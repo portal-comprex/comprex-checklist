@@ -55,7 +55,7 @@
   <div id="res-itens" class="resultado"></div>
 </div>
 
-<script src="https://alcdn.msauth.net/browser/3.14.0/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/dist/msal-browser.min.js"></script>
 <script>
 // =====================================================================
 // ⚙️ CONFIGURAÇÃO — já preenchido com os dados que você me passou
@@ -70,7 +70,13 @@ const msalConfig = {
 const SITE_HOSTNAME = 'granitozucchicombr.sharepoint.com';
 const SITE_PATH = '/sites/VagnereLucas';
 
-const msalInstance = new msal.PublicClientApplication(msalConfig);
+if (typeof msal === 'undefined') {
+  document.getElementById('res-login').className = 'resultado erro';
+  document.getElementById('res-login').textContent =
+    'ERRO: a biblioteca MSAL não carregou.\nVerifique sua internet ou tente recarregar a página (Ctrl+Shift+R).';
+  document.getElementById('btn-login').disabled = true;
+}
+const msalInstance = (typeof msal !== 'undefined') ? new msal.PublicClientApplication(msalConfig) : null;
 let contaAtual = null;
 let siteId = null;
 let listasCache = null;
