@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico MSAL — Comprex</title>
+<style>
+  body{font-family:Arial,sans-serif;padding:24px;max-width:700px;margin:0 auto;background:#f3f5f6}
+  h2{color:#132436;margin-bottom:4px}
+  p{color:#5b6570;font-size:13px;margin-bottom:16px}
+  button{padding:12px 20px;border:none;border-radius:9px;background:#132436;color:#fff;
+    font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;margin-right:8px}
+  button:hover{background:#1e3d5c}
+  button:disabled{background:#b7bcc0;cursor:not-allowed}
+  .passo{background:#fff;border:1px solid #e2e0d8;border-radius:10px;padding:16px;margin-bottom:12px}
+  .passo h3{font-size:14px;color:#132436;margin-bottom:8px}
+  .resultado{padding:12px;border-radius:9px;font-size:12px;font-family:monospace;
+    white-space:pre-wrap;word-break:break-all;display:none;margin-top:10px;max-height:300px;overflow:auto}
+  .ok{background:#e9f4ee;color:#1f7a44;border:1px solid #bfe3cd;display:block}
+  .erro{background:#fbe9e7;color:#c0392b;border:1px solid #f0c4bd;display:block}
+  .info{background:#e8f0fe;color:#1a4a8a;border:1px solid #c2d3f5;display:block}
+  #usuario-info{font-size:13px;font-weight:700;color:#1f7a44;margin-bottom:14px;display:none}
+</style>
+</head>
+<body>
+<h2>🔍 Diagnóstico — Azure AD + SharePoint</h2>
+<p>Testa se o login Microsoft e a conexão com as listas do SharePoint estão funcionando.</p>
+
+<div id="usuario-info"></div>
+
+<div class="passo">
+  <h3>Passo 1 — Login com a conta Microsoft</h3>
+  <button id="btn-login">Entrar com a conta Comprex</button>
+  <button id="btn-logout" disabled>Sair</button>
+  <div id="res-login" class="resultado"></div>
+</div>
+
+<div class="passo">
+  <h3>Passo 2 — Encontrar o site do SharePoint</h3>
+  <p>Confirma que o app consegue localizar o site "VagnereLucas".</p>
+  <button id="btn-site" disabled>Buscar site</button>
+  <div id="res-site" class="resultado"></div>
+</div>
+
+<div class="passo">
+  <h3>Passo 3 — Listar as listas do site</h3>
+  <p>Deve mostrar Checklists, Frota, Locais e Usuarios.</p>
+  <button id="btn-listas" disabled>Buscar listas</button>
+  <div id="res-listas" class="resultado"></div>
+</div>
+
+<div class="passo">
+  <h3>Passo 4 — Ler itens da lista "Checklists"</h3>
+  <button id="btn-itens" disabled>Buscar itens</button>
+  <div id="res-itens" class="resultado"></div>
+</div>
+
+<script src="https://alcdn.msauth.net/browser/3.14.0/js/msal-browser.min.js"></script>
+<script>
+// =====================================================================
+// ⚙️ CONFIGURAÇÃO — já preenchido com os dados que você me passou
+// =====================================================================
+const msalConfig = {
+  auth: {
+    clientId: '46c999c4-18ba-43c3-aed1-75b7e2e178a0',
+    authority: 'https://login.microsoftonline.com/5136e683-0069-4c8c-910d-0b538eac5494',
+    redirectUri: window.location.href.split('?')[0]
+  }
+};
+const SITE_HOSTNAME = 'granitozucchicombr.sharepoint.com';
+const SITE_PATH = '/sites/VagnereLucas';
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+let contaAtual = null;
+let siteId = null;
+let listasCache = null;
+
+function mostrar(elId, texto, classe){
+  const el = document.getElementById(elId);
+  el.className = 'resultado ' + classe;
+  el.textContent = texto;
+}
+
+function habilitarPassos(habilitado){
+  document.getElementById('btn-site').disabled = !habilitado;
+  document.getElementById('btn-listas').disabled = !habilitado;
+  document.getElementById('btn-itens').disabled = !habilitado;
+}
+
+document.getElementById('btn-login').onclick = async function(){
+  try {
+    const resp = await msalInstance.loginPopup({ scopes: ['Sites.ReadWrite.All'] });
+    contaAtual = resp.account;
+    document.getElementById('usuario-info').style.display = 'block';
+    document.getElementById('usuario-info').textContent = '✔ Logado como: ' + contaAtual.username;
+    document.getElementById('btn-login').disabled = true;
+    document.getElementById('btn-logout').disabled = false;
+    habilitarPassos(true);
+    mostrar('res-login', 'Login OK!\n\n' + JSON.stringify({ nome: contaAtual.name, email: contaAtual.username }, null, 2), 'ok');
+  } catch(err) {
+    mostrar('res-login', 'ERRO no login:\n' + err.message, 'erro');
+  }
+};
+
+document.getElementById('btn-logout').onclick = function(){
+  msalInstance.logoutPopup();
+  contaAtual = null;
+  document.getElementById('usuario-info').style.display = 'none';
+  document.getElementById('btn-login').disabled = false;
+  document.getElementById('btn-logout').disabled = true;
+  habilitarPassos(false);
+};
+
+async function getToken(){
+  const resp = await msalInstance.acquireTokenSilent({
+    scopes: ['Sites.ReadWrite.All'],
+    account: contaAtual
+  });
+  return resp.accessToken;
+}
+
+document.getElementById('btn-site').onclick = async function(){
+  mostrar('res-site', 'Buscando…', 'info');
+  try {
+    const token = await getToken();
+    const url = 'https://graph.microsoft.com/v1.0/sites/' + SITE_HOSTNAME + ':' + SITE_PATH;
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    const d = await r.json();
+    if (d.id) {
+      siteId = d.id;
+      mostrar('res-site', '✔ Site encontrado!\n\nNome: ' + d.displayName + '\nID do site: ' + d.id, 'ok');
+    } else {
+      mostrar('res-site', 'Resposta inesperada:\n' + JSON.stringify(d, null, 2), 'erro');
+    }
+  } catch(err) {
+    mostrar('res-site', 'ERRO:\n' + err.message, 'erro');
+  }
+};
+
+document.getElementById('btn-listas').onclick = async function(){
+  mostrar('res-listas', 'Buscando…', 'info');
+  try {
+    if (!siteId) {
+      mostrar('res-listas', 'Rode o Passo 2 primeiro (buscar o site).', 'erro');
+      return;
+    }
+    const token = await getToken();
+    const url = 'https://graph.microsoft.com/v1.0/sites/' + siteId + '/lists?$select=id,name,displayName';
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    const d = await r.json();
+    if (d.value) {
+      listasCache = d.value;
+      const nomes = d.value.map(function(l){ return '• ' + l.displayName + '  (id: ' + l.id + ')'; }).join('\n');
+      mostrar('res-listas', '✔ Listas encontradas:\n\n' + nomes, 'ok');
+    } else {
+      mostrar('res-listas', 'Resposta inesperada:\n' + JSON.stringify(d, null, 2), 'erro');
+    }
+  } catch(err) {
+    mostrar('res-listas', 'ERRO:\n' + err.message, 'erro');
+  }
+};
+
+document.getElementById('btn-itens').onclick = async function(){
+  mostrar('res-itens', 'Buscando…', 'info');
+  try {
+    if (!siteId || !listasCache) {
+      mostrar('res-itens', 'Rode os Passos 2 e 3 primeiro.', 'erro');
+      return;
+    }
+    const listaChecklists = listasCache.find(function(l){
+      return l.displayName.toLowerCase().indexOf('checklist') !== -1;
+    });
+    if (!listaChecklists) {
+      mostrar('res-itens', 'Lista "Checklists" não encontrada entre as listas do Passo 3.', 'erro');
+      return;
+    }
+    const token = await getToken();
+    const url = 'https://graph.microsoft.com/v1.0/sites/' + siteId + '/lists/' + listaChecklists.id + '/items?$expand=fields&$top=5';
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    const d = await r.json();
+    if (d.value) {
+      mostrar('res-itens', '✔ ' + d.value.length + ' item(ns) encontrado(s):\n\n' + JSON.stringify(d.value.map(function(i){return i.fields;}), null, 2), 'ok');
+    } else {
+      mostrar('res-itens', 'Resposta inesperada:\n' + JSON.stringify(d, null, 2), 'erro');
+    }
+  } catch(err) {
+    mostrar('res-itens', 'ERRO:\n' + err.message, 'erro');
+  }
+};
+</script>
+</body>
+</html>
