@@ -81,6 +81,10 @@ if (typeof msal === 'undefined') {
   document.getElementById('btn-login').disabled = true;
 }
 const msalInstance = (typeof msal !== 'undefined') ? new msal.PublicClientApplication(msalConfig) : null;
+let msalPronto = false;
+if (msalInstance) {
+  msalInstance.initialize().then(function(){ msalPronto = true; });
+}
 let contaAtual = null;
 let siteId = null;
 let listasCache = null;
@@ -99,6 +103,10 @@ function habilitarPassos(habilitado){
 
 document.getElementById('btn-login').onclick = async function(){
   try {
+    if (!msalPronto) {
+      await msalInstance.initialize();
+      msalPronto = true;
+    }
     const resp = await msalInstance.loginPopup({ scopes: ['Sites.ReadWrite.All'] });
     contaAtual = resp.account;
     document.getElementById('usuario-info').style.display = 'block';
