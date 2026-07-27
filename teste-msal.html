@@ -68,7 +68,7 @@ const msalConfig = {
   auth: {
     clientId: '46c999c4-18ba-43c3-aed1-75b7e2e178a0',
     authority: 'https://login.microsoftonline.com/5136e683-0069-4c8c-910d-0b538eac5494',
-    redirectUri: window.location.href.split('?')[0]
+    redirectUri: window.location.href.split('?')[0].split('#')[0]
   }
 };
 const SITE_HOSTNAME = 'granitozucchicombr.sharepoint.com';
@@ -82,9 +82,6 @@ if (typeof msal === 'undefined') {
 }
 const msalInstance = (typeof msal !== 'undefined') ? new msal.PublicClientApplication(msalConfig) : null;
 let msalPronto = false;
-if (msalInstance) {
-  msalInstance.initialize().then(function(){ msalPronto = true; });
-}
 let contaAtual = null;
 let siteId = null;
 let listasCache = null;
@@ -101,27 +98,50 @@ function habilitarPassos(habilitado){
   document.getElementById('btn-itens').disabled = !habilitado;
 }
 
+function marcarLogado(conta){
+  contaAtual = conta;
+  document.getElementById('usuario-info').style.display = 'block';
+  document.getElementById('usuario-info').textContent = '✔ Logado como: ' + contaAtual.username;
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('btn-logout').disabled = false;
+  habilitarPassos(true);
+  mostrar('res-login', 'Login OK!\n\n' + JSON.stringify({ nome: contaAtual.name, email: contaAtual.username }, null, 2), 'ok');
+}
+
+if (msalInstance) {
+  msalInstance.initialize().then(function(){
+    msalPronto = true;
+    // Captura o resultado do login ao voltar da página da Microsoft (fluxo redirect)
+    return msalInstance.handleRedirectPromise();
+  }).then(function(resp){
+    if (resp && resp.account) {
+      marcarLogado(resp.account);
+    } else {
+      // Se já havia uma conta logada de antes (sessão anterior), reaproveita
+      const contas = msalInstance.getAllAccounts();
+      if (contas.length > 0) marcarLogado(contas[0]);
+    }
+  }).catch(function(err){
+    mostrar('res-login', 'ERRO no login:\n' + err.message, 'erro');
+  });
+}
+
+
 document.getElementById('btn-login').onclick = async function(){
   try {
     if (!msalPronto) {
       await msalInstance.initialize();
       msalPronto = true;
     }
-    const resp = await msalInstance.loginPopup({ scopes: ['Sites.ReadWrite.All'] });
-    contaAtual = resp.account;
-    document.getElementById('usuario-info').style.display = 'block';
-    document.getElementById('usuario-info').textContent = '✔ Logado como: ' + contaAtual.username;
-    document.getElementById('btn-login').disabled = true;
-    document.getElementById('btn-logout').disabled = false;
-    habilitarPassos(true);
-    mostrar('res-login', 'Login OK!\n\n' + JSON.stringify({ nome: contaAtual.name, email: contaAtual.username }, null, 2), 'ok');
+    mostrar('res-login', 'Redirecionando para o login da Microsoft…', 'info');
+    await msalInstance.loginRedirect({ scopes: ['Sites.ReadWrite.All'] });
   } catch(err) {
     mostrar('res-login', 'ERRO no login:\n' + err.message, 'erro');
   }
 };
 
 document.getElementById('btn-logout').onclick = function(){
-  msalInstance.logoutPopup();
+  msalInstance.logoutRedirect();
   contaAtual = null;
   document.getElementById('usuario-info').style.display = 'none';
   document.getElementById('btn-login').disabled = false;
