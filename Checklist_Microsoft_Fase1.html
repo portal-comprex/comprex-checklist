@@ -918,7 +918,7 @@ async function graphPost(url, body){
 /** Lê os itens de uma lista simples (Frota/Locais), retornando os valores da coluna "Title". */
 async function lerListaSimples(listaId){
   const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items?$expand=fields&$top=999');
-  return (d.value || []).map(function(item){ return item.fields.Title; }).filter(Boolean);
+  return (d.value || []).map(function(item){ return (item.fields.Title || '').trim(); }).filter(Boolean);
 }
 
 /** Adiciona um item numa lista simples (Frota/Locais). */
