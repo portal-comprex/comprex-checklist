@@ -1296,7 +1296,6 @@ btn.onclick = async function(){
   btn.textContent = 'Enviando…';
 
   const valExtintor = document.getElementById('validade-extintor').value;
-  const valExtintorBR = valExtintor ? valExtintor.split('-').reverse().join('/') : '';
 
   const dados = {
     'Equipamento':        document.getElementById('equipamento').value,
