@@ -1382,7 +1382,7 @@ document.getElementById('btn-salvar-equip').onclick = async function(){
     botao.disabled = false; botao.textContent = 'Salvar equipamento';
   }
 };
-
+  
 document.getElementById('btn-salvar-local').onclick = async function(){
   const val = document.getElementById('input-local').value.trim();
   if (!val) { mostrarFeedback('local', false, 'Digite o nome do local/obra.'); return; }
