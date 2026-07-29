@@ -594,6 +594,7 @@
     </div>
     <nav class="sidebar-nav">
       <div class="sidebar-item ativo" data-view="novo"><i>📋</i> Checklists</div>
+      <div class="sidebar-item" data-view="historico"><i>🕒</i> Histórico</div>
 
       <div class="sidebar-secao">Em construção</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📊</i> Dashboard</div>
@@ -602,7 +603,6 @@
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>⚠️</i> Ocorrências</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📈</i> Indicadores</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📄</i> Relatórios</div>
-      <div class="sidebar-item bloqueado" data-bloqueado="1"><i>🕒</i> Histórico</div>
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
     </nav>
     <div class="sidebar-sair">
@@ -705,12 +705,53 @@
           <div class="resumo-linha"><span class="resumo-dot" style="background:var(--na)"></span><span class="resumo-lbl">N/A</span><b id="resumo-na">0</b></div>
         </div>
 
-        <div class="resumo-alerta" id="resumo-alerta" style="display:none">⚠️ Este equipamento será marcado para <b>PARALISAR</b></div>
+       <div class="resumo-alerta" id="resumo-alerta" style="display:none">⚠️ Este equipamento será marcado para <b>PARALISAR</b></div>
       </div>
     </div>
 
   </div>
   </div>
+
+<div class="view" id="view-historico">
+  <div class="hist-info" id="hist-info">Carregando histórico…</div>
+  <div class="hist-filtros">
+    <div class="hist-filtro-campo">
+      <label>Equipamento</label>
+      <select id="hist-filtro-equip"><option value="">Todos</option></select>
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Operador</label>
+      <input type="text" id="hist-filtro-operador" placeholder="Nome do operador">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Status</label>
+      <select id="hist-filtro-status">
+        <option value="">Todos</option>
+        <option value="ok">OK</option>
+        <option value="at">Atenção</option>
+        <option value="parar">Ruim / Paralisar</option>
+      </select>
+    </div>
+  </div>
+  <div class="hist-wrap">
+    <table class="hist-tabela" id="hist-tabela">
+      <thead>
+        <tr><th>Data</th><th>Equipamento</th><th>Operador</th><th>Horímetro</th><th>Local</th><th>Status</th></tr>
+      </thead>
+      <tbody id="hist-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
+  <div class="hist-detalhe-modal">
+    <div class="hist-detalhe-header">
+      <h3 id="hist-detalhe-titulo">Detalhes do checklist</h3>
+      <button class="modal-fechar" id="hist-detalhe-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo" id="hist-detalhe-corpo"></div>
+  </div>
+</div>
 
     </div>
 
@@ -1404,6 +1445,160 @@ document.getElementById('btn-salvar-local').onclick = async function(){
   }
 };
 
+  /* =====================================================================
+   NAVEGAÇÃO ENTRE TELAS — Fase 2 (Histórico)
+   ===================================================================== */
+let historicoCarregado = false;
+let historicoItens = [];
+
+function mostrarView(nome){
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('ativo'); });
+  const alvo = document.getElementById('view-' + nome);
+  if (alvo) alvo.classList.add('ativo');
+  document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
+    item.classList.toggle('ativo', item.dataset.view === nome);
+  });
+  const titulos = { novo: 'Checklists', historico: 'Histórico' };
+  document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
+  if (nome === 'historico' && !historicoCarregado) carregarHistorico();
+}
+
+document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
+  item.onclick = function(){ mostrarView(item.dataset.view); };
+});
+
+function severidadeDaResposta(rotuloOriginal, valor){
+  const item = ITENS.find(function(it){ return it[0] === rotuloOriginal; });
+  if (!item) return null;
+  const opt = item[1].find(function(o){ return o[0] === valor; });
+  return opt ? opt[1] : null;
+}
+
+function statusDoChecklist(fieldsPorRotulo){
+  if (fieldsPorRotulo['NECESSITA PARALIZAR O EQUIPAMENTO?'] === 'SIM') return { texto: 'Paralisar', classe: 'parar' };
+  let pior = 'ok';
+  ITENS.forEach(function(item){
+    const valor = fieldsPorRotulo[item[0]];
+    if (!valor) return;
+    const sev = severidadeDaResposta(item[0], valor);
+    if (sev === 'ru') pior = 'parar';
+    else if (sev === 'at' && pior === 'ok') pior = 'at';
+  });
+  const textos = { ok: 'OK', at: 'Atenção', parar: 'Ruim' };
+  return { texto: textos[pior], classe: pior };
+}
+
+function converterFieldsParaRotulos(fields){
+  const resultado = {};
+  Object.keys(MAPA_CAMPOS).forEach(function(rotulo){
+    const displayName = MAPA_CAMPOS[rotulo];
+    const nomeInterno = colunasInternas[displayName.trim().toLowerCase()];
+    if (nomeInterno && fields[nomeInterno] !== undefined) resultado[rotulo] = fields[nomeInterno];
+  });
+  return resultado;
+}
+
+async function carregarHistorico(){
+  const info = document.getElementById('hist-info');
+  info.textContent = 'Carregando histórico…';
+  try {
+    const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items?$expand=fields&$top=999');
+    historicoItens = (d.value || []).map(function(item){
+      const f = converterFieldsParaRotulos(item.fields);
+      return {
+        id: item.id,
+        criado: item.createdDateTime,
+        equipamento: f['Equipamento'] || '',
+        operador: f['Operador'] || '',
+        horimetro: f['Horimetro'] || '',
+        local: f['Local'] || '',
+        observacao: f['Observacao'] || '',
+        campos: f,
+        status: statusDoChecklist(f)
+      };
+    }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+    historicoCarregado = true;
+    preencherFiltroEquipamentoHistorico();
+    renderizarHistorico();
+    info.textContent = historicoItens.length + ' checklist(s) encontrado(s).';
+  } catch(err) {
+    info.textContent = '⚠️ Erro ao carregar histórico: ' + err.message;
+  }
+}
+
+function preencherFiltroEquipamentoHistorico(){
+  const select = document.getElementById('hist-filtro-equip');
+  const nomes = Array.from(new Set(historicoItens.map(function(h){ return h.equipamento; }))).filter(Boolean);
+  nomes.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
+  while (select.options.length > 1) select.remove(1);
+  nomes.forEach(function(n){
+    const o = document.createElement('option'); o.value = n; o.textContent = n; select.appendChild(o);
+  });
+}
+
+function formatarDataHist(iso){
+  if (!iso) return '';
+  const d = new Date(iso);
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() +
+    ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function renderizarHistorico(){
+  const equipFiltro = document.getElementById('hist-filtro-equip').value;
+  const operadorFiltro = document.getElementById('hist-filtro-operador').value.trim().toLowerCase();
+  const statusFiltro = document.getElementById('hist-filtro-status').value;
+  const filtrados = historicoItens.filter(function(h){
+    if (equipFiltro && h.equipamento !== equipFiltro) return false;
+    if (operadorFiltro && h.operador.toLowerCase().indexOf(operadorFiltro) < 0) return false;
+    if (statusFiltro && h.status.classe !== statusFiltro) return false;
+    return true;
+  });
+  const tbody = document.getElementById('hist-tbody');
+  if (!filtrados.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--cinza);padding:24px">Nenhum checklist encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtrados.map(function(h){
+    const linhaClasse = h.status.classe === 'parar' ? 'linha-parar' : (h.status.classe === 'at' ? 'linha-atencao' : '');
+    return '<tr class="' + linhaClasse + '" data-id="' + h.id + '">' +
+      '<td>' + formatarDataHist(h.criado) + '</td><td>' + h.equipamento + '</td><td>' + h.operador + '</td>' +
+      '<td>' + h.horimetro + '</td><td>' + h.local + '</td>' +
+      '<td><span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span></td></tr>';
+  }).join('');
+  tbody.querySelectorAll('tr').forEach(function(tr){
+    tr.onclick = function(){ abrirDetalheHistorico(tr.dataset.id); };
+  });
+}
+
+['hist-filtro-equip','hist-filtro-operador','hist-filtro-status'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', renderizarHistorico);
+  document.getElementById(id).addEventListener('change', renderizarHistorico);
+});
+
+function abrirDetalheHistorico(id){
+  const h = historicoItens.find(function(x){ return String(x.id) === String(id); });
+  if (!h) return;
+  document.getElementById('hist-detalhe-titulo').textContent = h.equipamento + ' — ' + formatarDataHist(h.criado);
+  let linhas = '<div class="hist-detalhe-meta">Operador: <b>' + h.operador + '</b> · Horímetro: <b>' + h.horimetro + '</b> · Local: <b>' + (h.local||'—') + '</b></div>';
+  ITENS.forEach(function(item){
+    const valor = h.campos[item[0]];
+    if (!valor) return;
+    const sev = severidadeDaResposta(item[0], valor);
+    const classeResp = sev === 'ru' ? 'ru' : (sev === 'at' ? 'at' : '');
+    linhas += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + prettify(item[0]) + '</span>' +
+      '<span class="hist-detalhe-resposta ' + classeResp + '">' + valor + '</span></div>';
+  });
+  if (h.observacao) linhas += '<div class="hist-detalhe-obs">Observação: ' + h.observacao + '</div>';
+  document.getElementById('hist-detalhe-corpo').innerHTML = linhas;
+  document.getElementById('hist-detalhe-overlay').classList.add('aberto');
+}
+
+document.getElementById('hist-detalhe-fechar').onclick = function(){
+  document.getElementById('hist-detalhe-overlay').classList.remove('aberto');
+};
+document.getElementById('hist-detalhe-overlay').onclick = function(e){
+  if (e.target === document.getElementById('hist-detalhe-overlay')) document.getElementById('hist-detalhe-overlay').classList.remove('aberto');
+};
 
 </script>
 </body>
