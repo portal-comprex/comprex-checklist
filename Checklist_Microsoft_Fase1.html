@@ -1047,10 +1047,52 @@ async function graphPost(url, body){
   return r.json();
 }
 
-/** Lê os itens de uma lista simples (Frota/Locais), retornando os valores da coluna "Title". */
-async function lerListaSimples(listaId){
+/** Lê os itens de uma lista simples (Frota/Locais), retornando os valores da coluna "Title".
+ *  Se um mapa (mapaIds) for passado, também preenche valor -> id do item no SharePoint. */
+async function lerListaSimples(listaId, mapaIds){
   const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items?$expand=fields&$top=999');
-  return (d.value || []).map(function(item){ return (item.fields.Title || '').trim(); }).filter(Boolean);
+  const valores = [];
+  (d.value || []).forEach(function(item){
+    const v = (item.fields.Title || '').trim();
+    if (!v) return;
+    valores.push(v);
+    if (mapaIds) mapaIds[v] = item.id;
+  });
+  return valores;
+}
+
+/** Renomeia (PATCH) o valor de um item numa lista simples (Frota/Locais). */
+async function editarItemSimples(listaId, itemId, novoValor){
+  const token = await graphToken();
+  const r = await fetch(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items/' + itemId + '/fields', {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Title: novoValor })
+  });
+  if (!r.ok) { const texto = await r.text(); throw new Error('Erro ' + r.status + ': ' + texto); }
+  return r.json();
+}
+
+/** Remove (DELETE) um item de uma lista simples (Frota/Locais). */
+async function apagarItemSimples(listaId, itemId){
+  const token = await graphToken();
+  const r = await fetch(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items/' + itemId, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (!r.ok && r.status !== 204) { const texto = await r.text(); throw new Error('Erro ' + r.status); }
+}
+
+/** Extrai o "grupo raiz" de um local, ex: "AMT - Boleamento - 500008" -> "AMT". */
+function grupoDoLocal(nome){
+  const partes = String(nome).split(/\s*[-–—]\s*/);
+  return partes.length > 1 ? partes[0].trim() : String(nome).trim();
+}
+
+/** Retorna a parte do nome sem o prefixo do grupo, ex: "AMT - Garra (500002)" -> "Garra (500002)". */
+function partesSemGrupo(nome){
+  const partes = String(nome).split(/\s*[-–—]\s*/);
+  return partes.length > 1 ? partes.slice(1).join(' - ') : nome;
 }
 
 /** Adiciona um item numa lista simples (Frota/Locais). */
@@ -1104,9 +1146,9 @@ function montarFieldsChecklist(dadosPorRotulo){
    ===================================================================== */
 async function iniciarAplicacao(){
   try {
-    const [equipamentos, locais] = await Promise.all([
-      lerListaSimples(LISTA_FROTA_ID),
-      lerListaSimples(LISTA_LOCAIS_ID)
+   const [equipamentos, locais] = await Promise.all([
+      lerListaSimples(LISTA_FROTA_ID, frotasIds),
+      lerListaSimples(LISTA_LOCAIS_ID, locaisIds)
     ]);
     inicializarListas(equipamentos, locais);
   } catch(err) {
@@ -1185,6 +1227,11 @@ function salvarExtras(chave, arr) {
 
 let frotas  = [];
 let locais  = [];
+let frotasIds = {};   // valor (texto) -> ID do item no SharePoint
+let locaisIds = {};   // valor (texto) -> ID do item no SharePoint
+let editandoEquip = null;
+let editandoLocal = null;
+let movendoLocal  = null;
 
 function preencherSelect(id, arr) {
   const s = document.getElementById(id);
@@ -1472,17 +1519,163 @@ document.querySelectorAll('.tab').forEach(function(tab){
   };
 });
 
-/** Renderiza a lista simples (só nome — sem editar/mover/apagar, isso chega na fase 2). */
-function renderizarListaModal(tipo){
+/** Renderiza a lista com opções de Editar/Apagar (e Mover, só para Local). */
+function renderizarListaModal(tipo) {
   const lista = tipo === 'equip' ? frotas : locais;
+  const mapaIds = tipo === 'equip' ? frotasIds : locaisIds;
+  const editando = tipo === 'equip' ? editandoEquip : editandoLocal;
   const el = document.getElementById('lista-' + tipo);
   if (!lista.length) {
     el.innerHTML = '<div class="modal-lista-vazio">Nenhum cadastrado ainda.</div>';
     return;
   }
+
+  const gruposExistentes = tipo === 'local'
+    ? Array.from(new Set(locais.map(function(l){ return grupoDoLocal(l); }))).sort()
+    : [];
+
   el.innerHTML = lista.map(function(v){
-    return '<div class="modal-lista-item"><span class="mli-nome">'+v+'</span></div>';
+    if (v === editando) {
+      return '<div class="modal-lista-item mli-editando">' +
+        '<input type="text" class="mli-input" id="mli-input-'+tipo+'" value="'+v+'">' +
+        '<button class="mli-btn mli-salvar" data-tipo="'+tipo+'" data-antigo="'+v+'">Salvar</button>' +
+        '<button class="mli-btn mli-cancelar" data-tipo="'+tipo+'">Cancelar</button>' +
+      '</div>';
+    }
+    if (tipo === 'local' && v === movendoLocal) {
+      const grupoAtual = grupoDoLocal(v);
+      return '<div class="modal-lista-item mli-editando">' +
+        '<select class="mli-input" id="mli-mover-select" style="flex:1">' +
+          gruposExistentes.map(function(g){
+            return '<option value="'+g+'" '+(g===grupoAtual?'selected':'')+'>'+g+'</option>';
+          }).join('') +
+          '<option value="__novo__">+ Novo grupo…</option>' +
+        '</select>' +
+        '<input type="text" class="mli-input" id="mli-mover-novo-grupo" placeholder="Nome do novo grupo" style="display:none;max-width:140px">' +
+        '<button class="mli-btn mli-mover-salvar" data-antigo="'+v+'">Mover</button>' +
+        '<button class="mli-btn mli-cancelar" data-tipo="local">Cancelar</button>' +
+      '</div>';
+    }
+    const btnMover = tipo === 'local'
+      ? '<button class="mli-btn mli-mover" data-valor="'+v+'" title="Mover para outro grupo">🔀 Mover</button>'
+      : '';
+    return '<div class="modal-lista-item">' +
+      '<span class="mli-nome">'+v+'</span>' +
+      btnMover +
+      '<button class="mli-btn mli-editar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Editar">✏️ Editar</button>' +
+      '<button class="mli-btn mli-apagar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Apagar">🗑️ Apagar</button>' +
+    '</div>';
   }).join('');
+
+  el.querySelectorAll('.mli-editar').forEach(function(btn){
+    btn.onclick = function(){
+      if (tipo === 'equip') editandoEquip = btn.dataset.valor; else editandoLocal = btn.dataset.valor;
+      movendoLocal = null;
+      renderizarListaModal(tipo);
+    };
+  });
+  el.querySelectorAll('.mli-mover').forEach(function(btn){
+    btn.onclick = function(){
+      movendoLocal = btn.dataset.valor;
+      editandoLocal = null;
+      renderizarListaModal(tipo);
+      const sel = document.getElementById('mli-mover-select');
+      if (sel) sel.onchange = function(){
+        document.getElementById('mli-mover-novo-grupo').style.display = sel.value === '__novo__' ? 'block' : 'none';
+      };
+    };
+  });
+  el.querySelectorAll('.mli-cancelar').forEach(function(btn){
+    btn.onclick = function(){
+      if (tipo === 'equip') editandoEquip = null; else { editandoLocal = null; movendoLocal = null; }
+      renderizarListaModal(tipo);
+    };
+  });
+  el.querySelectorAll('.mli-apagar').forEach(function(btn){
+    btn.onclick = function(){
+      const valor = btn.dataset.valor;
+      const rotulo = tipo === 'equip' ? 'equipamento' : 'local';
+      if (!confirm('Apagar o ' + rotulo + ' "' + valor + '" da lista?\n\nOs checklists já lançados com esse ' + rotulo + ' não serão apagados, só deixa de aparecer para novos lançamentos.')) return;
+
+      const listaId = tipo === 'equip' ? LISTA_FROTA_ID : LISTA_LOCAIS_ID;
+      const itemId = mapaIds[valor];
+      btn.disabled = true; btn.textContent = 'Apagando…';
+      apagarItemSimples(listaId, itemId).then(function(){
+        const listaRef = tipo === 'equip' ? frotas : locais;
+        const i = listaRef.indexOf(valor);
+        if (i >= 0) listaRef.splice(i, 1);
+        delete mapaIds[valor];
+        if (tipo === 'equip') preencherSelect('equipamento', frotas);
+        else preencherSelect('local', locais);
+        renderizarListaModal(tipo);
+        mostrarFeedback(tipo, true, '✔ Removido com sucesso!');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = '🗑️ Apagar';
+        mostrarFeedback(tipo, false, 'Erro: ' + err.message);
+      });
+    };
+  });
+  el.querySelectorAll('.mli-salvar').forEach(function(btn){
+    btn.onclick = function(){
+      const novoValor = document.getElementById('mli-input-'+tipo).value.trim();
+      const antigoValor = btn.dataset.antigo;
+      if (!novoValor) return;
+      if (novoValor === antigoValor) {
+        if (tipo === 'equip') editandoEquip = null; else editandoLocal = null;
+        renderizarListaModal(tipo);
+        return;
+      }
+      const listaId = tipo === 'equip' ? LISTA_FROTA_ID : LISTA_LOCAIS_ID;
+      const itemId = mapaIds[antigoValor];
+      btn.disabled = true; btn.textContent = 'Salvando…';
+      editarItemSimples(listaId, itemId, novoValor).then(function(){
+        const listaRef = tipo === 'equip' ? frotas : locais;
+        const i = listaRef.indexOf(antigoValor);
+        if (i >= 0) listaRef[i] = novoValor;
+        delete mapaIds[antigoValor];
+        mapaIds[novoValor] = itemId;
+        ordenarListas();
+        if (tipo === 'equip') { editandoEquip = null; preencherSelect('equipamento', frotas); }
+        else { editandoLocal = null; preencherSelect('local', locais); }
+        renderizarListaModal(tipo);
+        mostrarFeedback(tipo, true, '✔ Atualizado com sucesso!');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Salvar';
+        mostrarFeedback(tipo, false, 'Erro: ' + err.message);
+      });
+    };
+  });
+  el.querySelectorAll('.mli-mover-salvar').forEach(function(btn){
+    btn.onclick = function(){
+      const antigoValor = btn.dataset.antigo;
+      const sel = document.getElementById('mli-mover-select');
+      let novoGrupo = sel.value;
+      if (novoGrupo === '__novo__') {
+        novoGrupo = document.getElementById('mli-mover-novo-grupo').value.trim();
+        if (!novoGrupo) { mostrarFeedback('local', false, 'Digite o nome do novo grupo.'); return; }
+      }
+      const resto = partesSemGrupo(antigoValor);
+      const novoValor = resto === antigoValor ? novoGrupo : (novoGrupo + ' - ' + resto);
+      if (novoValor === antigoValor) { movendoLocal = null; renderizarListaModal('local'); return; }
+
+      const itemId = locaisIds[antigoValor];
+      btn.disabled = true; btn.textContent = 'Movendo…';
+      editarItemSimples(LISTA_LOCAIS_ID, itemId, novoValor).then(function(){
+        const i = locais.indexOf(antigoValor);
+        if (i >= 0) locais[i] = novoValor;
+        delete locaisIds[antigoValor];
+        locaisIds[novoValor] = itemId;
+        ordenarListas();
+        movendoLocal = null;
+        preencherSelect('local', locais);
+        renderizarListaModal('local');
+        mostrarFeedback('local', true, '✔ Movido para "' + novoGrupo + '" com sucesso!');
+      }).catch(function(err){
+        btn.disabled = false; btn.textContent = 'Mover';
+        mostrarFeedback('local', false, 'Erro: ' + err.message);
+      });
+    };
+  });
 }
 
 function mostrarFeedback(tipo, ok, msg){
@@ -1499,9 +1692,10 @@ document.getElementById('btn-salvar-equip').onclick = async function(){
 
   const botao = document.getElementById('btn-salvar-equip');
   botao.disabled = true; botao.textContent = 'Salvando…';
-  try {
-    await adicionarItemSimples(LISTA_FROTA_ID, val);
+try {
+    const resultado = await adicionarItemSimples(LISTA_FROTA_ID, val);
     frotas.push(val);
+    frotasIds[val] = resultado.id;
     ordenarListas();
     preencherSelect('equipamento', frotas);
     document.getElementById('input-equip').value = '';
@@ -1521,9 +1715,10 @@ document.getElementById('btn-salvar-local').onclick = async function(){
 
   const botao = document.getElementById('btn-salvar-local');
   botao.disabled = true; botao.textContent = 'Salvando…';
-  try {
-    await adicionarItemSimples(LISTA_LOCAIS_ID, val);
+ try {
+    const resultado = await adicionarItemSimples(LISTA_LOCAIS_ID, val);
     locais.push(val);
+    locaisIds[val] = resultado.id;
     ordenarListas();
     preencherSelect('local', locais);
     document.getElementById('input-local').value = '';
