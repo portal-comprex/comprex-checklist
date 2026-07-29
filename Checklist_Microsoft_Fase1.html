@@ -593,11 +593,11 @@
       <span class="logo-sub">MÁQUINAS E SERVIÇOS</span>
     </div>
     <nav class="sidebar-nav">
-      <div class="sidebar-item ativo" data-view="novo"><i>📋</i> Checklists</div>
+    <div class="sidebar-item ativo" data-view="novo"><i>📋</i> Checklists</div>
       <div class="sidebar-item" data-view="historico"><i>🕒</i> Histórico</div>
+      <div class="sidebar-item" data-view="dashboard"><i>📊</i> Dashboard</div>
 
       <div class="sidebar-secao">Em construção</div>
-      <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📊</i> Dashboard</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>🚚</i> Frota</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>👷</i> Operadores</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>⚠️</i> Ocorrências</div>
@@ -742,7 +742,75 @@
     </table>
   </div>
 </div>
+<div class="view" id="view-dashboard">
+  <div class="dash-kpis">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone azul">📋</div>
+        <div><div class="kpi-num" id="kpi-checklists-hoje">—</div><div class="kpi-lbl">Checklists hoje</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone tan">⏱️</div>
+        <div><div class="kpi-num" id="kpi-pendentes">—</div><div class="kpi-lbl">Pendentes hoje</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone ru">⚠️</div>
+        <div><div class="kpi-num" id="kpi-ocorrencias">—</div><div class="kpi-lbl">Ocorrências (30d)</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone ok">👷</div>
+        <div><div class="kpi-num" id="kpi-operadores">—</div><div class="kpi-lbl">Operadores ativos (30d)</div></div>
+      </div>
+    </div>
+  </div>
 
+  <div class="dash-row">
+    <div class="dash-card">
+      <h3>Checklists por dia (últimos 7 dias)</h3>
+      <div class="bar-chart" id="dash-bar-chart"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Apontamentos mais recorrentes (30d)</h3>
+      <div id="dash-donut"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+
+  <div class="dash-row">
+    <div class="dash-card">
+      <h3>Notificações</h3>
+      <div id="dash-notificacoes"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>🏆 Top operadores (30d)</h3>
+      <div id="dash-top-operadores"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+
+  <div class="dash-row-2">
+    <div class="dash-card">
+      <h3>🚜 Frota</h3>
+      <div id="dash-frota-donut"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Pendências</h3>
+      <div id="dash-pendencias"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Calendário</h3>
+      <div id="dash-calendario"></div>
+    </div>
+    <div class="dash-card">
+      <h3>Atividades recentes</h3>
+      <div id="dash-atividades"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+</div>
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
   <div class="hist-detalhe-modal">
     <div class="hist-detalhe-header">
@@ -1458,9 +1526,10 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-  const titulos = { novo: 'Checklists', historico: 'Histórico' };
+  const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
+  if (nome === 'dashboard') carregarDashboard();
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -1498,26 +1567,40 @@ function converterFieldsParaRotulos(fields){
   return resultado;
 }
 
+async function garantirDadosHistorico(forcar){
+  if (historicoCarregado && !forcar) return historicoItens;
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items?$expand=fields&$top=999');
+  historicoItens = (d.value || []).map(function(item){
+    const f = converterFieldsParaRotulos(item.fields);
+    let itensProblema = 0;
+    ITENS.forEach(function(it){
+      const valor = f[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at' || sev === 'ru') itensProblema++;
+    });
+    return {
+      id: item.id,
+      criado: item.createdDateTime,
+      equipamento: f['Equipamento'] || '',
+      operador: f['Operador'] || '',
+      horimetro: f['Horimetro'] || '',
+      local: f['Local'] || '',
+      observacao: f['Observacao'] || '',
+      campos: f,
+      status: statusDoChecklist(f),
+      itensProblema: itensProblema
+    };
+  }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  historicoCarregado = true;
+  return historicoItens;
+}
+
 async function carregarHistorico(){
   const info = document.getElementById('hist-info');
   info.textContent = 'Carregando histórico…';
   try {
-    const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items?$expand=fields&$top=999');
-    historicoItens = (d.value || []).map(function(item){
-      const f = converterFieldsParaRotulos(item.fields);
-      return {
-        id: item.id,
-        criado: item.createdDateTime,
-        equipamento: f['Equipamento'] || '',
-        operador: f['Operador'] || '',
-        horimetro: f['Horimetro'] || '',
-        local: f['Local'] || '',
-        observacao: f['Observacao'] || '',
-        campos: f,
-        status: statusDoChecklist(f)
-      };
-    }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
-    historicoCarregado = true;
+    await garantirDadosHistorico();
     preencherFiltroEquipamentoHistorico();
     renderizarHistorico();
     info.textContent = historicoItens.length + ' checklist(s) encontrado(s).';
@@ -1601,5 +1684,251 @@ document.getElementById('hist-detalhe-overlay').onclick = function(e){
 };
 
 </script>
+  /* =====================================================================
+   DASHBOARD — Fase 2
+   ===================================================================== */
+function dataChaveISO(iso){
+  const d = new Date(iso);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function hojeChaveISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+async function carregarDashboard(){
+  try {
+    await garantirDadosHistorico();
+  } catch(err) {
+    document.getElementById('dash-bar-chart').innerHTML = '<div class="lista-vazia-dash">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
+    return;
+  }
+
+  const hojeChave = hojeChaveISO();
+  const checklistsHoje = historicoItens.filter(function(h){ return dataChaveISO(h.criado) === hojeChave; });
+
+  const limite30 = new Date(Date.now() - 30*86400000);
+  const ultimos30 = historicoItens.filter(function(h){ return new Date(h.criado) >= limite30; });
+  const ocorrencias30 = ultimos30.filter(function(h){ return h.status.classe === 'parar'; });
+
+  const feitosHojeSet = new Set(checklistsHoje.map(function(h){ return h.equipamento; }));
+  const pendentes = frotas.filter(function(eq){ return !feitosHojeSet.has(eq); });
+
+  const operadoresSet = new Set(ultimos30.map(function(h){ return h.operador; }).filter(Boolean));
+
+  document.getElementById('kpi-checklists-hoje').textContent = checklistsHoje.length;
+  document.getElementById('kpi-pendentes').textContent = pendentes.length;
+  document.getElementById('kpi-ocorrencias').textContent = ocorrencias30.length;
+  document.getElementById('kpi-operadores').textContent = operadoresSet.size;
+
+  renderBarChart(historicoItens);
+  renderDonutApontamentos(ultimos30);
+  renderNotificacoes(ocorrencias30);
+  renderTopOperadores(ultimos30);
+  renderFrotaDonut(checklistsHoje, pendentes);
+  renderPendencias(pendentes);
+  renderAtividades(historicoItens);
+  renderCalendario();
+}
+
+function renderBarChart(itens){
+  const cont = document.getElementById('dash-bar-chart');
+  const dias = [];
+  for (let i = 6; i >= 0; i--){
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dias.push({ chave: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
+                rotulo: String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0') });
+  }
+  const contagem = {};
+  itens.forEach(function(h){
+    const chave = dataChaveISO(h.criado);
+    contagem[chave] = (contagem[chave] || 0) + 1;
+  });
+  const valores = dias.map(function(d){ return contagem[d.chave] || 0; });
+  const max = Math.max.apply(null, valores.concat([1]));
+  const hojeChave = hojeChaveISO();
+
+  cont.innerHTML = dias.map(function(d, i){
+    const v = valores[i];
+    const alturaPct = Math.max(4, Math.round(v / max * 100));
+    const ehHoje = d.chave === hojeChave;
+    return '<div class="bar-col">' +
+      '<div class="bar-valor">'+v+'</div>' +
+      '<div class="bar-fill'+(ehHoje?' hoje':'')+'" style="height:'+alturaPct+'%"></div>' +
+      '<div class="bar-dia">'+d.rotulo+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderDonutApontamentos(itens){
+  const cont = document.getElementById('dash-donut');
+  const porItem = {};
+  itens.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at' || sev === 'ru') porItem[it[0]] = (porItem[it[0]] || 0) + 1;
+    });
+  });
+  const lista = Object.keys(porItem).map(function(k){ return { label: prettify(k), valor: porItem[k] }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+
+  if (!lista.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem apontamentos no período.</div>'; return; }
+  const top4 = lista.slice(0, 4);
+  const total = top4.reduce(function(s,x){ return s + x.valor; }, 0);
+  const cores = ['#132436', '#c79a3a', '#8a94a0', '#5b6570'];
+
+  let acumulado = 0;
+  const stops = top4.map(function(x, i){
+    const pct = total ? (x.valor / total * 100) : 0;
+    const inicio = acumulado;
+    acumulado += pct;
+    return cores[i] + ' ' + inicio.toFixed(1) + '% ' + acumulado.toFixed(1) + '%';
+  }).join(', ');
+
+  const legenda = top4.map(function(x, i){
+    const pct = total ? Math.round(x.valor / total * 100) : 0;
+    return '<div class="donut-item"><span><span class="donut-cor" style="background:'+cores[i]+'"></span>'+x.label+'</span><b>'+pct+'%</b></div>';
+  }).join('');
+
+  cont.innerHTML =
+    '<div class="donut-wrap">' +
+      '<div style="width:110px;height:110px;border-radius:50%;background:conic-gradient('+stops+');flex-shrink:0"></div>' +
+      '<div class="donut-legenda">'+legenda+'</div>' +
+    '</div>' +
+    '<div class="donut-total">Total: '+total+' apontamento(s)</div>';
+}
+
+function renderNotificacoes(ocorrencias){
+  const cont = document.getElementById('dash-notificacoes');
+  if (!ocorrencias.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhuma notificação recente.</div>'; return; }
+  cont.innerHTML = ocorrencias.slice(0, 4).map(function(o){
+    const hora = formatarDataHist(o.criado).split(' ')[1] || '';
+    return '<div class="notif-item">' +
+      '<span class="notif-dot ru"></span>' +
+      '<div class="notif-txt"><div class="notif-titulo">'+o.equipamento+'</div>' +
+      '<div class="notif-sub">Necessita paralisar · '+(o.operador||'—')+'</div></div>' +
+      '<div class="notif-tempo">'+hora+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderTopOperadores(itens){
+  const cont = document.getElementById('dash-top-operadores');
+  const contagem = {};
+  itens.forEach(function(h){ if (h.operador) contagem[h.operador] = (contagem[h.operador] || 0) + 1; });
+  const lista = Object.keys(contagem).map(function(k){ return { label: k, valor: contagem[k] }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+  if (!lista.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem dados no período.</div>'; return; }
+  const top3 = lista.slice(0, 3);
+  const max = top3[0].valor || 1;
+  cont.innerHTML = top3.map(function(o, i){
+    const pct = Math.round(o.valor / max * 100);
+    return '<div class="rank-linha">' +
+      '<div class="rank-pos">'+(i+1)+'º</div>' +
+      '<div style="flex:1"><div class="rank-nome">'+o.label+'</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:'+pct+'%"></div></div></div>' +
+      '<div class="rank-pct">'+o.valor+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderFrotaDonut(checklistsHoje, pendentes){
+  const cont = document.getElementById('dash-frota-donut');
+  if (!frotas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem equipamentos cadastrados.</div>'; return; }
+
+  let ok = 0, atencao = 0, parado = 0;
+  checklistsHoje.forEach(function(h){
+    if (h.status.classe === 'parar') parado++;
+    else if (h.status.classe === 'at') atencao++;
+    else ok++;
+  });
+  const semRegistro = pendentes.length;
+  const total = frotas.length;
+
+  const partes = [
+    { label:'Ok', valor: ok, cor:'#2e7d46' },
+    { label:'Atenção', valor: atencao, cor:'#c79a3a' },
+    { label:'Parados', valor: parado, cor:'#c0392b' },
+    { label:'Sem registro hoje', valor: semRegistro, cor:'#8a94a0' }
+  ].filter(function(p){ return p.valor > 0; });
+
+  let acumulado = 0;
+  const stops = partes.map(function(p){
+    const pct = total ? (p.valor/total*100) : 0;
+    const inicio = acumulado; acumulado += pct;
+    return p.cor+' '+inicio.toFixed(1)+'% '+acumulado.toFixed(1)+'%';
+  }).join(', ');
+
+  const legenda = partes.map(function(p){
+    const pct = total ? Math.round(p.valor/total*100) : 0;
+    return '<div class="donut-item"><span><span class="donut-cor" style="background:'+p.cor+'"></span>'+p.label+'</span><b>'+p.valor+' ('+pct+'%)</b></div>';
+  }).join('');
+
+  cont.innerHTML =
+    '<div class="donut-wrap">' +
+      '<div style="width:100px;height:100px;border-radius:50%;background:conic-gradient('+stops+');flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
+        '<div style="width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px">'+total+'</div>' +
+      '</div>' +
+      '<div class="donut-legenda">'+legenda+'</div>' +
+    '</div>';
+}
+
+function renderPendencias(pendentes){
+  const cont = document.getElementById('dash-pendencias');
+  if (!pendentes.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhuma pendência hoje. ✔</div>'; return; }
+  cont.innerHTML = pendentes.slice(0, 6).map(function(eq){
+    return '<div class="pend-check">'+eq+'<span class="pend-badge alta">Pendente</span></div>';
+  }).join('');
+}
+
+function renderAtividades(itens){
+  const cont = document.getElementById('dash-atividades');
+  if (!itens.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhuma atividade registrada.</div>'; return; }
+  cont.innerHTML = itens.slice(0, 5).map(function(h){
+    const ok = h.status.classe === 'ok';
+    const icone = ok ? '✔' : (h.status.classe === 'parar' ? '⚠' : '●');
+    const classe = ok ? 'ok' : 'ru';
+    const dataHora = formatarDataHist(h.criado);
+    const hora = dataHora.split(' ')[1] || '';
+    return '<div class="ativ-item">' +
+      '<div class="ativ-icone '+classe+'">'+icone+'</div>' +
+      '<div class="ativ-titulo" style="flex:1">' +
+        '<div>Checklist '+(ok?'conforme':'com apontamento')+'</div>' +
+        '<div class="ativ-sub">'+h.equipamento+' · '+(h.operador||'—')+'</div>' +
+      '</div>' +
+      '<div class="ativ-hora">'+hora+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderCalendario(){
+  const cont = document.getElementById('dash-calendario');
+  const hoje = new Date();
+  const ano = hoje.getFullYear(), mes = hoje.getMonth();
+  const nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const totalDias = new Date(ano, mes + 1, 0).getDate();
+  const diasMesAnterior = new Date(ano, mes, 0).getDate();
+
+  let html = '<div style="text-align:center;font-size:12px;font-weight:700;margin-bottom:10px">'+nomesMes[mes]+' '+ano+'</div>';
+  html += '<div class="cal-grid">';
+  ['D','S','T','Q','Q','S','S'].forEach(function(d){ html += '<div class="cal-dow">'+d+'</div>'; });
+
+  for (let i = primeiroDia; i > 0; i--){
+    html += '<div class="cal-dia outro-mes">'+(diasMesAnterior - i + 1)+'</div>';
+  }
+  for (let d = 1; d <= totalDias; d++){
+    const ehHoje = d === hoje.getDate();
+    html += '<div class="cal-dia'+(ehHoje?' hoje':'')+'">'+d+'</div>';
+  }
+  const restante = (7 - ((primeiroDia + totalDias) % 7)) % 7;
+  for (let d = 1; d <= restante; d++){
+    html += '<div class="cal-dia outro-mes">'+d+'</div>';
+  }
+  html += '</div>';
+  cont.innerHTML = html;
+}
 </body>
 </html>
