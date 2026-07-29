@@ -1013,17 +1013,33 @@ function entrarComoLogado(conta){
   document.getElementById('user-avatar').textContent = iniciais || '--';
 
   iniciarAplicacao();
+
+  // Se voltamos de um redirect de renovação de token, retorna pra tela onde o usuário estava
+  var viewSalva = null;
+  try { viewSalva = sessionStorage.getItem('viewAntesDoRedirect'); sessionStorage.removeItem('viewAntesDoRedirect'); } catch(e) {}
+  if (viewSalva && viewSalva !== 'novo') {
+    setTimeout(function(){ mostrarView(viewSalva); }, 300);
+  }
 }
 
 /* =====================================================================
    GRAPH API — helpers
    ===================================================================== */
 async function graphToken(){
-  const resp = await msalInstance.acquireTokenSilent({
-    scopes: ['Sites.ReadWrite.All'],
-    account: contaAtual
-  });
-  return resp.accessToken;
+  try {
+    const resp = await msalInstance.acquireTokenSilent({
+      scopes: ['Sites.ReadWrite.All'],
+      account: contaAtual
+    });
+    return resp.accessToken;
+  } catch(err) {
+    console.warn('Renovação silenciosa falhou, tentando via redirect:', err.message);
+    // Guarda em que tela o usuário estava, para tentar voltar pra lá depois do redirect
+    try { sessionStorage.setItem('viewAntesDoRedirect', document.querySelector('.sidebar-item.ativo')?.dataset.view || 'novo'); } catch(e) {}
+    await msalInstance.acquireTokenRedirect({ scopes: ['Sites.ReadWrite.All'] });
+    // acquireTokenRedirect navega a página inteira — o código abaixo normalmente não executa
+    throw new Error('Redirecionando para renovar o login…');
+  }
 }
 
 async function graphGet(url){
