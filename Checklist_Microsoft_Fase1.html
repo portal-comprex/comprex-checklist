@@ -372,6 +372,8 @@
     .rel-grupo-resultado-titulo{break-before:auto;color:#000}
     .rel-item{break-inside:avoid;border:1px solid #ccc}
     .rel-resultado{border:none}
+    .hist-filtros, .hist-wrap, .hist-info, .hist-dica{display:none !important}
+    #hist-print-area{display:block !important}
   }
   .ind-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
   .ind-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta);
@@ -716,6 +718,14 @@
   <div class="hist-info" id="hist-info">Carregando histórico…</div>
   <div class="hist-filtros">
     <div class="hist-filtro-campo">
+      <label>De</label>
+      <input type="date" id="hist-filtro-de">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Até</label>
+      <input type="date" id="hist-filtro-ate">
+    </div>
+    <div class="hist-filtro-campo">
       <label>Equipamento</label>
       <select id="hist-filtro-equip"><option value="">Todos</option></select>
     </div>
@@ -724,19 +734,32 @@
       <input type="text" id="hist-filtro-operador" placeholder="Nome do operador">
     </div>
     <div class="hist-filtro-campo">
+      <label>Local</label>
+      <select id="hist-filtro-local"><option value="">Todos</option></select>
+    </div>
+    <div class="hist-filtro-campo">
       <label>Status</label>
       <select id="hist-filtro-status">
         <option value="">Todos</option>
-        <option value="ok">OK</option>
+        <option value="ok">Conforme</option>
         <option value="at">Atenção</option>
-        <option value="parar">Ruim / Paralisar</option>
+        <option value="parar">Paralisar</option>
       </select>
     </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="hist-limpar-filtros">Limpar filtros</button>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-primario" id="hist-imprimir">🖨️ Imprimir / Exportar PDF</button>
+    </div>
   </div>
+  <div id="hist-print-area" style="display:none"></div>
   <div class="hist-wrap">
     <table class="hist-tabela" id="hist-tabela">
       <thead>
-        <tr><th>Data</th><th>Equipamento</th><th>Operador</th><th>Horímetro</th><th>Local</th><th>Status</th></tr>
+        <tr><th>Data/Hora</th><th>Equipamento</th><th>Horímetro</th><th>Operador</th><th>Local</th><th>Situação</th><th>Itens</th></tr>
       </thead>
       <tbody id="hist-tbody"></tbody>
     </table>
@@ -1553,7 +1576,7 @@ function statusDoChecklist(fieldsPorRotulo){
     if (sev === 'ru') pior = 'parar';
     else if (sev === 'at' && pior === 'ok') pior = 'at';
   });
-  const textos = { ok: 'OK', at: 'Atenção', parar: 'Ruim' };
+  const textos = { ok: 'Conforme', at: 'Atenção', parar: 'Paralisar' };
   return { texto: textos[pior], classe: pior };
 }
 
@@ -1610,8 +1633,13 @@ async function carregarHistorico(){
 }
 
 function preencherFiltroEquipamentoHistorico(){
-  const select = document.getElementById('hist-filtro-equip');
-  const nomes = Array.from(new Set(historicoItens.map(function(h){ return h.equipamento; }))).filter(Boolean);
+  preencherFiltroSelectHistorico('hist-filtro-equip', 'equipamento');
+  preencherFiltroSelectHistorico('hist-filtro-local', 'local');
+}
+
+function preencherFiltroSelectHistorico(idSelect, campo){
+  const select = document.getElementById(idSelect);
+  const nomes = Array.from(new Set(historicoItens.map(function(h){ return h[campo]; }))).filter(Boolean);
   nomes.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
   while (select.options.length > 1) select.remove(1);
   nomes.forEach(function(n){
@@ -1626,37 +1654,94 @@ function formatarDataHist(iso){
     ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 
-function renderizarHistorico(){
+function obterHistoricoFiltrado(){
+  const deFiltro = document.getElementById('hist-filtro-de').value;
+  const ateFiltro = document.getElementById('hist-filtro-ate').value;
   const equipFiltro = document.getElementById('hist-filtro-equip').value;
   const operadorFiltro = document.getElementById('hist-filtro-operador').value.trim().toLowerCase();
+  const localFiltro = document.getElementById('hist-filtro-local').value;
   const statusFiltro = document.getElementById('hist-filtro-status').value;
-  const filtrados = historicoItens.filter(function(h){
+  return historicoItens.filter(function(h){
     if (equipFiltro && h.equipamento !== equipFiltro) return false;
     if (operadorFiltro && h.operador.toLowerCase().indexOf(operadorFiltro) < 0) return false;
+    if (localFiltro && h.local !== localFiltro) return false;
     if (statusFiltro && h.status.classe !== statusFiltro) return false;
+    if (deFiltro && h.criado < (deFiltro + 'T00:00:00')) return false;
+    if (ateFiltro && h.criado > (ateFiltro + 'T23:59:59')) return false;
     return true;
   });
+}
+
+function renderizarHistorico(){
+  const filtrados = obterHistoricoFiltrado();
   const tbody = document.getElementById('hist-tbody');
   if (!filtrados.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--cinza);padding:24px">Nenhum checklist encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--cinza);padding:24px">Nenhum checklist encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = filtrados.map(function(h){
     const linhaClasse = h.status.classe === 'parar' ? 'linha-parar' : (h.status.classe === 'at' ? 'linha-atencao' : '');
     return '<tr class="' + linhaClasse + '" data-id="' + h.id + '">' +
-      '<td>' + formatarDataHist(h.criado) + '</td><td>' + h.equipamento + '</td><td>' + h.operador + '</td>' +
-      '<td>' + h.horimetro + '</td><td>' + h.local + '</td>' +
-      '<td><span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span></td></tr>';
+      '<td>' + formatarDataHist(h.criado) + '</td><td>' + h.equipamento + '</td>' +
+      '<td>' + h.horimetro + '</td><td>' + h.operador + '</td><td>' + h.local + '</td>' +
+      '<td><span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span></td>' +
+      '<td>' + h.itensProblema + '</td></tr>';
   }).join('');
   tbody.querySelectorAll('tr').forEach(function(tr){
     tr.onclick = function(){ abrirDetalheHistorico(tr.dataset.id); };
   });
 }
 
-['hist-filtro-equip','hist-filtro-operador','hist-filtro-status'].forEach(function(id){
+['hist-filtro-de','hist-filtro-ate','hist-filtro-equip','hist-filtro-operador','hist-filtro-local','hist-filtro-status'].forEach(function(id){
   document.getElementById(id).addEventListener('input', renderizarHistorico);
   document.getElementById(id).addEventListener('change', renderizarHistorico);
 });
+
+document.getElementById('hist-limpar-filtros').onclick = function(){
+  document.getElementById('hist-filtro-de').value = '';
+  document.getElementById('hist-filtro-ate').value = '';
+  document.getElementById('hist-filtro-equip').value = '';
+  document.getElementById('hist-filtro-operador').value = '';
+  document.getElementById('hist-filtro-local').value = '';
+  document.getElementById('hist-filtro-status').value = '';
+  renderizarHistorico();
+};
+
+function montarConteudoImpressaoHistorico(filtrados){
+  if (!filtrados.length) return '<div class="rel-vazio">Nenhum checklist encontrado para este filtro.</div>';
+  let html = '<div class="rel-print-titulo">Relatório de Checklists — ' + filtrados.length + ' registro(s)</div>';
+  html += '<div class="rel-resultado">' + filtrados.map(function(h){
+    const badgeClasse = h.status.classe === 'parar' ? 'parar' : 'ok';
+    const badge = '<span class="rel-badge ' + badgeClasse + '">' + h.status.texto + '</span>';
+    const chips = ITENS.filter(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return false;
+      const sev = severidadeDaResposta(it[0], valor);
+      return sev === 'at' || sev === 'ru';
+    }).map(function(it){
+      const valor = h.campos[it[0]];
+      const sev = severidadeDaResposta(it[0], valor);
+      const classeChip = sev === 'ru' ? 'ru' : 'at';
+      return '<span class="rel-chip ' + classeChip + '">' + prettify(it[0]) + ': ' + valor + '</span>';
+    }).join('');
+    const obs = h.observacao ? '<div class="rel-obs">"' + h.observacao + '"</div>' : '';
+    return '<div class="rel-item">' +
+      '<div class="rel-item-cab">' +
+        '<span class="rel-item-eq">' + h.equipamento + ' · ' + formatarDataHist(h.criado) + '</span>' + badge +
+      '</div>' +
+      '<div class="rel-item-meta">Horímetro ' + (h.horimetro || '—') + ' · Operador: ' + (h.operador || '—') + ' · ' + (h.local || '—') + '</div>' +
+      (chips ? '<div class="rel-chips" style="margin-top:8px">' + chips + '</div>' : '') +
+      obs +
+    '</div>';
+  }).join('') + '</div>';
+  return html;
+}
+
+document.getElementById('hist-imprimir').onclick = function(){
+  const filtrados = obterHistoricoFiltrado();
+  document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico(filtrados);
+  window.print();
+};
 
 function abrirDetalheHistorico(id){
   const h = historicoItens.find(function(x){ return String(x.id) === String(id); });
@@ -1684,6 +1769,7 @@ document.getElementById('hist-detalhe-overlay').onclick = function(e){
 };
 
 </script>
+<script>
   /* =====================================================================
    DASHBOARD — Fase 2
    ===================================================================== */
@@ -1930,5 +2016,6 @@ function renderCalendario(){
   html += '</div>';
   cont.innerHTML = html;
 }
+</script>
 </body>
 </html>
