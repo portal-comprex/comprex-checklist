@@ -233,8 +233,19 @@
   .resumo-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
   .resumo-lbl{flex:1;color:var(--cinza)}
   .resumo-linha b{font-size:14px;color:var(--tinta)}
-  .resumo-alerta{margin-top:16px;background:#fbe9e7;color:var(--ru);border:1px solid #f0c4bd;
+ .resumo-alerta{margin-top:16px;background:#fbe9e7;color:var(--ru);border:1px solid #f0c4bd;
     border-radius:8px;padding:10px 12px;font-size:12px;text-align:center}
+  .resumo-critico-link{display:block;font-size:12px;color:var(--ru);font-weight:700;
+    text-decoration:none;margin:-6px 0 14px;cursor:pointer}
+  .resumo-critico-link:hover{text-decoration:underline}
+  .info-rapida-linha{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+    color:var(--cinza);padding:8px 0;border-bottom:1px solid var(--linha)}
+  .info-rapida-linha:last-child{border-bottom:none}
+  .info-rapida-linha b{color:var(--tinta);font-size:13px}
+  .ultimos-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+    border-bottom:1px solid var(--linha);font-size:12px}
+  .ultimos-item:last-child{border-bottom:none}
+  .ultimos-data{color:var(--cinza)}
   .item{background:var(--card);border:1px solid var(--linha);border-radius:10px;
     padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;
     align-items:center;gap:16px;transition:border-color .15s}
@@ -760,6 +771,8 @@
         <div class="resumo-progresso-lbl">itens avaliados</div>
         <div class="resumo-barra-wrap"><div class="resumo-barra-fill" id="resumo-barra-fill"></div></div>
 
+       <div id="resumo-donut-visual" style="width:80px;height:80px;border-radius:50%;margin:0 auto 16px;display:none"></div>
+
         <div class="resumo-contagens">
           <div class="resumo-linha"><span class="resumo-dot" style="background:var(--ok)"></span><span class="resumo-lbl">Bom</span><b id="resumo-ok">0</b></div>
           <div class="resumo-linha"><span class="resumo-dot" style="background:var(--at)"></span><span class="resumo-lbl">Atenção</span><b id="resumo-at">0</b></div>
@@ -767,7 +780,22 @@
           <div class="resumo-linha"><span class="resumo-dot" style="background:var(--na)"></span><span class="resumo-lbl">N/A</span><b id="resumo-na">0</b></div>
         </div>
 
+        <a class="resumo-critico-link" id="resumo-critico-link" style="display:none">Ver itens críticos (<span id="resumo-critico-count">0</span>)</a>
+
        <div class="resumo-alerta" id="resumo-alerta" style="display:none">⚠️ Este equipamento será marcado para <b>PARALISAR</b></div>
+      </div>
+
+      <div class="resumo-card" id="ultimos-card" style="margin-top:16px;display:none">
+        <h3>Últimos checklists</h3>
+        <div id="ultimos-conteudo"></div>
+      </div>
+
+      <div class="resumo-card" id="info-rapida-card" style="margin-top:16px">
+        <h3>Informações rápidas</h3>
+        <div class="info-rapida-linha"><span>⏱️ Tempo do checklist</span><b id="info-tempo">00:00</b></div>
+        <div class="info-rapida-linha"><span>🕐 Iniciado em</span><b id="info-iniciado">—</b></div>
+        <div class="info-rapida-linha"><span>⚠️ Itens críticos encontrados</span><b id="info-criticos">0</b></div>
+        <div class="info-rapida-linha"><span>📷 Fotos anexadas</span><b id="info-fotos">0</b></div>
       </div>
     </div>
 
@@ -1641,11 +1669,43 @@ function atualizarResumo(){
   const equipVal = document.getElementById('equipamento').value;
   document.getElementById('resumo-equip').textContent = equipVal || 'Nenhum equipamento selecionado';
 
+  // Donut visual com as proporções de Bom/Atenção/Ruim/N/A
+  const donut = document.getElementById('resumo-donut-visual');
+  if (feitos === 0) {
+    donut.style.display = 'none';
+  } else {
+    donut.style.display = 'block';
+    const partes = [
+      { valor: cont.ok, cor: 'var(--ok)' },
+      { valor: cont.at, cor: 'var(--at)' },
+      { valor: cont.ru, cor: 'var(--ru)' },
+      { valor: cont.na, cor: 'var(--na)' }
+    ];
+    let acumulado = 0;
+    const stops = partes.map(function(p){
+      const pct = feitos ? (p.valor/feitos*100) : 0;
+      const inicio = acumulado; acumulado += pct;
+      return p.cor + ' ' + inicio.toFixed(1) + '% ' + acumulado.toFixed(1) + '%';
+    }).join(', ');
+    donut.style.background = 'conic-gradient(' + stops + ')';
+  }
+
+  // Link "Ver itens críticos"
+  const linkCritico = document.getElementById('resumo-critico-link');
+  document.getElementById('resumo-critico-count').textContent = cont.ru;
+  linkCritico.style.display = cont.ru > 0 ? 'block' : 'none';
+  document.getElementById('info-criticos').textContent = cont.ru;
+
   // Verifica se o item "Necessita paralisar" foi marcado como SIM
   const idxParar = ITENS.findIndex(function(it){ return it[0] === 'NECESSITA PARALIZAR O EQUIPAMENTO?'; });
   const paralisar = idxParar >= 0 && respostas[idxParar] && respostas[idxParar].valor === 'SIM';
   document.getElementById('resumo-alerta').style.display = paralisar ? 'block' : 'none';
 }
+
+document.getElementById('resumo-critico-link').onclick = function(){
+  const primeiroCritico = document.querySelector('#itens .item.impeditivo');
+  if (primeiroCritico) primeiroCritico.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
 function validar(){
   const eqOk   = !!document.getElementById('equipamento').value;
@@ -2895,6 +2955,35 @@ function atualizarCardEquipamento(){
     const conformes = ultimos30.filter(function(h){ return h.status.classe === 'ok'; }).length;
     dispEl.textContent = Math.round(conformes / ultimos30.length * 100) + '%';
   }
+}
+ /* =====================================================================
+   TIMER DO CHECKLIST — painel "Informações rápidas"
+   ===================================================================== */
+let checklistTimerInterval = null;
+let checklistIniciadoEm = null;
+
+function iniciarTimerChecklist(){
+  if (checklistIniciadoEm) return;
+  checklistIniciadoEm = new Date();
+  document.getElementById('info-iniciado').textContent =
+    String(checklistIniciadoEm.getHours()).padStart(2,'0') + ':' + String(checklistIniciadoEm.getMinutes()).padStart(2,'0');
+  checklistTimerInterval = setInterval(atualizarTempoChecklist, 1000);
+  atualizarTempoChecklist();
+}
+
+function atualizarTempoChecklist(){
+  if (!checklistIniciadoEm) return;
+  const diffSeg = Math.floor((Date.now() - checklistIniciadoEm.getTime()) / 1000);
+  const min = Math.floor(diffSeg / 60);
+  const seg = diffSeg % 60;
+  document.getElementById('info-tempo').textContent = String(min).padStart(2,'0') + ':' + String(seg).padStart(2,'0');
+}
+
+function reiniciarTimerChecklist(){
+  checklistIniciadoEm = null;
+  if (checklistTimerInterval) clearInterval(checklistTimerInterval);
+  document.getElementById('info-tempo').textContent = '00:00';
+  document.getElementById('info-iniciado').textContent = '—';
 }
 </script>
 </body>
