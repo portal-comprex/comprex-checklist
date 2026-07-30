@@ -616,7 +616,55 @@
   .login-gate h2{font-size:20px}
   .login-gate button{background:#fff;color:#1b5e20;border:none;border-radius:9px;
     padding:14px 28px;font-size:14px;font-weight:700;cursor:pointer}
-  .login-gate .status{font-size:13px;color:#c8e6c9}
+  .login-gate .status{font-size:13px;color:#9fb0c2}
+
+  /* ---- Tema escuro ---- */
+  .tema-toggle{width:38px;height:38px;border-radius:50%;background:#f3f5f6;border:none;
+    cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+    transition:background .15s}
+  .tema-toggle:hover{background:#e9ecee}
+
+  body.tema-escuro{background:#0f1720;color:#e5e7eb}
+  body.tema-escuro .content{background:#0f1720}
+  body.tema-escuro .sidebar{background:#111827;border-right-color:#1f2937}
+  body.tema-escuro .sidebar-logo{border-bottom-color:#1f2937}
+  body.tema-escuro .sidebar-logo .logo-sub{color:#6b7280}
+  body.tema-escuro .sidebar-secao{color:#6b7280}
+  body.tema-escuro .sidebar-item{color:#9ca3af}
+  body.tema-escuro .sidebar-item:hover{background:#1f2937;color:#fff}
+  body.tema-escuro .sidebar-item.ativo{background:#16261c;color:#4ade80;border-left-color:#4ade80}
+  body.tema-escuro .sidebar-item.acao{color:#fbbf24}
+  body.tema-escuro .sidebar-item.acao:hover{background:#2a2410;color:#fbbf24}
+  body.tema-escuro .sidebar-sair{border-top-color:#1f2937}
+  body.tema-escuro .sidebar-sair .sidebar-item{color:#9ca3af}
+  body.tema-escuro .topbar{background:#111827;border-bottom-color:#1f2937}
+  body.tema-escuro .topbar-titulo{color:#e5e7eb}
+  body.tema-escuro .user-nome{color:#e5e7eb}
+  body.tema-escuro .user-empresa{color:#9ca3af}
+  body.tema-escuro .tema-toggle{background:#1f2937;color:#fbbf24}
+  body.tema-escuro .tema-toggle:hover{background:#2a3646}
+  body.tema-escuro .sino-wrap{background:#1f2937}
+
+  body.tema-escuro .kpi-card, body.tema-escuro .dash-card, body.tema-escuro .resumo-card,
+  body.tema-escuro .ind-card, body.tema-escuro .op-card, body.tema-escuro .cfg-card,
+  body.tema-escuro .exp-card, body.tema-escuro .oc-card, body.tema-escuro .frota-card,
+  body.tema-escuro .equip-card, body.tema-escuro .hist-tabela, body.tema-escuro .rel-resultado,
+  body.tema-escuro .rel-item, body.tema-escuro .modal, body.tema-escuro .rel-seletor-painel,
+  body.tema-escuro .hist-detalhe-modal{background:#1a2430;border-color:#2c3a4a;color:#e5e7eb}
+
+  body.tema-escuro .cab{background:#16261c;border-color:#1f3a2a}
+  body.tema-escuro .campo input, body.tema-escuro .campo select,
+  body.tema-escuro .hist-filtro-campo input, body.tema-escuro .hist-filtro-campo select,
+  body.tema-escuro .modal-campo input, body.tema-escuro .cfg-card textarea{
+    background:#0f1720;border-color:#2c3a4a;color:#e5e7eb}
+  body.tema-escuro .item, body.tema-escuro .opt{background:#1a2430;border-color:#2c3a4a;color:#e5e7eb}
+  body.tema-escuro .opt:hover{border-color:#3d4d5e}
+  body.tema-escuro .hist-tabela th{background:#0f1720}
+  body.tema-escuro .hist-tabela td{border-color:#2c3a4a}
+  body.tema-escuro .modal-header h2{color:#fff}
+  body.tema-escuro h3, body.tema-escuro .resumo-card h3, body.tema-escuro .dash-card h3{color:#e5e7eb}
+  body.tema-escuro .rodape-app{border-top-color:#2c3a4a;color:#9ca3af}
+  body.tema-escuro .equip-foto{background:#0f1720}
 </style>
 </head>
 <body>
@@ -655,6 +703,7 @@
         <span class="topbar-titulo" id="topbar-titulo">Checklists</span>
       </div>
       <div class="topbar-right">
+        <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
         <div class="user-chip">
           <div class="user-avatar" id="user-avatar">--</div>
           <div class="user-info">
@@ -2957,6 +3006,22 @@ function reiniciarTimerChecklist(){
   document.getElementById('info-tempo').textContent = '00:00';
   document.getElementById('info-iniciado').textContent = '—';
 }
+ /* =====================================================================
+   TEMA CLARO/ESCURO
+   ===================================================================== */
+function aplicarTema(tema){
+  document.body.classList.toggle('tema-escuro', tema === 'escuro');
+  const btn = document.getElementById('btn-tema');
+  if (btn) btn.textContent = tema === 'escuro' ? '☀️' : '🌙';
+}
+function alternarTema(){
+  const atual = localStorage.getItem('tema_comprex') === 'escuro' ? 'claro' : 'escuro';
+  localStorage.setItem('tema_comprex', atual);
+  aplicarTema(atual);
+}
+const btnTema = document.getElementById('btn-tema');
+if (btnTema) btnTema.onclick = alternarTema;
+aplicarTema(localStorage.getItem('tema_comprex') || 'claro');
 </script>
 </body>
 </html>
