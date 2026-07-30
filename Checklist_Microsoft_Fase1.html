@@ -1194,7 +1194,7 @@ function montarFieldsChecklist(dadosPorRotulo){
    ===================================================================== */
 async function iniciarAplicacao(){
   try {
-   const [equipamentos, locais] = await Promise.all([
+    const [equipamentos, locais] = await Promise.all([
       lerListaSimples(LISTA_FROTA_ID, frotasIds),
       lerListaSimples(LISTA_LOCAIS_ID, locaisIds)
     ]);
@@ -1212,6 +1212,25 @@ async function iniciarAplicacao(){
     document.getElementById('aviso-colunas-area').innerHTML =
       '<div class="aviso-coluna"><b>⚠️ Erro ao carregar as colunas da lista Checklists</b>' + err.message + '</div>';
   }
+
+  try {
+    await garantirDadosHistorico();
+    atualizarUltimoHorimetro();
+  } catch(err) {
+    console.warn('Não foi possível carregar o histórico de horímetros: ' + err.message);
+  }
+}
+
+/** Calcula o maior horímetro já registrado de cada equipamento, a partir do histórico. */
+function atualizarUltimoHorimetro(){
+  ultimoHorimetro = {};
+  historicoItens.forEach(function(h){
+    if (!h.equipamento) return;
+    const eq = h.equipamento.toUpperCase();
+    const v = parseFloat(String(h.horimetro).replace(',', '.'));
+    if (isNaN(v)) return;
+    if (ultimoHorimetro[eq] == null || v > ultimoHorimetro[eq]) ultimoHorimetro[eq] = v;
+  });
 }
 
 /* Itens bloqueados (fase 2/3) — mostra aviso ao clicar */
@@ -1539,6 +1558,13 @@ btn.onclick = async function(){
   try {
     const fields = montarFieldsChecklist(dados);
     await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items', { fields: fields });
+
+    const eqSalvo = document.getElementById('equipamento').value.toUpperCase();
+    const horSalvo = parseFloat(inpHor.value);
+    if (eqSalvo && !isNaN(horSalvo)) {
+      if (ultimoHorimetro[eqSalvo] == null || horSalvo > ultimoHorimetro[eqSalvo]) ultimoHorimetro[eqSalvo] = horSalvo;
+    }
+
     mostrarSucesso();
   } catch(err) {
     mostrarErro('Falha ao enviar. Tente novamente.\n' + err.message);
@@ -1877,18 +1903,8 @@ async function carregarHistorico(){
 }
 
 function preencherFiltroEquipamentoHistorico(){
-  preencherFiltroSelectHistorico('hist-filtro-equip', 'equipamento');
-  preencherFiltroSelectHistorico('hist-filtro-local', 'local');
-}
-
-function preencherFiltroSelectHistorico(idSelect, campo){
-  const select = document.getElementById(idSelect);
-  const nomes = Array.from(new Set(historicoItens.map(function(h){ return h[campo]; }))).filter(Boolean);
-  nomes.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
-  while (select.options.length > 1) select.remove(1);
-  nomes.forEach(function(n){
-    const o = document.createElement('option'); o.value = n; o.textContent = n; select.appendChild(o);
-  });
+  preencherFiltroSelectComLista('hist-filtro-equip', frotas);
+  preencherFiltroSelectComLista('hist-filtro-local', locais);
 }
 
 function formatarDataHist(iso){
