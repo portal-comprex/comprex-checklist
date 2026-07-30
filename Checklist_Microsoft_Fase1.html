@@ -602,9 +602,9 @@
       <div class="sidebar-item" data-view="dashboard"><i>📊</i> Dashboard</div>
      <div class="sidebar-item" data-view="ocorrencias"><i>⚠️</i> Ocorrências</div>
       <div class="sidebar-item" data-view="frota"><i>🚚</i> Frota</div>
+      <div class="sidebar-item" data-view="operadores"><i>👷</i> Operadores</div>
 
       <div class="sidebar-secao">Em construção</div>
-      <div class="sidebar-item bloqueado" data-bloqueado="1"><i>👷</i> Operadores</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📈</i> Indicadores</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📄</i> Relatórios</div>
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
@@ -871,7 +871,17 @@
   <div class="ind-total" id="frota-total"></div>
   <div id="frota-conteudo"><div class="ind-loading">Carregando frota…</div></div>
 </div>
+<div class="view" id="view-operadores">
+  <div class="periodo-toggle" id="op-periodo-toggle">
+    <div class="periodo-opt" data-periodo="semana">Semana</div>
+    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
+    <div class="periodo-opt" data-periodo="ano">Ano</div>
+  </div>
+  <div class="ind-total" id="op-total"></div>
+  <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
+</div>
 
+<div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
   <div class="hist-detalhe-modal">
@@ -1825,12 +1835,13 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
- const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota' };
+const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
   if (nome === 'dashboard') carregarDashboard();
   if (nome === 'ocorrencias') carregarOcorrencias();
   if (nome === 'frota') carregarFrota();
+  if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -2434,6 +2445,57 @@ async function carregarFrota(){
       '<div class="frota-eq">' + alerta + f.equip + '</div>' +
       '<span class="frota-st ' + f.situacao + '">' + stTxt + '</span>' +
       '<div class="frota-info">' + info + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+  /* =====================================================================
+   OPERADORES — ranking por período
+   ===================================================================== */
+let periodoOpAtivo = 'mes';
+
+document.querySelectorAll('#op-periodo-toggle .periodo-opt').forEach(function(opt){
+  opt.onclick = function(){
+    document.querySelectorAll('#op-periodo-toggle .periodo-opt').forEach(function(o){ o.classList.remove('ativo'); });
+    opt.classList.add('ativo');
+    periodoOpAtivo = opt.dataset.periodo;
+    carregarOperadores(periodoOpAtivo);
+  };
+});
+
+async function carregarOperadores(periodo){
+  const total = document.getElementById('op-total');
+  const cont = document.getElementById('op-conteudo');
+  cont.innerHTML = '<div class="ind-loading">Carregando…</div>';
+  try {
+    await garantirDadosHistorico();
+  } catch(err) {
+    cont.innerHTML = '<div class="ind-vazio">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
+    return;
+  }
+
+  const dias = periodo === 'semana' ? 7 : periodo === 'ano' ? 365 : 30;
+  const limite = new Date(Date.now() - dias*86400000);
+  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite && h.operador; });
+
+  const contagem = {};
+  filtrado.forEach(function(h){ contagem[h.operador] = (contagem[h.operador] || 0) + 1; });
+
+  const lista = Object.keys(contagem).map(function(op){ return { label: op, valor: contagem[op] }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+
+  const nomePeriodo = periodo === 'semana' ? 'últimos 7 dias' : periodo === 'ano' ? 'últimos 365 dias' : 'últimos 30 dias';
+  total.textContent = filtrado.length + ' checklist(s) — ' + nomePeriodo;
+
+  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Sem dados no período.</div>'; return; }
+
+  const max = lista[0].valor || 1;
+  cont.innerHTML = '<div class="op-card">' + lista.map(function(o, i){
+    const pct = Math.max(6, Math.round(o.valor / max * 100));
+    return '<div class="op-linha">' +
+      '<div class="op-pos">' + (i+1) + '</div>' +
+      '<div class="op-nome">' + o.label + '</div>' +
+      '<div class="op-bar-wrap"><div class="op-bar" style="width:' + pct + '%"></div></div>' +
+      '<div class="op-val">' + o.valor + '</div>' +
     '</div>';
   }).join('') + '</div>';
 }
