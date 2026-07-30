@@ -2285,16 +2285,14 @@ async function carregarOcorrencias(){
 }
 
 function preencherFiltrosOcorrencias(){
-  preencherFiltroSelectGenerico('oc-filtro-equip', ocorrenciasItens, 'equipamento');
-  preencherFiltroSelectGenerico('oc-filtro-local', ocorrenciasItens, 'local');
+  preencherFiltroSelectComLista('oc-filtro-equip', frotas);
+  preencherFiltroSelectComLista('oc-filtro-local', locais);
 }
 
-function preencherFiltroSelectGenerico(idSelect, itens, campo){
+function preencherFiltroSelectComLista(idSelect, lista){
   const select = document.getElementById(idSelect);
-  const nomes = Array.from(new Set(itens.map(function(h){ return h[campo]; }))).filter(Boolean);
-  nomes.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
   while (select.options.length > 1) select.remove(1);
-  nomes.forEach(function(n){
+  lista.forEach(function(n){
     const o = document.createElement('option'); o.value = n; o.textContent = n; select.appendChild(o);
   });
 }
