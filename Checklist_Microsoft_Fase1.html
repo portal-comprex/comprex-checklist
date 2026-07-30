@@ -178,7 +178,25 @@
   .campo input[readonly]{background:#f3f5f6;color:var(--cinza);cursor:default}
   .campo select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%232e7d46' stroke-width='2' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
   .obrig{color:#c79a3a}
-  .erro-hor{color:var(--ru);font-size:11px;margin-top:3px;display:none}
+ .erro-hor{color:var(--ru);font-size:11px;margin-top:3px;display:none}
+
+  /* ---- Card do equipamento (Fase 3 — redesign) ---- */
+  .equip-card{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:16px 20px;
+    margin:14px 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .equip-foto{width:64px;height:64px;border-radius:10px;background:var(--cream);display:flex;
+    align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+  .equip-info{flex:1;min-width:220px}
+  .equip-nome-linha{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .equip-nome{font-size:16px;font-weight:800;color:var(--tinta)}
+  .equip-stats{display:flex;gap:28px;flex-wrap:wrap}
+  .equip-stat-lbl{font-size:10px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .equip-stat-val{font-size:13px;font-weight:700;color:var(--tinta)}
+  .equip-stat-sub{font-size:10px;color:var(--cinza);margin-top:2px}
+  .equip-disponibilidade{text-align:right;flex-shrink:0;margin-left:auto}
+  .equip-disp-lbl{font-size:10px;color:var(--cinza);text-transform:uppercase;margin-bottom:4px}
+  .equip-disp-val{font-size:22px;font-weight:800;color:var(--ok)}
+  @media (max-width:820px){.equip-card{flex-direction:column;align-items:flex-start}.equip-disponibilidade{text-align:left;margin-left:0}}
+ 
 
   /* ---- PROGRESSO ---- */
   .barra-wrap{display:flex;align-items:center;gap:12px;margin:16px 0 10px}
@@ -667,6 +685,40 @@
           <label>Local / Obra</label>
           <select id="local"><option value="">— selecionar —</option></select>
         </div>
+      </div>
+  </div>
+
+    <!-- ===================== CARD DO EQUIPAMENTO ===================== -->
+    <div class="equip-card" id="equip-card" style="display:none">
+      <div class="equip-foto">🚜</div>
+      <div class="equip-info">
+        <div class="equip-nome-linha">
+          <span class="equip-nome" id="equip-card-nome">—</span>
+          <span class="frota-st" id="equip-card-status">—</span>
+        </div>
+        <div class="equip-stats">
+          <div class="equip-stat">
+            <div class="equip-stat-lbl">Horímetro atual</div>
+            <div class="equip-stat-val" id="equip-card-horimetro">—</div>
+          </div>
+          <div class="equip-stat">
+            <div class="equip-stat-lbl">Último checklist</div>
+            <div class="equip-stat-val" id="equip-card-ultimo">—</div>
+          </div>
+          <div class="equip-stat">
+            <div class="equip-stat-lbl">Última manutenção</div>
+            <div class="equip-stat-val" id="equip-card-manutencao">—</div>
+          </div>
+          <div class="equip-stat">
+            <div class="equip-stat-lbl">Próxima preventiva</div>
+            <div class="equip-stat-val" id="equip-card-preventiva">—</div>
+            <div class="equip-stat-sub" id="equip-card-preventiva-sub"></div>
+          </div>
+        </div>
+      </div>
+      <div class="equip-disponibilidade">
+        <div class="equip-disp-lbl">Disponibilidade (30 dias)</div>
+        <div class="equip-disp-val" id="equip-card-disponibilidade">—</div>
       </div>
     </div>
 
@@ -1489,7 +1541,8 @@ function horimetroValido(){
 }
 
 inpHor.addEventListener('input', validar);
-document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); });
+inpHor.addEventListener('input', atualizarCardEquipamento);
+document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); });
 document.getElementById('operador').addEventListener('input', validar);
 
 function atualizarProgresso(){
@@ -2697,6 +2750,79 @@ async function carregarIndicadores(periodo){
         '<div class="ind-val-grande">'+x.valor+'</div>' +
       '</div>';
     }).join('');
+  }
+}
+ /* =====================================================================
+   CARD DO EQUIPAMENTO — Bloco B1 (sem foto real ainda)
+   ===================================================================== */
+function situacaoDoUltimoChecklist(h){
+  if (!h) return 'sem-registro';
+  return h.status.classe === 'parar' ? 'parado' : h.status.classe === 'at' ? 'atencao' : 'ok';
+}
+
+/** Regra: a cada 500h; se também múltiplo de 1000 é revisão maior; se também múltiplo de 2000, a maior de todas. */
+function calcularProximaPreventiva(horimetroAtual){
+  if (horimetroAtual == null || isNaN(horimetroAtual)) return null;
+  let proximo = Math.ceil(horimetroAtual / 500) * 500;
+  if (proximo <= horimetroAtual) proximo += 500;
+  let tipo = 500;
+  if (proximo % 2000 === 0) tipo = 2000;
+  else if (proximo % 1000 === 0) tipo = 1000;
+  return { proximo: proximo, tipo: tipo, faltam: Math.round(proximo - horimetroAtual) };
+}
+
+function formatarUltimoChecklistCard(iso){
+  const d = new Date(iso);
+  const hoje = new Date();
+  const hora = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje às ' + hora;
+  const dias = Math.floor((hoje - d) / 86400000);
+  return dias === 1 ? 'Ontem às ' + hora : dias + 'd atrás';
+}
+
+function atualizarCardEquipamento(){
+  const eq = document.getElementById('equipamento').value;
+  const card = document.getElementById('equip-card');
+  if (!eq) { card.style.display = 'none'; return; }
+  card.style.display = 'flex';
+
+  const registros = (historicoItens || []).filter(function(h){ return h.equipamento === eq; })
+    .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  const ultimo = registros[0] || null;
+
+  document.getElementById('equip-card-nome').textContent = eq;
+
+  const situacao = situacaoDoUltimoChecklist(ultimo);
+  const stTxt = { ok: 'Ok', atencao: 'Atenção', parado: 'Necessita paralisar!', 'sem-registro': 'Sem registro' }[situacao];
+  const badge = document.getElementById('equip-card-status');
+  badge.textContent = stTxt;
+  badge.className = 'frota-st ' + situacao;
+
+  const horAtualInput = parseFloat(inpHor.value);
+  const horAtual = !isNaN(horAtualInput) ? horAtualInput : (ultimoHorimetro[eq.toUpperCase()] != null ? ultimoHorimetro[eq.toUpperCase()] : null);
+  document.getElementById('equip-card-horimetro').textContent = horAtual != null ? horAtual.toLocaleString('pt-BR') + ' h' : '—';
+
+  document.getElementById('equip-card-ultimo').textContent = ultimo ? formatarUltimoChecklistCard(ultimo.criado) : 'Nenhum checklist ainda';
+
+  document.getElementById('equip-card-manutencao').textContent = '—';
+
+  const prev = calcularProximaPreventiva(horAtual);
+  if (prev) {
+    document.getElementById('equip-card-preventiva').textContent = prev.proximo.toLocaleString('pt-BR') + ' h';
+    document.getElementById('equip-card-preventiva-sub').textContent = 'Revisão de ' + prev.tipo + 'h · ' + prev.faltam + 'h restantes';
+  } else {
+    document.getElementById('equip-card-preventiva').textContent = '—';
+    document.getElementById('equip-card-preventiva-sub').textContent = '';
+  }
+
+  const limite30 = new Date(Date.now() - 30*86400000);
+  const ultimos30 = registros.filter(function(h){ return new Date(h.criado) >= limite30; });
+  const dispEl = document.getElementById('equip-card-disponibilidade');
+  if (!ultimos30.length) {
+    dispEl.textContent = 'Sem dados';
+  } else {
+    const conformes = ultimos30.filter(function(h){ return h.status.classe === 'ok'; }).length;
+    dispEl.textContent = Math.round(conformes / ultimos30.length * 100) + '%';
   }
 }
 </script>
