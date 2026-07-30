@@ -251,8 +251,12 @@
     align-items:center;gap:16px;transition:border-color .15s}
   .item.respondido{border-color:#cfe3d4}
   .item.impeditivo{border-color:#f0c4bd}
-  .item .lbl{font-size:13px;font-weight:600;flex:1 1 auto;white-space:normal;min-width:0}
+  .item .lbl{font-size:13px;font-weight:600;flex:1 1 auto;white-space:normal;min-width:0;display:flex;align-items:center;gap:8px}
   .item .lbl .n{color:var(--cinza);font-family:monospace;font-size:11px;margin-right:6px}
+  .item-alca{cursor:grab;color:var(--cinza);font-size:14px;flex-shrink:0;user-select:none;letter-spacing:-2px}
+  .item-alca:active{cursor:grabbing}
+  .item.arrastando{opacity:.4}
+  .item.arrasto-sobre{border-top:2px solid var(--navy)}
   .opts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
   .opt{border:1px solid var(--linha);background:#f7f7f4;color:#5b6570;border-radius:6px;
     padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;
@@ -1583,14 +1587,74 @@ function prettify(txt){
 }
 
 const cont = document.getElementById('itens');
-ITENS.forEach(function(item, i){
+const ORDEM_SALVA_KEY = 'ordem_itens_checklist';
+
+function obterOrdemItens(){
+  const indices = ITENS.map(function(_, i){ return i; });
+  try {
+    const salvo = JSON.parse(localStorage.getItem(ORDEM_SALVA_KEY) || 'null');
+    if (Array.isArray(salvo) && salvo.length === ITENS.length && salvo.every(function(v){ return indices.indexOf(v) !== -1; })) {
+      return salvo;
+    }
+  } catch(e) {}
+  return indices;
+}
+
+function salvarOrdemItens(){
+  const ordem = Array.from(cont.querySelectorAll('.item[data-idx]')).map(function(div){ return parseInt(div.dataset.idx, 10); });
+  localStorage.setItem(ORDEM_SALVA_KEY, JSON.stringify(ordem));
+}
+
+function renumerarItens(){
+  cont.querySelectorAll('.item[data-idx]').forEach(function(div, posicao){
+    const span = div.querySelector('.lbl .n');
+    if (span) span.textContent = String(posicao+1).padStart(2,'0');
+  });
+}
+
+let itemArrastado = null;
+cont.addEventListener('dragstart', function(e){
+  const item = e.target.closest('.item[data-idx]');
+  if (!item) return;
+  itemArrastado = item;
+  item.classList.add('arrastando');
+});
+cont.addEventListener('dragend', function(e){
+  const item = e.target.closest('.item[data-idx]');
+  if (item) item.classList.remove('arrastando');
+  cont.querySelectorAll('.arrasto-sobre').forEach(function(el){ el.classList.remove('arrasto-sobre'); });
+});
+cont.addEventListener('dragover', function(e){
+  const item = e.target.closest('.item[data-idx]');
+  if (!item || item === itemArrastado) return;
+  e.preventDefault();
+  cont.querySelectorAll('.arrasto-sobre').forEach(function(el){ el.classList.remove('arrasto-sobre'); });
+  item.classList.add('arrasto-sobre');
+});
+cont.addEventListener('drop', function(e){
+  const item = e.target.closest('.item[data-idx]');
+  if (!item || !itemArrastado || item === itemArrastado) return;
+  e.preventDefault();
+  const todos = Array.from(cont.querySelectorAll('.item[data-idx]'));
+  const idxAlvo = todos.indexOf(item);
+  const idxOrigem = todos.indexOf(itemArrastado);
+  if (idxOrigem < idxAlvo) item.after(itemArrastado); else item.before(itemArrastado);
+  item.classList.remove('arrasto-sobre');
+  renumerarItens();
+  salvarOrdemItens();
+});
+
+const ordemItens = obterOrdemItens();
+ordemItens.forEach(function(i){
+  const item = ITENS[i];
   const label = item[0], opts = item[1];
   const div = document.createElement('div');
-  div.className = 'item'; div.id = 'item-'+i;
+  div.className = 'item'; div.id = 'item-'+i; div.dataset.idx = i;
+  div.draggable = true;
 
   const lbl = document.createElement('div');
   lbl.className = 'lbl';
-  lbl.innerHTML = '<span class="n">'+String(i+1).padStart(2,'0')+'</span>'+prettify(label);
+  lbl.innerHTML = '<span class="item-alca">⋮⋮</span><span class="n">'+String(ordemItens.indexOf(i)+1).padStart(2,'0')+'</span>'+prettify(label);
 
   const box = document.createElement('div');
   box.className = 'opts';
@@ -1608,7 +1672,7 @@ ITENS.forEach(function(item, i){
     box.appendChild(b);
   });
 
-  div.appendChild(lbl); div.appendChild(box);
+ div.appendChild(lbl); div.appendChild(box);
   cont.appendChild(div);
 
   // Logo após "Extintor de incêndio", insere o campo de validade —
