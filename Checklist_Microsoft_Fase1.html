@@ -278,6 +278,18 @@
     background:#b7bcc0;color:#fff;cursor:not-allowed}
   .finalizar.pronto{background:var(--navy);cursor:pointer}
   .aviso{text-align:center;font-size:12px;color:var(--cinza);margin-top:8px}
+ .aviso{text-align:center;font-size:12px;color:var(--cinza);margin-top:8px}
+
+  .rascunho-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .btn-rascunho{background:#fff;border:1.5px solid var(--linha);border-radius:9px;padding:9px 16px;
+    font-size:12px;font-weight:700;color:var(--tinta);cursor:pointer;white-space:nowrap}
+  .btn-rascunho:hover{border-color:var(--navy)}
+  .rascunho-feedback{font-size:12px;color:var(--ok);font-weight:600}
+  .rascunho-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:#fdf3e3;border:1px solid #f2ddb3;border-radius:10px;padding:12px 16px;margin-bottom:14px;
+    font-size:13px;color:#7a4f00}
+  body.tema-escuro .btn-rascunho{background:#1a2430;border-color:#2c3a4a;color:#e5e7eb}
+  body.tema-escuro .rascunho-banner{background:#2a2410;border-color:#3d3315;color:#fbbf24}
   .ok-msg{display:none;background:#e9f4ee;border:1px solid #bfe3cd;color:var(--ok);
     border-radius:10px;padding:14px;text-align:center;font-weight:600;margin-top:12px;font-size:15px}
   .erro-msg{display:none;background:#fbe9e7;border:1px solid #f0c4bd;color:var(--ru);
@@ -798,9 +810,21 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <span><i style="background:var(--na)"></i> N/A</span>
     </div>
 
+    <div class="rascunho-banner" id="rascunho-banner" style="display:none">
+      <span>📝 Você tem um rascunho salvo para este equipamento.</span>
+      <div>
+        <button type="button" class="rel-btn-primario" id="btn-restaurar-rascunho">Restaurar</button>
+        <button type="button" class="rel-btn-secundario" id="btn-descartar-rascunho">Descartar</button>
+      </div>
+    </div>
+
+    <div class="rascunho-row">
+      <button type="button" class="btn-rascunho" id="btn-salvar-rascunho">💾 Salvar rascunho</button>
+      <span class="rascunho-feedback" id="rascunho-feedback" style="display:none"></span>
+    </div>
+
     <!-- ===================== ITENS ===================== -->
     <div id="itens"></div>
-
     <!-- ===================== OBSERVAÇÃO ===================== -->
     <div class="item obs">
       <div class="lbl"><span class="n">Obs</span>Observação</div>
@@ -1706,7 +1730,7 @@ function atualizarCardEquipamento(){
 
 inpHor.addEventListener('input', validar);
 inpHor.addEventListener('input', atualizarCardEquipamento);
-document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); iniciarTimerChecklist(); });
+document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); iniciarTimerChecklist(); verificarRascunho(this.value); });
 document.getElementById('operador').addEventListener('input', validar);
 
 function atualizarProgresso(){
@@ -1878,6 +1902,7 @@ btn.onclick = async function(){
     if (eqSalvo && !isNaN(horSalvo)) {
       if (ultimoHorimetro[eqSalvo] == null || horSalvo > ultimoHorimetro[eqSalvo]) ultimoHorimetro[eqSalvo] = horSalvo;
     }
+    localStorage.removeItem(chaveRascunho(eqSalvo));
 
     mostrarSucesso();
   } catch(err) {
@@ -3026,6 +3051,88 @@ function alternarTema(){
 const btnTema = document.getElementById('btn-tema');
 if (btnTema) btnTema.onclick = alternarTema;
 aplicarTema(localStorage.getItem('tema_comprex') || 'claro');
+ /* =====================================================================
+   SALVAR RASCUNHO — guarda o progresso no navegador, por equipamento
+   ===================================================================== */
+function chaveRascunho(equip){
+  return 'rascunho_checklist_' + String(equip).toUpperCase();
+}
+
+function coletarEstadoFormulario(){
+  return {
+    horimetro: inpHor.value,
+    operador: document.getElementById('operador').value,
+    local: document.getElementById('local').value,
+    observacao: document.getElementById('observacao').value,
+    validadeExtintor: document.getElementById('validade-extintor').value,
+    respostas: respostas,
+    salvoEm: new Date().toISOString()
+  };
+}
+
+function mostrarFeedbackRascunho(msg){
+  const el = document.getElementById('rascunho-feedback');
+  el.textContent = msg;
+  el.style.display = 'inline';
+  setTimeout(function(){ el.style.display = 'none'; }, 3000);
+}
+
+function salvarRascunho(){
+  const eq = document.getElementById('equipamento').value;
+  if (!eq) { alert('Selecione um equipamento antes de salvar o rascunho.'); return; }
+  try {
+    localStorage.setItem(chaveRascunho(eq), JSON.stringify(coletarEstadoFormulario()));
+    mostrarFeedbackRascunho('✔ Rascunho salvo!');
+  } catch(e) {
+    mostrarFeedbackRascunho('⚠️ Não foi possível salvar.');
+  }
+}
+
+function verificarRascunho(eq){
+  const banner = document.getElementById('rascunho-banner');
+  if (!eq || !localStorage.getItem(chaveRascunho(eq))) {
+    banner.style.display = 'none';
+  } else {
+    banner.style.display = 'flex';
+  }
+}
+
+function restaurarRascunho(){
+  const eq = document.getElementById('equipamento').value;
+  const salvo = localStorage.getItem(chaveRascunho(eq));
+  if (!salvo) return;
+  let estado;
+  try { estado = JSON.parse(salvo); } catch(e) { return; }
+
+  inpHor.value = estado.horimetro || '';
+  inpHor.dispatchEvent(new Event('input'));
+  document.getElementById('operador').value = estado.operador || '';
+  document.getElementById('local').value = estado.local || '';
+  document.getElementById('observacao').value = estado.observacao || '';
+  document.getElementById('validade-extintor').value = estado.validadeExtintor || '';
+
+  Object.keys(estado.respostas || {}).forEach(function(i){
+    const r = estado.respostas[i];
+    const div = document.getElementById('item-' + i);
+    if (!div) return;
+    div.querySelectorAll('.opt').forEach(function(b){
+      if (b.textContent === r.valor) b.click();
+    });
+  });
+
+  document.getElementById('rascunho-banner').style.display = 'none';
+  mostrarFeedbackRascunho('✔ Rascunho restaurado!');
+}
+
+function descartarRascunho(){
+  const eq = document.getElementById('equipamento').value;
+  localStorage.removeItem(chaveRascunho(eq));
+  document.getElementById('rascunho-banner').style.display = 'none';
+}
+
+document.getElementById('btn-salvar-rascunho').onclick = salvarRascunho;
+document.getElementById('btn-restaurar-rascunho').onclick = restaurarRascunho;
+document.getElementById('btn-descartar-rascunho').onclick = descartarRascunho;
 </script>
 </body>
 </html>
