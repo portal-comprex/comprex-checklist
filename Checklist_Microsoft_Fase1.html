@@ -1594,7 +1594,7 @@ function formatarUltimoChecklistCard(iso){
 function atualizarCardEquipamento(){
   const eq = document.getElementById('equipamento').value;
   const card = document.getElementById('equip-card');
-  if (!eq) { card.style.display = 'none'; return; }
+  if (!eq) { card.style.display = 'none'; document.getElementById('ultimos-card').style.display = 'none'; return; }
   card.style.display = 'flex';
 
   const registros = (historicoItens || []).filter(function(h){ return h.equipamento === eq; })
@@ -1626,7 +1626,7 @@ function atualizarCardEquipamento(){
     document.getElementById('equip-card-preventiva-sub').textContent = '';
   }
 
-  const limite30 = new Date(Date.now() - 30*86400000);
+ const limite30 = new Date(Date.now() - 30*86400000);
   const ultimos30 = registros.filter(function(h){ return new Date(h.criado) >= limite30; });
   const dispEl = document.getElementById('equip-card-disponibilidade');
   if (!ultimos30.length) {
@@ -1635,13 +1635,25 @@ function atualizarCardEquipamento(){
     const conformes = ultimos30.filter(function(h){ return h.status.classe === 'ok'; }).length;
     dispEl.textContent = Math.round(conformes / ultimos30.length * 100) + '%';
   }
+
+  const ultimosCard = document.getElementById('ultimos-card');
+  const ultimosCont = document.getElementById('ultimos-conteudo');
+  if (registros.length) {
+    ultimosCard.style.display = 'block';
+    ultimosCont.innerHTML = registros.slice(0, 5).map(function(h){
+      return '<div class="ultimos-item">' +
+        '<span class="ultimos-data">' + formatarDataHist(h.criado) + '</span>' +
+        '<span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span>' +
+      '</div>';
+    }).join('');
+  } else {
+    ultimosCard.style.display = 'none';
+  }
 }
 
 inpHor.addEventListener('input', validar);
 inpHor.addEventListener('input', atualizarCardEquipamento);
-inpHor.addEventListener('input', validar);
-inpHor.addEventListener('input', atualizarCardEquipamento);
-document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); });
+document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); iniciarTimerChecklist(); });
 document.getElementById('operador').addEventListener('input', validar);
 
 function atualizarProgresso(){
@@ -1765,6 +1777,10 @@ function reiniciarFormulario(){
   btn.style.display = 'block';
   aviso.style.display = 'block';
   document.getElementById('ok-msg').style.display = 'none';
+
+  reiniciarTimerChecklist();
+  document.getElementById('equip-card').style.display = 'none';
+  document.getElementById('ultimos-card').style.display = 'none';
 
   window.scrollTo({ top: 0, behavior:'smooth' });
 }
