@@ -603,9 +603,7 @@
      <div class="sidebar-item" data-view="ocorrencias"><i>⚠️</i> Ocorrências</div>
       <div class="sidebar-item" data-view="frota"><i>🚚</i> Frota</div>
       <div class="sidebar-item" data-view="operadores"><i>👷</i> Operadores</div>
-
-      <div class="sidebar-secao">Em construção</div>
-      <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📈</i> Indicadores</div>
+      <div class="sidebar-item" data-view="indicadores"><i>📈</i> Indicadores</div>
       <div class="sidebar-item bloqueado" data-bloqueado="1"><i>📄</i> Relatórios</div>
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
     </nav>
@@ -880,7 +878,22 @@
   <div class="ind-total" id="op-total"></div>
   <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
 </div>
+<div class="view" id="view-indicadores">
+  <div class="periodo-toggle" id="ind-periodo-toggle">
+    <div class="periodo-opt" data-periodo="semana">Semana</div>
+    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
+    <div class="periodo-opt" data-periodo="ano">Ano</div>
+  </div>
+  <div class="ind-total" id="ind-total"></div>
+  <div id="ind-conteudo"><div class="ind-loading">Carregando indicadores…</div></div>
 
+  <div class="ind-card ind-card-grande">
+    <h3>Apontamentos por equipamento — todos do período</h3>
+    <div id="ind-equip-grande"><div class="ind-loading">Carregando…</div></div>
+  </div>
+</div>
+
+<div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
@@ -1835,13 +1848,14 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores' };
+const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
   if (nome === 'dashboard') carregarDashboard();
   if (nome === 'ocorrencias') carregarOcorrencias();
   if (nome === 'frota') carregarFrota();
   if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
+  if (nome === 'indicadores') carregarIndicadores(periodoIndAtivo);
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -2498,6 +2512,107 @@ async function carregarOperadores(periodo){
       '<div class="op-val">' + o.valor + '</div>' +
     '</div>';
   }).join('') + '</div>';
+}
+  /* =====================================================================
+   INDICADORES — rankings por período + gráfico completo de equipamentos
+   ===================================================================== */
+let periodoIndAtivo = 'mes';
+
+document.querySelectorAll('#ind-periodo-toggle .periodo-opt').forEach(function(opt){
+  opt.onclick = function(){
+    document.querySelectorAll('#ind-periodo-toggle .periodo-opt').forEach(function(o){ o.classList.remove('ativo'); });
+    opt.classList.add('ativo');
+    periodoIndAtivo = opt.dataset.periodo;
+    carregarIndicadores(periodoIndAtivo);
+  };
+});
+
+function corBarraIndicador(tipo){
+  return tipo === 'problemas' ? '#c79a3a' : tipo === 'equipamentos' ? '#3a5a7a' : '#5a7a3a';
+}
+
+function renderRankingIndicador(lista, tipo){
+  if (!lista || !lista.length) return '<div class="ind-vazio">Sem dados no período.</div>';
+  const max = lista[0].valor || 1;
+  return lista.map(function(x){
+    const pct = Math.max(6, Math.round(x.valor / max * 100));
+    return '<div class="ind-linha">' +
+      '<div class="ind-lbl" title="'+x.label+'">'+x.label+'</div>' +
+      '<div class="ind-bar-wrap"><div class="ind-bar" style="width:'+pct+'%;background:'+corBarraIndicador(tipo)+'"></div></div>' +
+      '<div class="ind-val">'+x.valor+'</div>' +
+    '</div>';
+  }).join('');
+}
+
+function topN(mapa, n){
+  return Object.keys(mapa).map(function(k){ return { label: k, valor: mapa[k] }; })
+    .sort(function(a,b){ return b.valor - a.valor; }).slice(0, n || 8);
+}
+
+async function carregarIndicadores(periodo){
+  const totalEl = document.getElementById('ind-total');
+  const cont = document.getElementById('ind-conteudo');
+  cont.innerHTML = '<div class="ind-loading">Carregando indicadores…</div>';
+  document.getElementById('ind-equip-grande').innerHTML = '<div class="ind-loading">Carregando…</div>';
+
+  try {
+    await garantirDadosHistorico();
+  } catch(err) {
+    cont.innerHTML = '<div class="ind-vazio">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
+    return;
+  }
+
+  const dias = periodo === 'semana' ? 7 : periodo === 'ano' ? 365 : 30;
+  const limite = new Date(Date.now() - dias*86400000);
+  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite; });
+
+  const porItem = {}, porEquip = {}, porLocal = {};
+  filtrado.forEach(function(h){
+    let nProblemas = 0;
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at' || sev === 'ru') {
+        porItem[it[0]] = (porItem[it[0]] || 0) + 1;
+        nProblemas++;
+      }
+    });
+    if (nProblemas > 0 && h.equipamento) porEquip[h.equipamento] = (porEquip[h.equipamento] || 0) + nProblemas;
+    if (nProblemas > 0 && h.local) porLocal[h.local] = (porLocal[h.local] || 0) + nProblemas;
+  });
+
+  const problemas = topN(porItem, 8).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
+  const equipamentos = topN(porEquip, 8);
+  const locais = topN(porLocal, 8);
+
+  const nomePeriodo = periodo === 'semana' ? 'últimos 7 dias' : periodo === 'ano' ? 'últimos 365 dias' : 'últimos 30 dias';
+  totalEl.textContent = filtrado.length + ' checklist(s) registrados — ' + nomePeriodo;
+
+  cont.innerHTML =
+    '<div class="ind-grid">' +
+      '<div class="ind-card"><h3>Apontamentos mais recorrentes</h3>' + renderRankingIndicador(problemas, 'problemas') + '</div>' +
+      '<div class="ind-card"><h3>Equipamentos com mais apontamentos</h3>' + renderRankingIndicador(equipamentos, 'equipamentos') + '</div>' +
+      '<div class="ind-card"><h3>Locais com mais apontamentos</h3>' + renderRankingIndicador(locais, 'locais') + '</div>' +
+    '</div>';
+
+  const todosEquip = Object.keys(porEquip).map(function(k){ return { label: k, valor: porEquip[k] }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+
+  const grandeEl = document.getElementById('ind-equip-grande');
+  if (!todosEquip.length) {
+    grandeEl.innerHTML = '<div class="ind-vazio">Sem apontamentos no período.</div>';
+  } else {
+    const maxG = todosEquip[0].valor || 1;
+    grandeEl.innerHTML = todosEquip.map(function(x){
+      const pct = Math.max(3, Math.round(x.valor / maxG * 100));
+      return '<div class="ind-linha-grande">' +
+        '<div class="ind-lbl-grande" title="'+x.label+'">'+x.label+'</div>' +
+        '<div class="ind-bar-wrap-grande"><div class="ind-bar-grande" style="width:'+pct+'%"></div></div>' +
+        '<div class="ind-val-grande">'+x.valor+'</div>' +
+      '</div>';
+    }).join('');
+  }
 }
 </script>
 </body>
