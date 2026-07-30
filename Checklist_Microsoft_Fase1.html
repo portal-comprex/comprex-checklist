@@ -351,7 +351,9 @@
   .periodo-opt{padding:8px 18px;border-radius:7px;font-size:12px;font-weight:700;
     color:var(--cinza);cursor:pointer;transition:all .15s;letter-spacing:.3px}
   .periodo-opt.ativo{background:var(--navy);color:#fff}
-  .ind-total{font-size:12px;color:var(--cinza);margin-bottom:16px}
+ .ind-total{font-size:12px;color:var(--cinza);margin-bottom:16px}
+  .ind-kpis{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+  @media (max-width:820px){.ind-kpis{grid-template-columns:1fr}}
   .ind-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
   @media (max-width:820px){.ind-grid{grid-template-columns:1fr}}
 
@@ -884,8 +886,31 @@
     <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
     <div class="periodo-opt" data-periodo="ano">Ano</div>
   </div>
+
+  <div class="ind-kpis">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone ok">✔</div>
+        <div><div class="kpi-num" id="ind-kpi-conformidade">—</div><div class="kpi-lbl">Taxa de conformidade</div></div>
+      </div>
+      <div class="kpi-var flat" id="ind-kpi-conformidade-sub"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone azul">📊</div>
+        <div><div class="kpi-num" id="ind-kpi-apontamentos">—</div><div class="kpi-lbl">Apontamentos no período</div></div>
+      </div>
+      <div class="kpi-var" id="ind-kpi-apontamentos-var"></div>
+    </div>
+  </div>
+
   <div class="ind-total" id="ind-total"></div>
   <div id="ind-conteudo"><div class="ind-loading">Carregando indicadores…</div></div>
+
+  <div class="ind-card ind-card-grande">
+    <h3>🔒 Itens de segurança — apontamentos no período</h3>
+    <div id="ind-seguranca"><div class="ind-loading">Carregando…</div></div>
+  </div>
 
   <div class="ind-card ind-card-grande">
     <h3>Apontamentos por equipamento — todos do período</h3>
@@ -2549,11 +2574,46 @@ function topN(mapa, n){
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, n || 8);
 }
 
+const ITENS_SEGURANCA_LABELS = [
+  'ALARME SONORO PARA CINTO DE SEGURANÇA (FUNCIONA)',
+  'ALARME SONORO E/OU VISUAL PARA FREIO DE ESTACIONAMENTO (FUNCIONA)',
+  'ALARME DE RÉ (FUNCIONA)',
+  'SENSOR DE RÉ (FUNCIONA)',
+  'CÂMERA DE RÉ (FUNCIONA)',
+  'SISTEMA DE DETECÇÃO DE PROXIMIDADE (FUNCIONA)'
+];
+
+/** Calcula todas as métricas de um conjunto de checklists (usado no período atual e no anterior). */
+function calcularMetricasPeriodo(itensPeriodo){
+  const porItem = {}, porEquip = {}, porLocal = {}, porItemSeguranca = {};
+  let apontamentos = 0, conformes = 0;
+  itensPeriodo.forEach(function(h){
+    if (h.status.classe === 'ok') conformes++;
+    let nProblemas = 0;
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at' || sev === 'ru') {
+        porItem[it[0]] = (porItem[it[0]] || 0) + 1;
+        nProblemas++;
+        if (ITENS_SEGURANCA_LABELS.indexOf(it[0]) !== -1) {
+          porItemSeguranca[it[0]] = (porItemSeguranca[it[0]] || 0) + 1;
+        }
+      }
+    });
+    apontamentos += nProblemas;
+    if (nProblemas > 0 && h.equipamento) porEquip[h.equipamento] = (porEquip[h.equipamento] || 0) + nProblemas;
+    if (nProblemas > 0 && h.local) porLocal[h.local] = (porLocal[h.local] || 0) + nProblemas;
+  });
+  return { total: itensPeriodo.length, conformes: conformes, apontamentos: apontamentos, porItem: porItem, porEquip: porEquip, porLocal: porLocal, porItemSeguranca: porItemSeguranca };
+}
 async function carregarIndicadores(periodo){
   const totalEl = document.getElementById('ind-total');
   const cont = document.getElementById('ind-conteudo');
   cont.innerHTML = '<div class="ind-loading">Carregando indicadores…</div>';
   document.getElementById('ind-equip-grande').innerHTML = '<div class="ind-loading">Carregando…</div>';
+  document.getElementById('ind-seguranca').innerHTML = '<div class="ind-loading">Carregando…</div>';
 
   try {
     await garantirDadosHistorico();
@@ -2564,30 +2624,44 @@ async function carregarIndicadores(periodo){
 
   const dias = periodo === 'semana' ? 7 : periodo === 'ano' ? 365 : 30;
   const limite = new Date(Date.now() - dias*86400000);
-  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite; });
+  const limiteAnterior = new Date(limite.getTime() - dias*86400000);
 
-  const porItem = {}, porEquip = {}, porLocal = {};
-  filtrado.forEach(function(h){
-    let nProblemas = 0;
-    ITENS.forEach(function(it){
-      const valor = h.campos[it[0]];
-      if (!valor) return;
-      const sev = severidadeDaResposta(it[0], valor);
-      if (sev === 'at' || sev === 'ru') {
-        porItem[it[0]] = (porItem[it[0]] || 0) + 1;
-        nProblemas++;
-      }
-    });
-    if (nProblemas > 0 && h.equipamento) porEquip[h.equipamento] = (porEquip[h.equipamento] || 0) + nProblemas;
-    if (nProblemas > 0 && h.local) porLocal[h.local] = (porLocal[h.local] || 0) + nProblemas;
+  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite; });
+  const anterior = historicoItens.filter(function(h){
+    const d = new Date(h.criado);
+    return d >= limiteAnterior && d < limite;
   });
 
-  const problemas = topN(porItem, 8).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
-  const equipamentos = topN(porEquip, 8);
-  const locais = topN(porLocal, 8);
+  const m = calcularMetricasPeriodo(filtrado);
+  const mAnterior = calcularMetricasPeriodo(anterior);
 
   const nomePeriodo = periodo === 'semana' ? 'últimos 7 dias' : periodo === 'ano' ? 'últimos 365 dias' : 'últimos 30 dias';
-  totalEl.textContent = filtrado.length + ' checklist(s) registrados — ' + nomePeriodo;
+  totalEl.textContent = m.total + ' checklist(s) registrados — ' + nomePeriodo;
+
+  // KPI: Taxa de conformidade
+  const taxaConf = m.total ? Math.round(m.conformes / m.total * 100) : 0;
+  document.getElementById('ind-kpi-conformidade').textContent = taxaConf + '%';
+  document.getElementById('ind-kpi-conformidade-sub').textContent = m.conformes + ' de ' + m.total + ' conforme(s)';
+
+  // KPI: Apontamentos + comparação com o período anterior
+  document.getElementById('ind-kpi-apontamentos').textContent = m.apontamentos;
+  const varEl = document.getElementById('ind-kpi-apontamentos-var');
+  if (mAnterior.apontamentos === 0 && m.apontamentos === 0) {
+    varEl.className = 'kpi-var flat';
+    varEl.textContent = 'Sem dados no período anterior';
+  } else if (mAnterior.apontamentos === 0) {
+    varEl.className = 'kpi-var up';
+    varEl.textContent = '▲ novo (sem base de comparação)';
+  } else {
+    const variacao = Math.round((m.apontamentos - mAnterior.apontamentos) / mAnterior.apontamentos * 100);
+    const seta = variacao > 0 ? '▲' : variacao < 0 ? '▼' : '—';
+    varEl.className = 'kpi-var ' + (variacao > 0 ? 'down' : variacao < 0 ? 'up' : 'flat');
+    varEl.textContent = seta + ' ' + Math.abs(variacao) + '% vs. período anterior';
+  }
+
+  const problemas = topN(m.porItem, 8).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
+  const equipamentos = topN(m.porEquip, 8);
+  const locais = topN(m.porLocal, 8);
 
   cont.innerHTML =
     '<div class="ind-grid">' +
@@ -2596,7 +2670,12 @@ async function carregarIndicadores(periodo){
       '<div class="ind-card"><h3>Locais com mais apontamentos</h3>' + renderRankingIndicador(locais, 'locais') + '</div>' +
     '</div>';
 
-  const todosEquip = Object.keys(porEquip).map(function(k){ return { label: k, valor: porEquip[k] }; })
+  const seguranca = topN(m.porItemSeguranca, 6).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
+  document.getElementById('ind-seguranca').innerHTML = seguranca.length
+    ? renderRankingIndicador(seguranca, 'problemas')
+    : '<div class="ind-vazio">Nenhum item de segurança reprovado no período. ✔</div>';
+
+  const todosEquip = Object.keys(m.porEquip).map(function(k){ return { label: k, valor: m.porEquip[k] }; })
     .sort(function(a,b){ return b.valor - a.valor; });
 
   const grandeEl = document.getElementById('ind-equip-grande');
