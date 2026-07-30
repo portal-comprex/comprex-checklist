@@ -6,9 +6,9 @@
 <title>Checklist Diário — Comprex (Microsoft)</title>
 <style>
 
-  :root{
-    --navy:#132436; --navy-2:#1b3350; --card:#ffffff;
-    --tan:#c79a3a; --cream:#f6f1e6;
+ :root{
+    --navy:#1b6b34; --navy-2:#155a2a; --card:#ffffff;
+    --tan:#2e7d46; --cream:#e8f5e9;
     --ok:#2e7d46; --at:#c79a3a; --ru:#c0392b; --na:#8a94a0;
     --linha:#e2e0d8; --tinta:#1a2430; --cinza:#5b6570;
     --sidebar-w:230px;
@@ -18,21 +18,27 @@
 
   /* ===================== SHELL: SIDEBAR + MAIN ===================== */
   .shell{display:flex;min-height:100vh}
-  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--navy);color:#fff;
-    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-  .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
-  .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:#fff}
-  .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:#8fa3b8;margin-top:3px}
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:#ffffff;color:var(--tinta);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
+    border-right:1px solid var(--linha)}
+  .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--linha)}
+  .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--navy)}
+  .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:var(--cinza);margin-top:3px}
 
   .sidebar-nav{flex:1;padding:14px 10px}
-  .sidebar-secao{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#6d8199;
+  .sidebar-secao{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--cinza);
     text-transform:uppercase;padding:14px 12px 6px}
   .sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
-    font-size:13px;font-weight:600;color:#c3d0dd;cursor:pointer;transition:all .15s;margin-bottom:2px}
+    font-size:13px;font-weight:600;color:#4b5563;cursor:pointer;transition:all .15s;margin-bottom:2px;
+    border-left:3px solid transparent}
   .sidebar-item i{font-style:normal;font-size:16px;width:18px;text-align:center}
-  .sidebar-item:hover{background:rgba(255,255,255,.06);color:#fff}
-  .sidebar-item.ativo{background:var(--tan);color:#1a2430;font-weight:700}
-  .sidebar-item.acao{color:#f0c99a}
+  .sidebar-item:hover{background:var(--cream);color:var(--navy)}
+  .sidebar-item.ativo{background:var(--cream);color:var(--navy);font-weight:700;border-left:3px solid var(--navy)}
+  .sidebar-item.acao{color:#a06800}
+  .sidebar-item.acao:hover{background:#fdf3e3;color:#a06800}
+
+  .sidebar-sair{padding:14px 20px 20px;border-top:1px solid var(--linha)}
+  .sidebar-sair .sidebar-item{color:#4b5563}
   .sidebar-item.acao:hover{background:rgba(199,154,58,.18);color:#f0c99a}
 
   .sidebar-sair{padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.08)}
@@ -162,17 +168,17 @@
     .dash-row-2{grid-template-columns:1fr}
   }
 
-  .cab{background:var(--navy);color:#fff;border-radius:14px;padding:16px 20px}
+  .cab{background:var(--cream);border:1px solid #cfe8d2;color:var(--tinta);border-radius:14px;padding:16px 20px}
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
-  .campo label{display:block;font-size:10px;letter-spacing:1px;color:#9fb0c2;text-transform:uppercase;margin-bottom:4px}
+  .campo label{display:block;font-size:10px;letter-spacing:1px;color:var(--cinza);text-transform:uppercase;margin-bottom:4px}
   .campo input,.campo select{
-    width:100%;background:#1b3350;border:1px solid #2c4763;color:#fff;
+    width:100%;background:#fff;border:1.5px solid #d8dee3;color:var(--tinta);
     border-radius:8px;padding:10px 11px;font-size:14px;outline:none}
-  .campo input::placeholder{color:#63768c}
-  .campo input[readonly]{background:#16293d;color:#c9d3de;cursor:default}
-  .campo select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23c79a3a' stroke-width='2' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
-  .obrig{color:var(--tan)}
-  .erro-hor{color:#ffb4a8;font-size:11px;margin-top:3px;display:none}
+  .campo input::placeholder{color:#9aa5ad}
+  .campo input[readonly]{background:#f3f5f6;color:var(--cinza);cursor:default}
+  .campo select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%232e7d46' stroke-width='2' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+  .obrig{color:#c79a3a}
+  .erro-hor{color:var(--ru);font-size:11px;margin-top:3px;display:none}
 
   /* ---- PROGRESSO ---- */
   .barra-wrap{display:flex;align-items:center;gap:12px;margin:16px 0 10px}
@@ -576,12 +582,12 @@
   .aviso-coluna{background:#fbe9e7;border:1px solid #f0c4bd;border-radius:9px;
     padding:12px 16px;font-size:12px;color:var(--ru);margin-bottom:16px}
   .aviso-coluna b{display:block;margin-bottom:4px}
-  .login-gate{position:fixed;inset:0;background:#132436;display:flex;align-items:center;
+ .login-gate{position:fixed;inset:0;background:#1b5e20;display:flex;align-items:center;
     justify-content:center;z-index:1000;flex-direction:column;color:#fff;gap:16px}
   .login-gate h2{font-size:20px}
-  .login-gate button{background:var(--tan);color:#1a2430;border:none;border-radius:9px;
+  .login-gate button{background:#fff;color:#1b5e20;border:none;border-radius:9px;
     padding:14px 28px;font-size:14px;font-weight:700;cursor:pointer}
-  .login-gate .status{font-size:13px;color:#9fb0c2}
+  .login-gate .status{font-size:13px;color:#c8e6c9}
 </style>
 </head>
 <body>
