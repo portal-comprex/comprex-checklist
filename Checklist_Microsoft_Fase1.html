@@ -532,7 +532,9 @@
   .frota-st.atencao{background:#fdf3e3;color:#a06800}
   .frota-st.parado{background:#fbe9e7;color:var(--ru)}
   .frota-st.sem-registro{background:#f3f5f6;color:var(--cinza)}
-  .frota-info{font-size:11px;color:var(--cinza);line-height:1.5}
+ .frota-info{font-size:11px;color:var(--cinza);line-height:1.5}
+  .frota-alerta{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+    border-radius:50%;background:var(--ru);color:#fff;font-weight:800;font-size:12px;margin-right:6px;flex-shrink:0}
 
   /* ---- Operadores ---- */
   .op-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
@@ -743,7 +745,7 @@
         <option value="">Todos</option>
         <option value="ok">Conforme</option>
         <option value="at">Atenção</option>
-        <option value="parar">Paralisar</option>
+        <option value="parar">Necessita paralisar!</option>
       </select>
     </div>
     <div class="hist-filtro-campo" style="justify-content:flex-end">
@@ -1843,16 +1845,17 @@ function severidadeDaResposta(rotuloOriginal, valor){
 }
 
 function statusDoChecklist(fieldsPorRotulo){
-  if (fieldsPorRotulo['NECESSITA PARALIZAR O EQUIPAMENTO?'] === 'SIM') return { texto: 'Paralisar', classe: 'parar' };
+  // A partir de agora, SÓ a resposta explícita a esta pergunta define "necessita paralisar".
+  // Itens isolados marcados como "Ruim" não paralisam sozinhos — passam a contar como "Atenção".
+  if (fieldsPorRotulo['NECESSITA PARALIZAR O EQUIPAMENTO?'] === 'SIM') return { texto: 'Necessita paralisar!', classe: 'parar' };
   let pior = 'ok';
   ITENS.forEach(function(item){
     const valor = fieldsPorRotulo[item[0]];
     if (!valor) return;
     const sev = severidadeDaResposta(item[0], valor);
-    if (sev === 'ru') pior = 'parar';
-    else if (sev === 'at' && pior === 'ok') pior = 'at';
+    if (sev === 'ru' || sev === 'at') pior = 'at';
   });
-  const textos = { ok: 'Conforme', at: 'Atenção', parar: 'Paralisar' };
+  const textos = { ok: 'Conforme', at: 'Atenção', parar: 'Necessita paralisar!' };
   return { texto: textos[pior], classe: pior };
 }
 
@@ -2422,12 +2425,13 @@ async function carregarFrota(){
 
   total.textContent = lista.length + ' equipamento(s) monitorado(s)';
   cont.innerHTML = '<div class="frota-grid">' + lista.map(function(f){
-    const stTxt = { ok: 'Ok', atencao: 'Atenção', parado: 'Parado', 'sem-registro': 'Sem registro' }[f.situacao];
+    const stTxt = { ok: 'Ok', atencao: 'Atenção', parado: 'Necessita paralisar!', 'sem-registro': 'Sem registro' }[f.situacao];
+    const alerta = f.situacao === 'parado' ? '<span class="frota-alerta">!</span>' : '';
     const info = f.ultimaData
       ? 'Último checklist: ' + f.ultimaData + ' (' + f.diasSemChecklist + 'd atrás)<br>Ocorrências (30d): ' + f.ocorrencias30d
       : 'Nenhum checklist registrado ainda';
     return '<div class="frota-card st-' + f.situacao + '">' +
-      '<div class="frota-eq">' + f.equip + '</div>' +
+      '<div class="frota-eq">' + alerta + f.equip + '</div>' +
       '<span class="frota-st ' + f.situacao + '">' + stTxt + '</span>' +
       '<div class="frota-info">' + info + '</div>' +
     '</div>';
