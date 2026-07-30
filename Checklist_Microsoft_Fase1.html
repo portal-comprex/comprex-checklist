@@ -1539,7 +1539,78 @@ function horimetroValido(){
   erroHor.style.display = 'none';
   return true;
 }
+function situacaoDoUltimoChecklist(h){
+  if (!h) return 'sem-registro';
+  return h.status.classe === 'parar' ? 'parado' : h.status.classe === 'at' ? 'atencao' : 'ok';
+}
 
+function calcularProximaPreventiva(horimetroAtual){
+  if (horimetroAtual == null || isNaN(horimetroAtual)) return null;
+  let proximo = Math.ceil(horimetroAtual / 500) * 500;
+  if (proximo <= horimetroAtual) proximo += 500;
+  let tipo = 500;
+  if (proximo % 2000 === 0) tipo = 2000;
+  else if (proximo % 1000 === 0) tipo = 1000;
+  return { proximo: proximo, tipo: tipo, faltam: Math.round(proximo - horimetroAtual) };
+}
+
+function formatarUltimoChecklistCard(iso){
+  const d = new Date(iso);
+  const hoje = new Date();
+  const hora = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  if (d.toDateString() === hoje.toDateString()) return 'Hoje às ' + hora;
+  const dias = Math.floor((hoje - d) / 86400000);
+  return dias === 1 ? 'Ontem às ' + hora : dias + 'd atrás';
+}
+
+function atualizarCardEquipamento(){
+  const eq = document.getElementById('equipamento').value;
+  const card = document.getElementById('equip-card');
+  if (!eq) { card.style.display = 'none'; return; }
+  card.style.display = 'flex';
+
+  const registros = (historicoItens || []).filter(function(h){ return h.equipamento === eq; })
+    .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  const ultimo = registros[0] || null;
+
+  document.getElementById('equip-card-nome').textContent = eq;
+
+  const situacao = situacaoDoUltimoChecklist(ultimo);
+  const stTxt = { ok: 'Ok', atencao: 'Atenção', parado: 'Necessita paralisar!', 'sem-registro': 'Sem registro' }[situacao];
+  const badge = document.getElementById('equip-card-status');
+  badge.textContent = stTxt;
+  badge.className = 'frota-st ' + situacao;
+
+  const horAtualInput = parseFloat(inpHor.value);
+  const horAtual = !isNaN(horAtualInput) ? horAtualInput : (ultimoHorimetro[eq.toUpperCase()] != null ? ultimoHorimetro[eq.toUpperCase()] : null);
+  document.getElementById('equip-card-horimetro').textContent = horAtual != null ? horAtual.toLocaleString('pt-BR') + ' h' : '—';
+
+  document.getElementById('equip-card-ultimo').textContent = ultimo ? formatarUltimoChecklistCard(ultimo.criado) : 'Nenhum checklist ainda';
+
+  document.getElementById('equip-card-manutencao').textContent = '—';
+
+  const prev = calcularProximaPreventiva(horAtual);
+  if (prev) {
+    document.getElementById('equip-card-preventiva').textContent = prev.proximo.toLocaleString('pt-BR') + ' h';
+    document.getElementById('equip-card-preventiva-sub').textContent = 'Revisão de ' + prev.tipo + 'h · ' + prev.faltam + 'h restantes';
+  } else {
+    document.getElementById('equip-card-preventiva').textContent = '—';
+    document.getElementById('equip-card-preventiva-sub').textContent = '';
+  }
+
+  const limite30 = new Date(Date.now() - 30*86400000);
+  const ultimos30 = registros.filter(function(h){ return new Date(h.criado) >= limite30; });
+  const dispEl = document.getElementById('equip-card-disponibilidade');
+  if (!ultimos30.length) {
+    dispEl.textContent = 'Sem dados';
+  } else {
+    const conformes = ultimos30.filter(function(h){ return h.status.classe === 'ok'; }).length;
+    dispEl.textContent = Math.round(conformes / ultimos30.length * 100) + '%';
+  }
+}
+
+inpHor.addEventListener('input', validar);
+inpHor.addEventListener('input', atualizarCardEquipamento);
 inpHor.addEventListener('input', validar);
 inpHor.addEventListener('input', atualizarCardEquipamento);
 document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); });
