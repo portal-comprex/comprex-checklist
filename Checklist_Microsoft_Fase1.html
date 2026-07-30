@@ -1730,7 +1730,7 @@ function atualizarCardEquipamento(){
 
 inpHor.addEventListener('input', validar);
 inpHor.addEventListener('input', atualizarCardEquipamento);
-document.getElementById('equipamento').addEventListener('change', function(){ validar(); atualizarResumo(); atualizarCardEquipamento(); iniciarTimerChecklist(); verificarRascunho(this.value); });
+document.getElementById('equipamento').addEventListener('change', function(){ limparItensSeSemRascunho(this.value); validar(); atualizarResumo(); atualizarCardEquipamento(); iniciarTimerChecklist(); verificarRascunho(this.value); });
 document.getElementById('operador').addEventListener('input', validar);
 
 function atualizarProgresso(){
@@ -3086,6 +3086,21 @@ function salvarRascunho(){
   } catch(e) {
     mostrarFeedbackRascunho('⚠️ Não foi possível salvar.');
   }
+}
+
+function limparItensSeSemRascunho(eq){
+  if (eq && localStorage.getItem(chaveRascunho(eq))) return; // tem rascunho salvo — o botão "Restaurar" decide o que fazer
+  for (const k in respostas) delete respostas[k];
+  document.querySelectorAll('#itens .item').forEach(function(div){
+    div.className = 'item';
+    div.querySelectorAll('.opt').forEach(function(b){ b.className = 'opt'; });
+  });
+  document.getElementById('horimetro').value = '';
+  document.getElementById('observacao').value = '';
+  document.getElementById('validade-extintor').value = '';
+  erroHor.style.display = 'none';
+  atualizarProgresso();
+  atualizarResumo();
 }
 
 function verificarRascunho(eq){
