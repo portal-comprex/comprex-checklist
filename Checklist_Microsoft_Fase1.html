@@ -1088,6 +1088,77 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
 </div>
 <div class="view" id="view-indicadores">
+ <div class="ind2-filtros">
+    <div class="hist-filtro-campo">
+      <label>De</label>
+      <input type="date" id="ind2-filtro-de">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Até</label>
+      <input type="date" id="ind2-filtro-ate">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Comparar com</label>
+      <select id="ind2-filtro-comparar">
+        <option value="anterior">Período anterior</option>
+      </select>
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Equipamento</label>
+      <select id="ind2-filtro-equip"><option value="">Todos</option></select>
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Local / Obra</label>
+      <select id="ind2-filtro-local"><option value="">Todos</option></select>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="ind2-limpar-filtros">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div class="ind2-kpis" id="ind2-kpis">
+    <div class="ind2-kpi-card">
+      <div class="ind2-kpi-top">
+        <div class="ind2-kpi-icone ok">🛡️</div>
+        <div><div class="ind2-kpi-lbl">Taxa de conformidade</div><div class="ind2-kpi-val" id="ind2-kpi-conforme">—</div></div>
+      </div>
+      <div class="ind2-kpi-delta" id="ind2-kpi-conforme-delta"></div>
+      <div class="ind2-kpi-spark" id="ind2-spark-conforme"></div>
+    </div>
+    <div class="ind2-kpi-card">
+      <div class="ind2-kpi-top">
+        <div class="ind2-kpi-icone at">⚠️</div>
+        <div><div class="ind2-kpi-lbl">Taxa de não conformidade</div><div class="ind2-kpi-val" id="ind2-kpi-nconforme">—</div></div>
+      </div>
+      <div class="ind2-kpi-delta" id="ind2-kpi-nconforme-delta"></div>
+      <div class="ind2-kpi-spark" id="ind2-spark-nconforme"></div>
+    </div>
+    <div class="ind2-kpi-card">
+      <div class="ind2-kpi-top">
+        <div class="ind2-kpi-icone azul">📋</div>
+        <div><div class="ind2-kpi-lbl">Média de apontamentos<br>por checklist</div><div class="ind2-kpi-val" id="ind2-kpi-media">—</div></div>
+      </div>
+      <div class="ind2-kpi-delta" id="ind2-kpi-media-delta"></div>
+      <div class="ind2-kpi-spark" id="ind2-spark-media"></div>
+    </div>
+    <div class="ind2-kpi-card">
+      <div class="ind2-kpi-top">
+        <div class="ind2-kpi-icone roxo">🔁</div>
+        <div><div class="ind2-kpi-lbl">Taxa de reincidência</div><div class="ind2-kpi-val" id="ind2-kpi-reinc">—</div></div>
+      </div>
+      <div class="ind2-kpi-delta" id="ind2-kpi-reinc-delta"></div>
+      <div class="ind2-kpi-spark" id="ind2-spark-reinc"></div>
+    </div>
+    <div class="ind2-kpi-card">
+      <div class="ind2-kpi-top">
+        <div class="ind2-kpi-icone ru">🚚</div>
+        <div><div class="ind2-kpi-lbl">Equipamentos<br>reincidentes</div><div class="ind2-kpi-val" id="ind2-kpi-equipreinc">—</div></div>
+      </div>
+      <div class="ind2-kpi-delta" id="ind2-kpi-equipreinc-delta"></div>
+      <div class="ind2-kpi-spark" id="ind2-spark-equipreinc"></div>
+    </div>
+  </div>
   <div class="periodo-toggle" id="ind-periodo-toggle">
     <div class="periodo-opt" data-periodo="semana">Semana</div>
     <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
@@ -1145,6 +1216,29 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
 </div>
 
 <input type="file" id="input-foto-equip" accept="image/*" style="display:none">
+ .ind-loading{text-align:center;padding:40px;color:var(--cinza);font-size:13px}
+
+  .ind2-filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end}
+  .ind2-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  @media (max-width:1100px){.ind2-kpis{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:600px){.ind2-kpis{grid-template-columns:1fr}}
+  .ind2-kpi-card{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:16px}
+  .ind2-kpi-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .ind2-kpi-icone{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .ind2-kpi-icone.ok{background:#e9f4ee}
+  .ind2-kpi-icone.at{background:#fdf3e3}
+  .ind2-kpi-icone.azul{background:#e6f1fb}
+  .ind2-kpi-icone.roxo{background:#f1e9fb}
+  .ind2-kpi-icone.ru{background:#fbe9e7}
+  .ind2-kpi-lbl{font-size:11px;color:var(--cinza);line-height:1.3}
+  .ind2-kpi-val{font-size:22px;font-weight:800;color:var(--tinta);line-height:1.1}
+  .ind2-kpi-delta{font-size:11px;font-weight:700;margin-bottom:6px}
+  .ind2-kpi-delta.up{color:var(--ok)}
+  .ind2-kpi-delta.down{color:var(--ru)}
+  .ind2-kpi-delta.flat{color:var(--cinza)}
+  .ind2-kpi-spark{height:28px}
+  .ind2-kpi-spark svg{width:100%;height:100%;display:block}
+  body.tema-escuro .ind2-kpi-card{background:#1a2430;border-color:#2c3a4a}
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -2302,7 +2396,7 @@ const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashb
   if (nome === 'ocorrencias') carregarOcorrencias();
   if (nome === 'frota') carregarFrota();
   if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
-  if (nome === 'indicadores') carregarIndicadores(periodoIndAtivo);
+  if (nome === 'indicadores') { carregarIndicadores(periodoIndAtivo); carregarIndicadoresV2(); }
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -3432,6 +3526,159 @@ function configurarComboBusca(inputId, listaOrigemFn){
 
 configurarComboBusca('equipamento', function(){ return frotas; });
 configurarComboBusca('local', function(){ return locais; });
+ /* =====================================================================
+   INDICADORES V2 — filtros de período + KPIs com sparkline (Fase 1)
+   ===================================================================== */
+function gerarSparklineSVG(valores, cor){
+  if (!valores || !valores.length) return '';
+  const w = 120, h = 28, pad = 2;
+  const max = Math.max.apply(null, valores.concat([0.0001]));
+  const min = Math.min.apply(null, valores.concat([0]));
+  const range = (max - min) || 1;
+  const stepX = valores.length > 1 ? (w - pad*2) / (valores.length - 1) : 0;
+  const pontos = valores.map(function(v, i){
+    const x = pad + i*stepX;
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><polyline points="' + pontos + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+
+function serieDiaria(itensFiltrados, deStr, ateStr, calcValorDia){
+  const de = new Date(deStr + 'T00:00:00');
+  const ate = new Date(ateStr + 'T00:00:00');
+  const dias = [];
+  for (let d = new Date(de); d <= ate; d.setDate(d.getDate() + 1)) dias.push(new Date(d));
+  let ultimo = 0;
+  return dias.map(function(dia){
+    const chave = dia.getFullYear() + '-' + String(dia.getMonth()+1).padStart(2,'0') + '-' + String(dia.getDate()).padStart(2,'0');
+    const doDia = itensFiltrados.filter(function(h){ return dataChaveISO(h.criado) === chave; });
+    if (doDia.length) ultimo = calcValorDia(doDia);
+    return ultimo;
+  });
+}
+
+function calcularKPIsPeriodo(itens, deStr, ateStr){
+  const doPeriodo = itens.filter(function(h){
+    return h.criado >= (deStr + 'T00:00:00') && h.criado <= (ateStr + 'T23:59:59');
+  });
+  const total = doPeriodo.length;
+  const conformes = doPeriodo.filter(function(h){ return h.status.classe === 'ok'; }).length;
+  let apontamentos = 0;
+  const porEquipItem = {};
+  doPeriodo.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at' || sev === 'ru') {
+        apontamentos++;
+        const chave = h.equipamento + '||' + it[0];
+        porEquipItem[chave] = (porEquipItem[chave] || 0) + 1;
+      }
+    });
+  });
+  const reincidentesChaves = Object.keys(porEquipItem).filter(function(k){ return porEquipItem[k] >= 2; });
+  const equipReinc = new Set(reincidentesChaves.map(function(k){ return k.split('||')[0]; }));
+  const taxaConf = total ? (conformes/total*100) : 0;
+  return {
+    total: total,
+    taxaConf: taxaConf,
+    taxaNConf: 100 - taxaConf,
+    apontamentos: apontamentos,
+    mediaApont: total ? (apontamentos/total) : 0,
+    taxaReinc: total ? (reincidentesChaves.length/total*100) : 0,
+    equipReinc: equipReinc.size
+  };
+}
+
+function preencherKPI(idVal, idDelta, idSpark, valorAtual, valorAnterior, temAnterior, sufixo, corSpark, inverso, serie){
+  const decimais = sufixo === '%' ? 0 : (valorAtual % 1 === 0 ? 0 : 2);
+  document.getElementById(idVal).textContent = valorAtual.toFixed(decimais) + (sufixo || '');
+  const deltaEl = document.getElementById(idDelta);
+  if (!temAnterior) {
+    deltaEl.className = 'ind2-kpi-delta flat';
+    deltaEl.textContent = 'Sem dados no período anterior';
+  } else {
+    const delta = valorAtual - valorAnterior;
+    const melhorou = inverso ? delta < 0 : delta > 0;
+    const pior = inverso ? delta > 0 : delta < 0;
+    deltaEl.className = 'ind2-kpi-delta ' + (melhorou ? 'up' : pior ? 'down' : 'flat');
+    const seta = melhorou ? '▲' : (pior ? '▼' : '—');
+    deltaEl.textContent = seta + ' ' + Math.abs(delta).toFixed(decimais) + (sufixo === '%' ? ' p.p.' : '') + ' vs período anterior';
+  }
+  document.getElementById(idSpark).innerHTML = gerarSparklineSVG(serie, corSpark);
+}
+
+async function carregarIndicadoresV2(){
+  try { await garantirDadosHistorico(); } catch(err) { return; }
+
+  preencherFiltroSelectComLista('ind2-filtro-equip', frotas);
+  preencherFiltroSelectComLista('ind2-filtro-local', locais);
+
+  const de = document.getElementById('ind2-filtro-de').value;
+  const ate = document.getElementById('ind2-filtro-ate').value;
+  if (!de || !ate) return;
+
+  const equipF = document.getElementById('ind2-filtro-equip').value;
+  const localF = document.getElementById('ind2-filtro-local').value;
+
+  let itens = historicoItens;
+  if (equipF) itens = itens.filter(function(h){ return h.equipamento === equipF; });
+  if (localF) itens = itens.filter(function(h){ return h.local === localF; });
+
+  const duracaoMs = new Date(ate + 'T23:59:59') - new Date(de + 'T00:00:00');
+  const anteriorAte = new Date(new Date(de + 'T00:00:00').getTime() - 1000);
+  const anteriorDe = new Date(anteriorAte.getTime() - duracaoMs);
+  const anteriorDeStr = anteriorDe.toISOString().slice(0, 10);
+  const anteriorAteStr = anteriorAte.toISOString().slice(0, 10);
+
+  const atual = calcularKPIsPeriodo(itens, de, ate);
+  const anterior = calcularKPIsPeriodo(itens, anteriorDeStr, anteriorAteStr);
+  const temAnterior = anterior.total > 0;
+
+  const serieConf = serieDiaria(itens, de, ate, function(doDia){
+    return doDia.filter(function(h){ return h.status.classe === 'ok'; }).length / doDia.length * 100;
+  });
+  const serieNConf = serieConf.map(function(v){ return 100 - v; });
+  const serieApont = serieDiaria(itens, de, ate, function(doDia){
+    let s = 0;
+    doDia.forEach(function(h){
+      ITENS.forEach(function(it){
+        const valor = h.campos[it[0]];
+        if (!valor) return;
+        const sev = severidadeDaResposta(it[0], valor);
+        if (sev === 'at' || sev === 'ru') s++;
+      });
+    });
+    return s / doDia.length;
+  });
+
+  preencherKPI('ind2-kpi-conforme', 'ind2-kpi-conforme-delta', 'ind2-spark-conforme', atual.taxaConf, anterior.taxaConf, temAnterior, '%', '#2e7d46', false, serieConf);
+  preencherKPI('ind2-kpi-nconforme', 'ind2-kpi-nconforme-delta', 'ind2-spark-nconforme', atual.taxaNConf, anterior.taxaNConf, temAnterior, '%', '#c79a3a', true, serieNConf);
+  preencherKPI('ind2-kpi-media', 'ind2-kpi-media-delta', 'ind2-spark-media', atual.mediaApont, anterior.mediaApont, temAnterior, '', '#3a5a7a', true, serieApont);
+  preencherKPI('ind2-kpi-reinc', 'ind2-kpi-reinc-delta', 'ind2-spark-reinc', atual.taxaReinc, anterior.taxaReinc, temAnterior, '%', '#7a4fbf', true, serieApont);
+  preencherKPI('ind2-kpi-equipreinc', 'ind2-kpi-equipreinc-delta', 'ind2-spark-equipreinc', atual.equipReinc, anterior.equipReinc, temAnterior, '', '#c0392b', true, serieApont);
+}
+
+document.getElementById('ind2-limpar-filtros').onclick = function(){
+  document.getElementById('ind2-filtro-equip').value = '';
+  document.getElementById('ind2-filtro-local').value = '';
+  const hoje = new Date();
+  document.getElementById('ind2-filtro-de').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
+  document.getElementById('ind2-filtro-ate').value = hoje.toISOString().slice(0, 10);
+  carregarIndicadoresV2();
+};
+
+['ind2-filtro-de', 'ind2-filtro-ate', 'ind2-filtro-equip', 'ind2-filtro-local'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', carregarIndicadoresV2);
+});
+
+(function(){
+  const hoje = new Date();
+  document.getElementById('ind2-filtro-de').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
+  document.getElementById('ind2-filtro-ate').value = hoje.toISOString().slice(0, 10);
+})();
 </script>
 </body>
 </html>
