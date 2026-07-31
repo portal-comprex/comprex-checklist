@@ -734,6 +734,16 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .ind2-kpi-spark{height:28px}
   .ind2-kpi-spark svg{width:100%;height:100%;display:block}
   body.tema-escuro .ind2-kpi-card{background:#1a2430;border-color:#2c3a4a}
+ .ind2-kpi-card{background:#1a2430;border-color:#2c3a4a}
+
+  .ind2-comp-tabela{width:100%;border-collapse:collapse;font-size:12px}
+  .ind2-comp-tabela th{text-align:left;padding:8px 10px;color:var(--cinza);font-weight:700;border-bottom:2px solid var(--linha)}
+  .ind2-comp-tabela td{padding:8px 10px;border-bottom:1px solid var(--linha);color:var(--tinta)}
+  .ind2-comp-tabela tr:last-child td{border-bottom:none}
+  .ind2-comp-var{font-weight:700;white-space:nowrap}
+  .ind2-comp-var.up{color:var(--ok)}
+  .ind2-comp-var.down{color:var(--ru)}
+  .ind2-comp-var.flat{color:var(--cinza)}
 </style>
 </head>
 <body>
@@ -1180,6 +1190,18 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="ind2-kpi-spark" id="ind2-spark-equipreinc"></div>
     </div>
   </div>
+ <div class="dash-row" id="ind2-row-evolucao">
+    <div class="dash-card">
+      <h3>Evolução da taxa de conformidade</h3>
+      <div id="ind2-grafico-evolucao"><div class="ind-loading">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Comparação entre períodos</h3>
+      <div id="ind2-comparacao"><div class="ind-loading">Carregando…</div></div>
+    </div>
+  </div>
+
+  <div class="periodo-toggle" id="ind-periodo-toggle">
   <div class="periodo-toggle" id="ind-periodo-toggle">
     <div class="periodo-opt" data-periodo="semana">Semana</div>
     <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
@@ -3576,10 +3598,20 @@ function calcularKPIsPeriodo(itens, deStr, ateStr){
       }
     });
   });
- const reincidentesChaves = Object.keys(porEquipItem).filter(function(k){ return porEquipItem[k] >= 2; });
+const reincidentesChaves = Object.keys(porEquipItem).filter(function(k){ return porEquipItem[k] >= 2; });
   const equipReinc = new Set(reincidentesChaves.map(function(k){ return k.split('||')[0]; }));
   const equipamentosNoPeriodo = new Set(doPeriodo.map(function(h){ return h.equipamento; }));
   const taxaConf = total ? (conformes/total*100) : 0;
+
+  let itensCriticos = 0;
+  doPeriodo.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      if (severidadeDaResposta(it[0], valor) === 'ru') itensCriticos++;
+    });
+  });
+
   return {
     total: total,
     taxaConf: taxaConf,
@@ -3587,7 +3619,8 @@ function calcularKPIsPeriodo(itens, deStr, ateStr){
     apontamentos: apontamentos,
     mediaApont: total ? (apontamentos/total) : 0,
     taxaReinc: equipamentosNoPeriodo.size ? (equipReinc.size / equipamentosNoPeriodo.size * 100) : 0,
-    equipReinc: equipReinc.size
+    equipReinc: equipReinc.size,
+    itensCriticos: itensCriticos
   };
 }
 
@@ -3657,9 +3690,11 @@ async function carregarIndicadoresV2(){
   preencherKPI('ind2-kpi-nconforme', 'ind2-kpi-nconforme-delta', 'ind2-spark-nconforme', atual.taxaNConf, anterior.taxaNConf, temAnterior, '%', '#c79a3a', true, serieNConf);
   preencherKPI('ind2-kpi-media', 'ind2-kpi-media-delta', 'ind2-spark-media', atual.mediaApont, anterior.mediaApont, temAnterior, '', '#3a5a7a', true, serieApont);
   preencherKPI('ind2-kpi-reinc', 'ind2-kpi-reinc-delta', 'ind2-spark-reinc', atual.taxaReinc, anterior.taxaReinc, temAnterior, '%', '#7a4fbf', true, serieApont);
-  preencherKPI('ind2-kpi-equipreinc', 'ind2-kpi-equipreinc-delta', 'ind2-spark-equipreinc', atual.equipReinc, anterior.equipReinc, temAnterior, '', '#c0392b', true, serieApont);
-}
+ preencherKPI('ind2-kpi-equipreinc', 'ind2-kpi-equipreinc-delta', 'ind2-spark-equipreinc', atual.equipReinc, anterior.equipReinc, temAnterior, '', '#c0392b', true, serieApont);
 
+  document.getElementById('ind2-grafico-evolucao').innerHTML = gerarGraficoEvolucaoSVG(dadosMensaisConformidade(itens, 7), 75);
+  renderComparacaoPeriodos(atual, anterior, de, ate, anteriorDeStr, anteriorAteStr);
+}
 document.getElementById('ind2-limpar-filtros').onclick = function(){
   document.getElementById('ind2-filtro-equip').value = '';
   document.getElementById('ind2-filtro-local').value = '';
@@ -3678,6 +3713,94 @@ document.getElementById('ind2-limpar-filtros').onclick = function(){
   document.getElementById('ind2-filtro-de').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10);
   document.getElementById('ind2-filtro-ate').value = hoje.toISOString().slice(0, 10);
 })();
+ /* =====================================================================
+   INDICADORES V2 — Fase 2: gráfico de evolução + comparação entre períodos
+   ===================================================================== */
+function dadosMensaisConformidade(itens, meses){
+  const hoje = new Date();
+  const nomesMes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const pontos = [];
+  for (let i = meses - 1; i >= 0; i--){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const doMes = itens.filter(function(h){
+      const hd = new Date(h.criado);
+      return hd.getFullYear() === d.getFullYear() && hd.getMonth() === d.getMonth();
+    });
+    const conf = doMes.filter(function(h){ return h.status.classe === 'ok'; }).length;
+    const pct = doMes.length ? (conf/doMes.length*100) : 0;
+    pontos.push({ label: nomesMes[d.getMonth()] + '/' + String(d.getFullYear()).slice(2), pct: pct, temDados: doMes.length > 0 });
+  }
+  return pontos;
+}
+
+function gerarGraficoEvolucaoSVG(pontos, meta){
+  const w = 700, h = 220, padL = 40, padR = 12, padT = 26, padB = 26;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const n = pontos.length;
+  const stepX = n > 1 ? innerW / (n - 1) : 0;
+  function xFor(i){ return padL + i*stepX; }
+  function yFor(v){ return padT + innerH - (v/100)*innerH; }
+
+  const linhaPontos = pontos.map(function(p, i){ return xFor(i).toFixed(1) + ',' + yFor(p.pct).toFixed(1); }).join(' ');
+  const metaY = yFor(meta).toFixed(1);
+
+  const circulos = pontos.map(function(p, i){
+    if (!p.temDados) return '';
+    return '<circle cx="'+xFor(i).toFixed(1)+'" cy="'+yFor(p.pct).toFixed(1)+'" r="4" fill="#2e7d46"/>' +
+      '<text x="'+xFor(i).toFixed(1)+'" y="'+(yFor(p.pct)-10).toFixed(1)+'" font-size="11" fill="#1a2430" text-anchor="middle" font-weight="700">'+Math.round(p.pct)+'%</text>';
+  }).join('');
+
+  const labelsX = pontos.map(function(p, i){
+    return '<text x="'+xFor(i).toFixed(1)+'" y="'+(h-6)+'" font-size="10" fill="#5b6570" text-anchor="middle">'+p.label+'</text>';
+  }).join('');
+
+  const gradeY = [0,25,50,75,100].map(function(v){
+    return '<text x="'+(padL-8)+'" y="'+(yFor(v)+3).toFixed(1)+'" font-size="10" fill="#5b6570" text-anchor="end">'+v+'%</text>' +
+      '<line x1="'+padL+'" y1="'+yFor(v).toFixed(1)+'" x2="'+(w-padR)+'" y2="'+yFor(v).toFixed(1)+'" stroke="#eef0f1" stroke-width="1"/>';
+  }).join('');
+
+  return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:220px">' +
+    gradeY +
+    '<line x1="'+padL+'" y1="'+metaY+'" x2="'+(w-padR)+'" y2="'+metaY+'" stroke="#c79a3a" stroke-width="1.5" stroke-dasharray="5,4"/>' +
+    '<text x="'+(w-padR)+'" y="'+(parseFloat(metaY)-6)+'" font-size="10" fill="#c79a3a" text-anchor="end" font-weight="700">Meta ' + meta + '%</text>' +
+    '<polyline points="'+linhaPontos+'" fill="none" stroke="#2e7d46" stroke-width="2.5"/>' +
+    circulos +
+    labelsX +
+    '</svg>';
+}
+
+function renderComparacaoPeriodos(atual, anterior, deStr, ateStr, deAntStr, ateAntStr){
+  function fmtData(iso){ const d = new Date(iso+'T00:00:00'); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'); }
+  const colAtual = fmtData(deStr) + ' - ' + fmtData(ateStr);
+  const colAnterior = fmtData(deAntStr) + ' - ' + fmtData(ateAntStr);
+
+  const linhas = [
+    { label: 'Taxa de conformidade', a: anterior.taxaConf, b: atual.taxaConf, suf: '%', inverso: false, dec: 0 },
+    { label: 'Taxa de não conformidade', a: anterior.taxaNConf, b: atual.taxaNConf, suf: '%', inverso: true, dec: 0 },
+    { label: 'Média de apontamentos/checklist', a: anterior.mediaApont, b: atual.mediaApont, suf: '', inverso: true, dec: 2 },
+    { label: 'Itens críticos', a: anterior.itensCriticos, b: atual.itensCriticos, suf: '', inverso: true, dec: 0 },
+    { label: 'Taxa de reincidência', a: anterior.taxaReinc, b: atual.taxaReinc, suf: '%', inverso: true, dec: 0 }
+  ];
+
+  const linhasHtml = linhas.map(function(l){
+    const delta = l.b - l.a;
+    const melhorou = l.inverso ? delta < 0 : delta > 0;
+    const pior = l.inverso ? delta > 0 : delta < 0;
+    const classe = melhorou ? 'up' : (pior ? 'down' : 'flat');
+    const seta = melhorou ? '▲' : (pior ? '▼' : '—');
+    return '<tr>' +
+      '<td>'+l.label+'</td>' +
+      '<td>'+l.a.toFixed(l.dec)+l.suf+'</td>' +
+      '<td>'+l.b.toFixed(l.dec)+l.suf+'</td>' +
+      '<td class="ind2-comp-var '+classe+'">'+seta+' '+Math.abs(delta).toFixed(l.dec)+(l.suf==='%'?' p.p.':'')+'</td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('ind2-comparacao').innerHTML =
+    '<table class="ind2-comp-tabela"><thead><tr>' +
+      '<th>Indicador</th><th>'+colAnterior+'</th><th>'+colAtual+'</th><th>Variação</th>' +
+    '</tr></thead><tbody>' + linhasHtml + '</tbody></table>';
+}
 </script>
 </body>
 </html>
