@@ -2099,10 +2099,28 @@ function renderizarListaModal(tipo) {
         '<button class="mli-btn mli-mover-salvar" data-antigo="'+v+'">Mover</button>' +
         '<button class="mli-btn mli-cancelar" data-tipo="local">Cancelar</button>' +
       '</div>';
-    }
-        const btnMover = tipo === 'local'
+   }
+    const btnMover = tipo === 'local'
+      ? '<button class="mli-btn mli-mover" data-valor="'+v+'" title="Mover para outro grupo">🔀 Mover</button>'
+      : '';
+    const btnFoto = tipo === 'equip'
+      ? '<button class="mli-btn mli-foto" data-foto="'+v+'" title="Trocar foto">📷 Foto</button>'
+      : '';
+    return '<div class="modal-lista-item">' +
+      '<span class="mli-nome">'+v+'</span>' +
+      btnFoto +
+      btnMover +
+      '<button class="mli-btn mli-editar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Editar">✏️ Editar</button>' +
+      '<button class="mli-btn mli-apagar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Apagar">🗑️ Apagar</button>' +
+    '</div>';
+  }).join('');
 
-
+  el.querySelectorAll('.mli-foto').forEach(function(btn){
+    btn.onclick = function(){
+      equipFotoAlvo = btn.dataset.foto;
+      document.getElementById('input-foto-equip').click();
+    };
+  });
   el.querySelectorAll('.mli-editar').forEach(function(btn){
     btn.onclick = function(){
       if (tipo === 'equip') editandoEquip = btn.dataset.valor; else editandoLocal = btn.dataset.valor;
