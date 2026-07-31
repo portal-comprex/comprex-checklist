@@ -2590,8 +2590,14 @@ function renderNotificacoes(ocorrencias){
 
 function renderTopOperadores(itens){
   const cont = document.getElementById('dash-top-operadores');
+  function renderTopOperadores(itens){
+  const cont = document.getElementById('dash-top-operadores');
   const contagem = {};
-  itens.forEach(function(h){ if (h.operador) contagem[h.operador] = (contagem[h.operador] || 0) + 1; });
+  itens.forEach(function(h){
+    if (!h.operador) return;
+    const nome = normalizarNomeOperador(h.operador);
+    contagem[nome] = (contagem[nome] || 0) + 1;
+  });
   const lista = Object.keys(contagem).map(function(k){ return { label: k, valor: contagem[k] }; })
     .sort(function(a,b){ return b.valor - a.valor; });
   if (!lista.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem dados no período.</div>'; return; }
@@ -2858,6 +2864,12 @@ async function carregarFrota(){
   /* =====================================================================
    OPERADORES — ranking por período
    ===================================================================== */
+function normalizarNomeOperador(nome){
+  return String(nome || '').trim().split(/\s+/).map(function(p){
+    return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  }).join(' ');
+}
+
 let periodoOpAtivo = 'mes';
 
 document.querySelectorAll('#op-periodo-toggle .periodo-opt').forEach(function(opt){
@@ -2885,7 +2897,10 @@ async function carregarOperadores(periodo){
   const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite && h.operador; });
 
   const contagem = {};
-  filtrado.forEach(function(h){ contagem[h.operador] = (contagem[h.operador] || 0) + 1; });
+  filtrado.forEach(function(h){
+    const nome = normalizarNomeOperador(h.operador);
+    contagem[nome] = (contagem[nome] || 0) + 1;
+  });
 
   const lista = Object.keys(contagem).map(function(op){ return { label: op, valor: contagem[op] }; })
     .sort(function(a,b){ return b.valor - a.valor; });
