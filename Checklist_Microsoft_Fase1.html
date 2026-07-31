@@ -265,8 +265,15 @@
   .opt.sel.ok{background:var(--ok);border-color:var(--ok);color:#fff}
   .opt.sel.at{background:var(--at);border-color:var(--at);color:#fff}
   .item-data{background:#faf8f3;border-color:#eee0c2}
-  .item-data-input{border:1.5px solid #d8dee3;border-radius:8px;padding:9px 12px;
+ .item-data-input{border:1.5px solid #d8dee3;border-radius:8px;padding:9px 12px;
     font-size:13px;color:var(--tinta);flex-shrink:0;width:170px}
+
+  .item-com-obs{flex-direction:column;align-items:stretch}
+  .item-linha-principal{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .item-obs-input{width:100%;border:1px solid var(--linha);border-radius:8px;padding:8px 10px;
+    font-size:12px;color:var(--tinta);margin-top:10px;background:#fafbfb}
+  .item-obs-input::placeholder{color:#9aa5ad}
+  body.tema-escuro .item-obs-input{background:#0f1720;border-color:#2c3a4a;color:#e5e7eb}
   .opt.sel.ru{background:var(--ru);border-color:var(--ru);color:#fff}
   .opt.sel.na{background:var(--na);border-color:var(--na);color:#fff}
 
@@ -1502,6 +1509,7 @@ const ITENS = [
    ESTADO DA APLICAÇÃO
    ===================================================================== */
 const respostas = {};
+const observacoesItens = {};
 let ultimoHorimetro = {};
 
 /* =====================================================================
@@ -1666,8 +1674,25 @@ ordemItens.forEach(function(i){
       box.querySelectorAll('.opt').forEach(function(x){ x.className='opt'; });
       b.className = 'opt sel '+sev;
       respostas[i] = { label: label, valor: val, sev: sev };
-      div.className = 'item respondido' + (sev==='ru' ? ' impeditivo' : '');
+      div.className = 'item respondido item-com-obs' + (sev==='ru' ? ' impeditivo' : '');
       atualizarProgresso();
+    };
+    box.appendChild(b);
+  });
+
+  const linhaPrincipal = document.createElement('div');
+  linhaPrincipal.className = 'item-linha-principal';
+  linhaPrincipal.appendChild(lbl); linhaPrincipal.appendChild(box);
+
+  const obsInput = document.createElement('input');
+  obsInput.type = 'text'; obsInput.className = 'item-obs-input';
+  obsInput.placeholder = 'Observação sobre este item (opcional)';
+  obsInput.id = 'obs-item-' + i;
+  obsInput.addEventListener('input', function(){ observacoesItens[i] = obsInput.value; });
+
+  div.className = 'item item-com-obs';
+  div.appendChild(linhaPrincipal); div.appendChild(obsInput);
+  cont.appendChild(div);
     };
     box.appendChild(b);
   });
@@ -1885,6 +1910,8 @@ function mostrarSucesso(){
 function reiniciarFormulario(){
   // Limpa todas as respostas selecionadas
   for (const k in respostas) delete respostas[k];
+  for (const k in observacoesItens) delete observacoesItens[k];
+  document.querySelectorAll('.item-obs-input').forEach(function(inp){ inp.value = ''; });
 
   // Restaura visual de cada item do checklist
   document.querySelectorAll('#itens .item').forEach(function(div){
@@ -1945,12 +1972,18 @@ btn.onclick = async function(){
 
   const valExtintor = document.getElementById('validade-extintor').value;
 
+ let observacaoCompleta = document.getElementById('observacao').value;
+  ITENS.forEach(function(item, i){
+    const obsItem = (observacoesItens[i] || '').trim();
+    if (obsItem) observacaoCompleta += (observacaoCompleta ? '\n' : '') + prettify(item[0]) + ': ' + obsItem;
+  });
+
   const dados = {
     'Equipamento':        document.getElementById('equipamento').value,
     'Horimetro':          inpHor.value,
     'Operador':           document.getElementById('operador').value,
     'Local':              document.getElementById('local').value,
-    'Observacao':         document.getElementById('observacao').value,
+    'Observacao':         observacaoCompleta,
     'DATA DE VALIDADE DO EXTINTOR': valExtintor ? (valExtintor + 'T00:00:00') : ''
   };
   ITENS.forEach(function(item, i){
