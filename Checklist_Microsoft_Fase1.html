@@ -453,7 +453,7 @@
     .rel-grupo-resultado-titulo{break-before:auto;color:#000}
     .rel-item{break-inside:avoid;border:1px solid #ccc}
     .rel-resultado{border:none}
-    .hist-filtros, .hist-wrap, .hist-info, .hist-dica{display:none !important}
+    .hist-filtros, .hist-wrap, .hist-info, .hist-dica, .hist-detalhe-overlay{display:none !important}
     #hist-print-area{display:block !important}
   }
   .ind-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
@@ -1262,7 +1262,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-detalhe-modal">
     <div class="hist-detalhe-header">
       <h3 id="hist-detalhe-titulo">Detalhes do checklist</h3>
-      <button class="modal-fechar" id="hist-detalhe-fechar" style="color:#1a2430">✕</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="rel-btn-primario" id="hist-detalhe-imprimir" style="padding:6px 12px;font-size:12px">🖨️ Imprimir</button>
+        <button class="modal-fechar" id="hist-detalhe-fechar" style="color:#1a2430">✕</button>
+      </div>
     </div>
     <div class="hist-detalhe-corpo" id="hist-detalhe-corpo"></div>
   </div>
@@ -2424,6 +2427,7 @@ document.getElementById('btn-salvar-local').onclick = async function(){
    NAVEGAÇÃO ENTRE TELAS — Fase 2 (Histórico)
    ===================================================================== */
 let historicoCarregado = false;
+let detalheHistoricoAberto = null;
 let historicoItens = [];
 
 function mostrarView(nome){
@@ -2625,6 +2629,7 @@ document.getElementById('hist-imprimir').onclick = function(){
 function abrirDetalheHistorico(id){
   const h = historicoItens.find(function(x){ return String(x.id) === String(id); });
   if (!h) return;
+  detalheHistoricoAberto = h;
   document.getElementById('hist-detalhe-titulo').textContent = h.equipamento + ' — ' + formatarDataHist(h.criado);
   let linhas = '<div class="hist-detalhe-meta">Operador: <b>' + h.operador + '</b> · Horímetro: <b>' + h.horimetro + '</b> · Local: <b>' + (h.local||'—') + '</b></div>';
   ITENS.forEach(function(item){
@@ -2639,6 +2644,13 @@ function abrirDetalheHistorico(id){
   document.getElementById('hist-detalhe-corpo').innerHTML = linhas;
   document.getElementById('hist-detalhe-overlay').classList.add('aberto');
 }
+
+document.getElementById('hist-detalhe-imprimir').onclick = function(){
+  if (!detalheHistoricoAberto) return;
+  document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico([detalheHistoricoAberto]);
+  window.print();
+};
+
 
 document.getElementById('hist-detalhe-fechar').onclick = function(){
   document.getElementById('hist-detalhe-overlay').classList.remove('aberto');
