@@ -1483,13 +1483,7 @@ async function iniciarAplicacao(){
     console.warn('Não foi possível carregar o histórico de horímetros: ' + err.message);
   }
 
-  try {
-    await obterDriveFotosEquipamento();
-  } catch(err) {
-    console.warn('Não foi possível localizar a biblioteca de fotos: ' + err.message);
-  }
-}
-  try {
+try {
     await obterDriveFotosEquipamento();
   } catch(err) {
     console.warn('Não foi possível localizar a biblioteca de fotos: ' + err.message);
