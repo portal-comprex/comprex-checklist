@@ -3577,8 +3577,9 @@ function calcularKPIsPeriodo(itens, deStr, ateStr){
       }
     });
   });
-  const reincidentesChaves = Object.keys(porEquipItem).filter(function(k){ return porEquipItem[k] >= 2; });
+ const reincidentesChaves = Object.keys(porEquipItem).filter(function(k){ return porEquipItem[k] >= 2; });
   const equipReinc = new Set(reincidentesChaves.map(function(k){ return k.split('||')[0]; }));
+  const equipamentosNoPeriodo = new Set(doPeriodo.map(function(h){ return h.equipamento; }));
   const taxaConf = total ? (conformes/total*100) : 0;
   return {
     total: total,
@@ -3586,7 +3587,7 @@ function calcularKPIsPeriodo(itens, deStr, ateStr){
     taxaNConf: 100 - taxaConf,
     apontamentos: apontamentos,
     mediaApont: total ? (apontamentos/total) : 0,
-    taxaReinc: total ? (reincidentesChaves.length/total*100) : 0,
+    taxaReinc: equipamentosNoPeriodo.size ? (equipReinc.size / equipamentosNoPeriodo.size * 100) : 0,
     equipReinc: equipReinc.size
   };
 }
