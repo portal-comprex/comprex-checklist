@@ -2592,32 +2592,23 @@ document.getElementById('hist-limpar-filtros').onclick = function(){
 
 function montarConteudoImpressaoHistorico(filtrados){
   if (!filtrados.length) return '<div class="rel-vazio">Nenhum checklist encontrado para este filtro.</div>';
-  let html = '<div class="rel-print-titulo">Relatório de Checklists — ' + filtrados.length + ' registro(s)</div>';
-  html += '<div class="rel-resultado">' + filtrados.map(function(h){
-    const badgeClasse = h.status.classe === 'parar' ? 'parar' : 'ok';
-    const badge = '<span class="rel-badge ' + badgeClasse + '">' + h.status.texto + '</span>';
-    const chips = ITENS.filter(function(it){
-      const valor = h.campos[it[0]];
-      if (!valor) return false;
-      const sev = severidadeDaResposta(it[0], valor);
-      return sev === 'at' || sev === 'ru';
-    }).map(function(it){
-      const valor = h.campos[it[0]];
-      const sev = severidadeDaResposta(it[0], valor);
-      const classeChip = sev === 'ru' ? 'ru' : 'at';
-      return '<span class="rel-chip ' + classeChip + '">' + prettify(it[0]) + ': ' + valor + '</span>';
-    }).join('');
-    const obs = h.observacao ? '<div class="rel-obs">"' + h.observacao + '"</div>' : '';
-    return '<div class="rel-item">' +
-      '<div class="rel-item-cab">' +
-        '<span class="rel-item-eq">' + h.equipamento + ' · ' + formatarDataHist(h.criado) + '</span>' + badge +
-      '</div>' +
-      '<div class="rel-item-meta">Horímetro ' + (h.horimetro || '—') + ' · Operador: ' + (h.operador || '—') + ' · ' + (h.local || '—') + '</div>' +
-      (chips ? '<div class="rel-chips" style="margin-top:8px">' + chips + '</div>' : '') +
-      obs +
-    '</div>';
-  }).join('') + '</div>';
-  return html;
+  const linhas = filtrados.map(function(h){
+    const linhaClasse = h.status.classe === 'parar' ? 'linha-parar' : (h.status.classe === 'at' ? 'linha-atencao' : '');
+    return '<tr class="' + linhaClasse + '">' +
+      '<td>' + formatarDataHist(h.criado) + '</td>' +
+      '<td>' + (h.equipamento || '—') + '</td>' +
+      '<td>' + (h.horimetro || '—') + '</td>' +
+      '<td>' + (h.operador || '—') + '</td>' +
+      '<td>' + (h.local || '—') + '</td>' +
+      '<td><span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span></td>' +
+      '<td>' + h.itensProblema + '</td>' +
+    '</tr>';
+  }).join('');
+  return '<div class="rel-print-titulo">Histórico de Checklists — ' + filtrados.length + ' registro(s)</div>' +
+    '<table class="hist-tabela">' +
+      '<thead><tr><th>Data/Hora</th><th>Equipamento</th><th>Horímetro</th><th>Operador</th><th>Local</th><th>Situação</th><th>Itens</th></tr></thead>' +
+      '<tbody>' + linhas + '</tbody>' +
+    '</table>';
 }
 
 document.getElementById('hist-imprimir').onclick = function(){
