@@ -744,6 +744,20 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .ind2-comp-var.up{color:var(--ok)}
   .ind2-comp-var.down{color:var(--ru)}
   .ind2-comp-var.flat{color:var(--cinza)}
+ .ind2-comp-var.flat{color:var(--cinza)}
+
+  .ind2-rank-linha{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--linha);font-size:12px}
+  .ind2-rank-linha:last-child{border-bottom:none}
+  .ind2-rank-nome{flex:0 0 130px;font-weight:600;color:var(--tinta);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ind2-rank-sub{flex:1;color:var(--cinza);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ind2-rank-bar-wrap{flex:1;height:8px;background:#eef0f1;border-radius:4px;overflow:hidden;min-width:60px}
+  .ind2-rank-bar{height:100%;border-radius:4px}
+  .ind2-rank-val{flex:0 0 30px;text-align:right;font-weight:700;color:var(--tinta)}
+  .ind2-nivel{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+  .ind2-nivel.critico{background:#fbe9e7;color:var(--ru)}
+  .ind2-nivel.alto{background:#fde3d3;color:#a0522d}
+  .ind2-nivel.medio{background:#fdf3e3;color:#a06800}
+  .ind2-nivel.baixo{background:#e9f4ee;color:var(--ok)}
 </style>
 </head>
 <body>
@@ -1110,6 +1124,27 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div id="frota-conteudo"><div class="ind-loading">Carregando frota…</div></div>
 </div>
 <div class="view" id="view-operadores">
+ <div class="dash-row" id="ind2-row-reincidencia">
+    <div class="dash-card">
+      <h3>Principais reincidências (30 dias)</h3>
+      <div id="ind2-reincidencias"><div class="ind-loading">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Índice de criticidade por equipamento</h3>
+      <div id="ind2-criticidade-equip"><div class="ind-loading">Carregando…</div></div>
+    </div>
+  </div>
+
+  <div class="dash-row" id="ind2-row-criticidade-local">
+    <div class="dash-card">
+      <h3>Índice de criticidade por Local/Obra</h3>
+      <div id="ind2-criticidade-local"><div class="ind-loading">Carregando…</div></div>
+    </div>
+    <div class="dash-card">
+      <h3>Indicadores de segurança</h3>
+      <div id="ind2-seguranca-v2"><div class="ind-loading">Carregando…</div></div>
+    </div>
+  </div>
   <div class="periodo-toggle" id="op-periodo-toggle">
     <div class="periodo-opt" data-periodo="semana">Semana</div>
     <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
@@ -3693,6 +3728,14 @@ async function carregarIndicadoresV2(){
 
   document.getElementById('ind2-grafico-evolucao').innerHTML = gerarGraficoEvolucaoSVG(dadosMensaisConformidade(itens, 7), 75);
   renderComparacaoPeriodos(atual, anterior, de, ate, anteriorDeStr, anteriorAteStr);
+
+  const itensAnteriorPeriodo = itens.filter(function(h){
+    return h.criado >= (anteriorDeStr + 'T00:00:00') && h.criado <= (anteriorAteStr + 'T23:59:59');
+  });
+  renderRankReincidencias(calcularReincidencias30d());
+  renderRankCriticidade('ind2-criticidade-equip', calcularCriticidadePor('equipamento', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#3a5a7a');
+  renderRankCriticidade('ind2-criticidade-local', calcularCriticidadePor('local', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#5a7a3a');
+  renderSegurancaV2(itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); }), itensAnteriorPeriodo);
 }
 document.getElementById('ind2-limpar-filtros').onclick = function(){
   document.getElementById('ind2-filtro-equip').value = '';
@@ -3799,6 +3842,117 @@ function renderComparacaoPeriodos(atual, anterior, deStr, ateStr, deAntStr, ateA
     '<table class="ind2-comp-tabela"><thead><tr>' +
       '<th>Indicador</th><th>'+colAnterior+'</th><th>'+colAtual+'</th><th>Variação</th>' +
     '</tr></thead><tbody>' + linhasHtml + '</tbody></table>';
+}
+ /* =====================================================================
+   INDICADORES V2 — Fase 3: reincidências + criticidade + segurança
+   ===================================================================== */
+function nivelCriticidade(pontos){
+  if (pontos >= 20) return { texto: 'Crítico', classe: 'critico' };
+  if (pontos >= 12) return { texto: 'Alto', classe: 'alto' };
+  if (pontos >= 6) return { texto: 'Médio', classe: 'medio' };
+  return { texto: 'Baixo', classe: 'baixo' };
+}
+
+function calcularReincidencias30d(){
+  const limite30 = new Date(Date.now() - 30*86400000);
+  const doPeriodo = historicoItens.filter(function(h){ return new Date(h.criado) >= limite30; });
+  const contagem = {};
+  doPeriodo.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev !== 'at' && sev !== 'ru') return;
+      const chave = h.equipamento + '||' + it[0];
+      contagem[chave] = (contagem[chave] || 0) + 1;
+    });
+  });
+  return Object.keys(contagem).filter(function(k){ return contagem[k] >= 2; })
+    .map(function(k){
+      const partes = k.split('||');
+      return { equipamento: partes[0], apontamento: prettify(partes[1]), ocorrencias: contagem[k] };
+    })
+    .sort(function(a,b){ return b.ocorrencias - a.ocorrencias; });
+}
+
+function calcularCriticidadePor(campo, itensFiltrados){
+  const pontos = {};
+  itensFiltrados.forEach(function(h){
+    const chave = h[campo];
+    if (!chave) return;
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      const sev = severidadeDaResposta(it[0], valor);
+      if (sev === 'at') pontos[chave] = (pontos[chave] || 0) + 1;
+      else if (sev === 'ru') pontos[chave] = (pontos[chave] || 0) + 2;
+    });
+    if (h.status.classe === 'parar') pontos[chave] = (pontos[chave] || 0) + 3;
+  });
+  return Object.keys(pontos).map(function(k){ return { label: k, pontos: pontos[k] }; })
+    .sort(function(a,b){ return b.pontos - a.pontos; });
+}
+
+function renderRankReincidencias(lista){
+  const cont = document.getElementById('ind2-reincidencias');
+  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Nenhuma reincidência nos últimos 30 dias. ✔</div>'; return; }
+  const top = lista.slice(0, 6);
+  const max = top[0].ocorrencias || 1;
+  cont.innerHTML = top.map(function(x){
+    const pct = Math.max(8, Math.round(x.ocorrencias/max*100));
+    return '<div class="ind2-rank-linha">' +
+      '<span class="ind2-rank-nome">'+x.equipamento+'</span>' +
+      '<span class="ind2-rank-sub">'+x.apontamento+'</span>' +
+      '<div class="ind2-rank-bar-wrap"><div class="ind2-rank-bar" style="width:'+pct+'%;background:var(--ru)"></div></div>' +
+      '<span class="ind2-rank-val">'+x.ocorrencias+'</span>' +
+    '</div>';
+  }).join('');
+}
+
+function renderRankCriticidade(idDiv, lista, cor){
+  const cont = document.getElementById(idDiv);
+  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Sem apontamentos no período.</div>'; return; }
+  const top = lista.slice(0, 6);
+  const max = top[0].pontos || 1;
+  cont.innerHTML = top.map(function(x){
+    const pct = Math.max(8, Math.round(x.pontos/max*100));
+    const nivel = nivelCriticidade(x.pontos);
+    return '<div class="ind2-rank-linha">' +
+      '<span class="ind2-rank-nome">'+x.label+'</span>' +
+      '<div class="ind2-rank-bar-wrap"><div class="ind2-rank-bar" style="width:'+pct+'%;background:'+cor+'"></div></div>' +
+      '<span class="ind2-rank-val">'+x.pontos+'</span>' +
+      '<span class="ind2-nivel '+nivel.classe+'">'+nivel.texto+'</span>' +
+    '</div>';
+  }).join('');
+}
+
+function renderSegurancaV2(itens, itensAnterior){
+  const cont = document.getElementById('ind2-seguranca-v2');
+  function pctNaoConforme(lista, label){
+    if (!lista.length) return 0;
+    const n = lista.filter(function(h){
+      const valor = h.campos[label];
+      return valor && severidadeDaResposta(label, valor) !== 'ok';
+    }).length;
+    return n / lista.length * 100;
+  }
+  const linhas = ITENS_SEGURANCA_LABELS.map(function(label){
+    const atual = pctNaoConforme(itens, label);
+    const anterior = pctNaoConforme(itensAnterior, label);
+    const delta = atual - anterior;
+    const melhorou = delta < 0, pior = delta > 0;
+    const classe = melhorou ? 'up' : (pior ? 'down' : 'flat');
+    const seta = melhorou ? '▼' : (pior ? '▲' : '—');
+    return { label: prettify(label), atual: atual, seta: seta, classe: classe, delta: Math.abs(delta) };
+  });
+  if (!linhas.length) { cont.innerHTML = '<div class="ind-vazio">Sem itens de segurança configurados.</div>'; return; }
+  cont.innerHTML = linhas.map(function(l){
+    return '<div class="ind2-rank-linha">' +
+      '<span class="ind2-rank-nome" style="flex:1 1 auto">'+l.label+'</span>' +
+      '<span class="ind2-rank-val" style="flex:0 0 44px">'+Math.round(l.atual)+'%</span>' +
+      '<span class="ind2-comp-var '+l.classe+'" style="flex:0 0 70px;text-align:right">'+l.seta+' '+l.delta.toFixed(0)+' p.p.</span>' +
+    '</div>';
+  }).join('');
 }
 </script>
 </body>
