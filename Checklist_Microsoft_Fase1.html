@@ -1732,6 +1732,11 @@ function inicializarListas(equipamentosServidor, locaisServidor) {
   preencherSelect('local', locais);
   renderizarListaModal('equip');
   renderizarListaModal('local');
+
+  // Garante que os filtros de Histórico e Ocorrências fiquem sincronizados,
+  // mesmo que essas telas já tenham carregado antes da lista de equip./local chegar.
+  if (document.getElementById('hist-filtro-equip')) preencherFiltroEquipamentoHistorico();
+  if (document.getElementById('oc-filtro-equip')) preencherFiltrosOcorrencias();
 }
 
 /** Reordena as duas listas em ordem alfabética — chamar após qualquer edição. */
