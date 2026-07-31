@@ -386,6 +386,8 @@
   .mli-apagar{color:var(--ru)}
   .mli-apagar:hover{background:#fbe9e7}
   .mli-apagar:disabled{color:#b7bcc0;cursor:not-allowed}
+  .mli-foto{color:var(--navy)}
+  .mli-foto:hover{background:var(--cream)}
   .modal-lista-item.mli-editando{gap:6px}
   .mli-input{flex:1;border:1.5px solid var(--navy);border-radius:6px;padding:5px 8px;font-size:12px;min-width:0}
 
@@ -1112,6 +1114,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </div>
 </div>
 
+<input type="file" id="input-foto-equip" accept="image/*" style="display:none">
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -1446,8 +1449,13 @@ async function iniciarAplicacao(){
   } catch(err) {
     console.warn('Não foi possível carregar o histórico de horímetros: ' + err.message);
   }
-}
 
+  try {
+    await obterDriveFotosEquipamento();
+  } catch(err) {
+    console.warn('Não foi possível localizar a biblioteca de fotos: ' + err.message);
+  }
+}
 /** Calcula o maior horímetro já registrado de cada equipamento, a partir do histórico. */
 function atualizarUltimoHorimetro(){
   ultimoHorimetro = {};
@@ -3245,6 +3253,89 @@ function descartarRascunho(){
 document.getElementById('btn-salvar-rascunho').onclick = salvarRascunho;
 document.getElementById('btn-restaurar-rascunho').onclick = restaurarRascunho;
 document.getElementById('btn-descartar-rascunho').onclick = descartarRascunho;
+ /* =====================================================================
+   FOTO DO EQUIPAMENTO — biblioteca "FotosEquipamentos" no SharePoint
+   ===================================================================== */
+let driveFotosEquipId = null;
+const cacheFotoEquip = {};
+
+async function obterDriveFotosEquipamento(){
+  if (driveFotosEquipId) return driveFotosEquipId;
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/drives');
+  const lib = (d.value || []).find(function(x){ return x.name === 'FotosEquipamentos'; });
+  if (!lib) throw new Error('Biblioteca "FotosEquipamentos" não encontrada.');
+  driveFotosEquipId = lib.id;
+  return driveFotosEquipId;
+}
+
+/** Redimensiona a imagem no navegador antes de enviar (evita fotos gigantes de celular). */
+function redimensionarImagem(file, maxLado){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        let w = img.width, h = img.height;
+        if (w > h && w > maxLado) { h = Math.round(h * maxLado / w); w = maxLado; }
+        else if (h >= w && h > maxLado) { w = Math.round(w * maxLado / h); h = maxLado; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob){ resolve(blob); }, 'image/jpeg', 0.82);
+      };
+      img.onerror = function(){ reject(new Error('Não foi possível ler a imagem.')); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){ reject(new Error('Não foi possível ler o arquivo.')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFotoEquipamento(equipCode, file){
+  const driveId = await obterDriveFotosEquipamento();
+  const blob = await redimensionarImagem(file, 800);
+  const token = await graphToken();
+  const nomeArquivo = encodeURIComponent(equipCode.toUpperCase()) + '.jpg';
+  const r = await fetch(GRAPH + '/drives/' + driveId + '/root:/' + nomeArquivo + ':/content', {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg' },
+    body: blob
+  });
+  if (!r.ok) { const t = await r.text(); throw new Error('Erro ' + r.status + ': ' + t); }
+  delete cacheFotoEquip[equipCode.toUpperCase()];
+  return r.json();
+}
+
+async function buscarUrlFotoEquipamento(equipCode){
+  const chave = equipCode.toUpperCase();
+  if (cacheFotoEquip[chave] !== undefined) return cacheFotoEquip[chave];
+  try {
+    const driveId = await obterDriveFotosEquipamento();
+    const nomeArquivo = encodeURIComponent(chave) + '.jpg';
+    const d = await graphGet(GRAPH + '/drives/' + driveId + '/root:/' + nomeArquivo);
+    const url = d['@microsoft.graph.downloadUrl'] || null;
+    cacheFotoEquip[chave] = url;
+    return url;
+  } catch(err) {
+    cacheFotoEquip[chave] = null;
+    return null;
+  }
+}
+
+/* ---- Botão "📷 Foto" na tela de Cadastro ---- */
+let equipFotoAlvo = null;
+document.getElementById('input-foto-equip').addEventListener('change', async function(e){
+  const file = e.target.files[0];
+  this.value = '';
+  if (!file || !equipFotoAlvo) return;
+  try {
+    await uploadFotoEquipamento(equipFotoAlvo, file);
+    mostrarFeedback('equip', true, '✔ Foto de ' + equipFotoAlvo + ' salva com sucesso!');
+  } catch(err) {
+    mostrarFeedback('equip', false, 'Erro ao enviar foto: ' + err.message);
+  }
+  equipFotoAlvo = null;
+});
 </script>
 </body>
 </html>
