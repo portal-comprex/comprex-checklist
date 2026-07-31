@@ -770,9 +770,9 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="forma-principal">
 
     <!-- ===================== CABEÇALHO ===================== -->
-    <div class="cab">
+ <div class="cab">
       <div class="grid">
-       <div class="campo">
+        <div class="campo">
           <label>Equipamento <span class="obrig">*</span></label>
           <div class="busca-wrap">
             <span class="busca-icone">🔍</span>
@@ -783,14 +783,9 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           </div>
         </div>
         <div class="campo">
-          <label>Local / Obra</label>
-          <div class="busca-wrap">
-            <span class="busca-icone">🔍</span>
-            <input type="text" id="local" placeholder="Buscar local…" autocomplete="off">
-            <button type="button" class="busca-limpar" style="display:none">✕</button>
-            <span class="busca-seta">⌄</span>
-            <div class="busca-lista"></div>
-          </div>
+          <label>Horímetro <span class="obrig">*</span></label>
+          <input id="horimetro" type="number" inputmode="decimal" step="0.1" placeholder="0000">
+          <div class="erro-hor" id="erro-hor"></div>
         </div>
         <div class="campo">
           <label>Data</label>
@@ -802,7 +797,13 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
         <div class="campo">
           <label>Local / Obra</label>
-          <select id="local"><option value="">— selecionar —</option></select>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="local" placeholder="Buscar local…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
         </div>
       </div>
   </div>
