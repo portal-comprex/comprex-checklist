@@ -438,6 +438,7 @@
 
   /* ---- IMPRESSÃO / SALVAR PDF (só a tela de Relatórios) ---- */
   .rel-print-titulo{display:none}
+  @page{size:portrait}
   @media print{
     body{background:#fff}
     .sidebar, .topbar, .rodape-app, .nav-menu, .btn-cadastrar,
@@ -455,6 +456,7 @@
     .rel-resultado{border:none}
     .hist-filtros, .hist-wrap, .hist-info, .hist-dica, .hist-detalhe-overlay{display:none !important}
     #hist-print-area{display:block !important}
+    .hist-detalhe-print .hist-detalhe-linha{break-inside:avoid}
   }
   .ind-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
   .ind-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta);
@@ -2636,9 +2638,15 @@ function abrirDetalheHistorico(id){
   document.getElementById('hist-detalhe-overlay').classList.add('aberto');
 }
 
+function montarConteudoImpressaoDetalhe(h){
+  const titulo = h.equipamento + ' — ' + formatarDataHist(h.criado);
+  return '<div class="rel-print-titulo">' + titulo + '</div>' +
+    '<div class="hist-detalhe-print">' + document.getElementById('hist-detalhe-corpo').innerHTML + '</div>';
+}
+
 document.getElementById('hist-detalhe-imprimir').onclick = function(){
   if (!detalheHistoricoAberto) return;
-  document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico([detalheHistoricoAberto]);
+  document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoDetalhe(detalheHistoricoAberto);
   window.print();
 };
 
