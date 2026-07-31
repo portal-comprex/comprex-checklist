@@ -1256,41 +1256,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
 
- <div class="periodo-toggle" id="ind-periodo-toggle">
-    <div class="periodo-opt" data-periodo="semana">Semana</div>
-    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
-    <div class="periodo-opt" data-periodo="ano">Ano</div>
-  </div>
-
-  <div class="ind-kpis">
-    <div class="kpi-card">
-      <div class="kpi-top">
-        <div class="kpi-icone ok">✔</div>
-        <div><div class="kpi-num" id="ind-kpi-conformidade">—</div><div class="kpi-lbl">Taxa de conformidade</div></div>
-      </div>
-      <div class="kpi-var flat" id="ind-kpi-conformidade-sub"></div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-top">
-        <div class="kpi-icone azul">📊</div>
-        <div><div class="kpi-num" id="ind-kpi-apontamentos">—</div><div class="kpi-lbl">Apontamentos no período</div></div>
-      </div>
-      <div class="kpi-var" id="ind-kpi-apontamentos-var"></div>
-    </div>
-  </div>
-
-  <div class="ind-total" id="ind-total"></div>
-  <div id="ind-conteudo"><div class="ind-loading">Carregando indicadores…</div></div>
-
-  <div class="ind-card ind-card-grande">
-    <h3>🔒 Itens de segurança — apontamentos no período</h3>
-    <div id="ind-seguranca"><div class="ind-loading">Carregando…</div></div>
-  </div>
-
-  <div class="ind-card ind-card-grande">
-    <h3>Apontamentos por equipamento — todos do período</h3>
-    <div id="ind-equip-grande"><div class="ind-loading">Carregando…</div></div>
-  </div>
 </div>
 
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
@@ -2470,7 +2435,7 @@ const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashb
   if (nome === 'ocorrencias') carregarOcorrencias();
   if (nome === 'frota') carregarFrota();
   if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
-  if (nome === 'indicadores') { carregarIndicadores(periodoIndAtivo); carregarIndicadoresV2(); }
+  if (nome === 'indicadores') { carregarIndicadoresV2(); }
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -3141,42 +3106,6 @@ async function carregarOperadores(periodo){
     '</div>';
   }).join('') + '</div>';
 }
-  /* =====================================================================
-   INDICADORES — rankings por período + gráfico completo de equipamentos
-   ===================================================================== */
-let periodoIndAtivo = 'mes';
-
-document.querySelectorAll('#ind-periodo-toggle .periodo-opt').forEach(function(opt){
-  opt.onclick = function(){
-    document.querySelectorAll('#ind-periodo-toggle .periodo-opt').forEach(function(o){ o.classList.remove('ativo'); });
-    opt.classList.add('ativo');
-    periodoIndAtivo = opt.dataset.periodo;
-    carregarIndicadores(periodoIndAtivo);
-  };
-});
-
-function corBarraIndicador(tipo){
-  return tipo === 'problemas' ? '#c79a3a' : tipo === 'equipamentos' ? '#3a5a7a' : '#5a7a3a';
-}
-
-function renderRankingIndicador(lista, tipo){
-  if (!lista || !lista.length) return '<div class="ind-vazio">Sem dados no período.</div>';
-  const max = lista[0].valor || 1;
-  return lista.map(function(x){
-    const pct = Math.max(6, Math.round(x.valor / max * 100));
-    return '<div class="ind-linha">' +
-      '<div class="ind-lbl" title="'+x.label+'">'+x.label+'</div>' +
-      '<div class="ind-bar-wrap"><div class="ind-bar" style="width:'+pct+'%;background:'+corBarraIndicador(tipo)+'"></div></div>' +
-      '<div class="ind-val">'+x.valor+'</div>' +
-    '</div>';
-  }).join('');
-}
-
-function topN(mapa, n){
-  return Object.keys(mapa).map(function(k){ return { label: k, valor: mapa[k] }; })
-    .sort(function(a,b){ return b.valor - a.valor; }).slice(0, n || 8);
-}
-
 const ITENS_SEGURANCA_LABELS = [
   'ALARME SONORO PARA CINTO DE SEGURANÇA (FUNCIONA)',
   'ALARME SONORO E/OU VISUAL PARA FREIO DE ESTACIONAMENTO (FUNCIONA)',
@@ -3186,116 +3115,6 @@ const ITENS_SEGURANCA_LABELS = [
   'SISTEMA DE DETECÇÃO DE PROXIMIDADE (FUNCIONA)'
 ];
 
-/** Calcula todas as métricas de um conjunto de checklists (usado no período atual e no anterior). */
-function calcularMetricasPeriodo(itensPeriodo){
-  const porItem = {}, porEquip = {}, porLocal = {}, porItemSeguranca = {};
-  let apontamentos = 0, conformes = 0;
-  itensPeriodo.forEach(function(h){
-    if (h.status.classe === 'ok') conformes++;
-    let nProblemas = 0;
-    ITENS.forEach(function(it){
-      const valor = h.campos[it[0]];
-      if (!valor) return;
-      const sev = severidadeDaResposta(it[0], valor);
-      if (sev === 'at' || sev === 'ru') {
-        porItem[it[0]] = (porItem[it[0]] || 0) + 1;
-        nProblemas++;
-        if (ITENS_SEGURANCA_LABELS.indexOf(it[0]) !== -1) {
-          porItemSeguranca[it[0]] = (porItemSeguranca[it[0]] || 0) + 1;
-        }
-      }
-    });
-    apontamentos += nProblemas;
-    if (nProblemas > 0 && h.equipamento) porEquip[h.equipamento] = (porEquip[h.equipamento] || 0) + nProblemas;
-    if (nProblemas > 0 && h.local) porLocal[h.local] = (porLocal[h.local] || 0) + nProblemas;
-  });
-  return { total: itensPeriodo.length, conformes: conformes, apontamentos: apontamentos, porItem: porItem, porEquip: porEquip, porLocal: porLocal, porItemSeguranca: porItemSeguranca };
-}
-async function carregarIndicadores(periodo){
-  const totalEl = document.getElementById('ind-total');
-  const cont = document.getElementById('ind-conteudo');
-  cont.innerHTML = '<div class="ind-loading">Carregando indicadores…</div>';
-  document.getElementById('ind-equip-grande').innerHTML = '<div class="ind-loading">Carregando…</div>';
-  document.getElementById('ind-seguranca').innerHTML = '<div class="ind-loading">Carregando…</div>';
-
-  try {
-    await garantirDadosHistorico();
-  } catch(err) {
-    cont.innerHTML = '<div class="ind-vazio">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
-    return;
-  }
-
-  const dias = periodo === 'semana' ? 7 : periodo === 'ano' ? 365 : 30;
-  const limite = new Date(Date.now() - dias*86400000);
-  const limiteAnterior = new Date(limite.getTime() - dias*86400000);
-
-  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite; });
-  const anterior = historicoItens.filter(function(h){
-    const d = new Date(h.criado);
-    return d >= limiteAnterior && d < limite;
-  });
-
-  const m = calcularMetricasPeriodo(filtrado);
-  const mAnterior = calcularMetricasPeriodo(anterior);
-
-  const nomePeriodo = periodo === 'semana' ? 'últimos 7 dias' : periodo === 'ano' ? 'últimos 365 dias' : 'últimos 30 dias';
-  totalEl.textContent = m.total + ' checklist(s) registrados — ' + nomePeriodo;
-
-  // KPI: Taxa de conformidade
-  const taxaConf = m.total ? Math.round(m.conformes / m.total * 100) : 0;
-  document.getElementById('ind-kpi-conformidade').textContent = taxaConf + '%';
-  document.getElementById('ind-kpi-conformidade-sub').textContent = m.conformes + ' de ' + m.total + ' conforme(s)';
-
-  // KPI: Apontamentos + comparação com o período anterior
-  document.getElementById('ind-kpi-apontamentos').textContent = m.apontamentos;
-  const varEl = document.getElementById('ind-kpi-apontamentos-var');
-  if (mAnterior.apontamentos === 0 && m.apontamentos === 0) {
-    varEl.className = 'kpi-var flat';
-    varEl.textContent = 'Sem dados no período anterior';
-  } else if (mAnterior.apontamentos === 0) {
-    varEl.className = 'kpi-var up';
-    varEl.textContent = '▲ novo (sem base de comparação)';
-  } else {
-    const variacao = Math.round((m.apontamentos - mAnterior.apontamentos) / mAnterior.apontamentos * 100);
-    const seta = variacao > 0 ? '▲' : variacao < 0 ? '▼' : '—';
-    varEl.className = 'kpi-var ' + (variacao > 0 ? 'down' : variacao < 0 ? 'up' : 'flat');
-    varEl.textContent = seta + ' ' + Math.abs(variacao) + '% vs. período anterior';
-  }
-
-  const problemas = topN(m.porItem, 8).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
-  const equipamentos = topN(m.porEquip, 8);
-  const locais = topN(m.porLocal, 8);
-
-  cont.innerHTML =
-    '<div class="ind-grid">' +
-      '<div class="ind-card"><h3>Apontamentos mais recorrentes</h3>' + renderRankingIndicador(problemas, 'problemas') + '</div>' +
-      '<div class="ind-card"><h3>Equipamentos com mais apontamentos</h3>' + renderRankingIndicador(equipamentos, 'equipamentos') + '</div>' +
-      '<div class="ind-card"><h3>Locais com mais apontamentos</h3>' + renderRankingIndicador(locais, 'locais') + '</div>' +
-    '</div>';
-
-  const seguranca = topN(m.porItemSeguranca, 6).map(function(x){ return { label: prettify(x.label), valor: x.valor }; });
-  document.getElementById('ind-seguranca').innerHTML = seguranca.length
-    ? renderRankingIndicador(seguranca, 'problemas')
-    : '<div class="ind-vazio">Nenhum item de segurança reprovado no período. ✔</div>';
-
-  const todosEquip = Object.keys(m.porEquip).map(function(k){ return { label: k, valor: m.porEquip[k] }; })
-    .sort(function(a,b){ return b.valor - a.valor; });
-
-  const grandeEl = document.getElementById('ind-equip-grande');
-  if (!todosEquip.length) {
-    grandeEl.innerHTML = '<div class="ind-vazio">Sem apontamentos no período.</div>';
-  } else {
-    const maxG = todosEquip[0].valor || 1;
-    grandeEl.innerHTML = todosEquip.map(function(x){
-      const pct = Math.max(3, Math.round(x.valor / maxG * 100));
-      return '<div class="ind-linha-grande">' +
-        '<div class="ind-lbl-grande" title="'+x.label+'">'+x.label+'</div>' +
-        '<div class="ind-bar-wrap-grande"><div class="ind-bar-grande" style="width:'+pct+'%"></div></div>' +
-        '<div class="ind-val-grande">'+x.valor+'</div>' +
-      '</div>';
-    }).join('');
-  }
-}
  /* =====================================================================
    CARD DO EQUIPAMENTO — Bloco B1 (sem foto real ainda)
    ===================================================================== */
