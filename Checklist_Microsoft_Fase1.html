@@ -268,10 +268,10 @@
  .item-data-input{border:1.5px solid #d8dee3;border-radius:8px;padding:9px 12px;
     font-size:13px;color:var(--tinta);flex-shrink:0;width:170px}
 
-  .item-com-obs{flex-direction:column;align-items:stretch}
-  .item-linha-principal{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-  .item-obs-input{width:100%;border:1px solid var(--linha);border-radius:8px;padding:8px 10px;
-    font-size:12px;color:var(--tinta);margin-top:10px;background:#fafbfb}
+.item-com-obs{flex-wrap:wrap;align-items:center}
+  .item-com-obs .lbl{flex:1 1 220px}
+  .item-obs-input{flex:1 1 200px;min-width:160px;border:1px solid var(--linha);border-radius:8px;
+    padding:8px 10px;font-size:12px;color:var(--tinta);background:#fafbfb}
   .item-obs-input::placeholder{color:#9aa5ad}
   body.tema-escuro .item-obs-input{background:#0f1720;border-color:#2c3a4a;color:#e5e7eb}
   .opt.sel.ru{background:var(--ru);border-color:var(--ru);color:#fff}
@@ -1680,10 +1680,6 @@ ordemItens.forEach(function(i){
     box.appendChild(b);
   });
 
-  const linhaPrincipal = document.createElement('div');
-  linhaPrincipal.className = 'item-linha-principal';
-  linhaPrincipal.appendChild(lbl); linhaPrincipal.appendChild(box);
-
   const obsInput = document.createElement('input');
   obsInput.type = 'text'; obsInput.className = 'item-obs-input';
   obsInput.placeholder = 'Observação sobre este item (opcional)';
@@ -1691,7 +1687,7 @@ ordemItens.forEach(function(i){
   obsInput.addEventListener('input', function(){ observacoesItens[i] = obsInput.value; });
 
   div.className = 'item item-com-obs';
-  div.appendChild(linhaPrincipal); div.appendChild(obsInput);
+  div.appendChild(lbl); div.appendChild(box); div.appendChild(obsInput);
   cont.appendChild(div);
   // Logo após "Extintor de incêndio", insere o campo de validade —
   // fica no fluxo natural do checklist, junto com a pergunta relacionada.
