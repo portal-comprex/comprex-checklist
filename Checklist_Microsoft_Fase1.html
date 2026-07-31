@@ -1124,7 +1124,16 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div id="frota-conteudo"><div class="ind-loading">Carregando frota…</div></div>
 </div>
 <div class="view" id="view-operadores">
- <div class="dash-row" id="ind2-row-reincidencia">
+  <div class="periodo-toggle" id="op-periodo-toggle">
+    <div class="periodo-opt" data-periodo="semana">Semana</div>
+    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
+    <div class="periodo-opt" data-periodo="ano">Ano</div>
+  </div>
+  <div class="ind-total" id="op-total"></div>
+  <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
+</div>
+<div class="view" id="view-indicadores">
+  <div class="dash-row" id="ind2-row-reincidencia">
     <div class="dash-card">
       <h3>Principais reincidências (30 dias)</h3>
       <div id="ind2-reincidencias"><div class="ind-loading">Carregando…</div></div>
@@ -1145,15 +1154,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div id="ind2-seguranca-v2"><div class="ind-loading">Carregando…</div></div>
     </div>
   </div>
-  <div class="periodo-toggle" id="op-periodo-toggle">
-    <div class="periodo-opt" data-periodo="semana">Semana</div>
-    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
-    <div class="periodo-opt" data-periodo="ano">Ano</div>
-  </div>
-  <div class="ind-total" id="op-total"></div>
-  <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
-</div>
-<div class="view" id="view-indicadores">
+
  <div class="ind2-filtros">
     <div class="hist-filtro-campo">
       <label>De</label>
