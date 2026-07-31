@@ -179,7 +179,25 @@
   .campo select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%232e7d46' stroke-width='2' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
   .obrig{color:#c79a3a}
  .erro-hor{color:var(--ru);font-size:11px;margin-top:3px;display:none}
+.erro-hor{color:var(--ru);font-size:11px;margin-top:3px;display:none}
 
+  .campo .busca-wrap{background:#fff;border:1.5px solid #d8dee3;border-radius:8px;padding:0 10px;
+    display:flex;align-items:center;gap:6px;position:relative}
+  .campo .busca-wrap input{border:none!important;background:transparent!important;padding:10px 2px!important;
+    width:auto!important;flex:1;font-size:14px;color:var(--tinta);outline:none}
+  .busca-icone{color:var(--cinza);font-size:13px;flex-shrink:0}
+  .busca-limpar{border:none;background:none;color:var(--cinza);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0}
+  .busca-limpar:hover{color:var(--ru)}
+  .busca-seta{color:var(--cinza);font-size:11px;flex-shrink:0}
+  .busca-lista{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--linha);
+    border-radius:8px;max-height:220px;overflow-y:auto;z-index:60;box-shadow:0 10px 24px rgba(0,0,0,.12);display:none}
+  .busca-lista.aberta{display:block}
+  .busca-item{padding:9px 12px;font-size:13px;cursor:pointer;color:var(--tinta)}
+  .busca-item:hover{background:var(--cream)}
+  .busca-vazio{padding:9px 12px;font-size:12px;color:var(--cinza)}
+  body.tema-escuro .campo .busca-wrap{background:#0f1720;border-color:#2c3a4a}
+  body.tema-escuro .busca-lista{background:#1a2430;border-color:#2c3a4a}
+  body.tema-escuro .busca-item:hover{background:#16261c}
   /* ---- Card do equipamento (Fase 3 — redesign) ---- */
   .equip-card{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:16px 20px;
     margin:14px 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
@@ -754,14 +772,25 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <!-- ===================== CABEÇALHO ===================== -->
     <div class="cab">
       <div class="grid">
-        <div class="campo">
+       <div class="campo">
           <label>Equipamento <span class="obrig">*</span></label>
-          <select id="equipamento"><option value="">— selecionar —</option></select>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="equipamento" placeholder="Buscar equipamento…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
         </div>
         <div class="campo">
-          <label>Horímetro <span class="obrig">*</span></label>
-          <input id="horimetro" type="number" inputmode="decimal" step="0.1" placeholder="0000">
-          <div class="erro-hor" id="erro-hor"></div>
+          <label>Local / Obra</label>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="local" placeholder="Buscar local…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
         </div>
         <div class="campo">
           <label>Data</label>
@@ -1537,13 +1566,9 @@ let editandoLocal = null;
 let movendoLocal  = null;
 
 function preencherSelect(id, arr) {
-  const s = document.getElementById(id);
-  // remove opções antigas (mantém só o placeholder)
-  while(s.options.length > 1) s.remove(1);
-  arr.forEach(function(v){
-    const o = document.createElement('option');
-    o.value = v; o.textContent = v; s.appendChild(o);
-  });
+  // "equipamento" e "local" agora são combos de busca customizados (ver configurarComboBusca)
+  // que leem frotas/locais diretamente a cada busca — não precisam de preenchimento antecipado.
+  // Função mantida vazia só por compatibilidade com chamadas já existentes no código.
 }
 
 function inicializarListas(equipamentosServidor, locaisServidor) {
@@ -1907,6 +1932,7 @@ function reiniciarFormulario(){
   for (const k in respostas) delete respostas[k];
   for (const k in observacoesItens) delete observacoesItens[k];
   document.querySelectorAll('.item-obs-input').forEach(function(inp){ inp.value = ''; });
+  document.querySelectorAll('.busca-limpar').forEach(function(b){ b.style.display = 'none'; });
 
   // Restaura visual de cada item do checklist
   document.querySelectorAll('#itens .item').forEach(function(div){
@@ -3336,6 +3362,56 @@ document.getElementById('input-foto-equip').addEventListener('change', async fun
   }
   equipFotoAlvo = null;
 });
+ /* =====================================================================
+   COMBO DE BUSCA — Equipamento e Local (visual do mockup)
+   ===================================================================== */
+function configurarComboBusca(inputId, listaOrigemFn){
+  const input = document.getElementById(inputId);
+  const wrap = input.closest('.busca-wrap');
+  const painel = wrap.querySelector('.busca-lista');
+  const btnLimpar = wrap.querySelector('.busca-limpar');
+
+  function renderizar(filtro){
+    const termo = (filtro || '').trim().toLowerCase();
+    const todos = listaOrigemFn();
+    const filtrados = termo ? todos.filter(function(v){ return v.toLowerCase().indexOf(termo) !== -1; }) : todos;
+    if (!filtrados.length) {
+      painel.innerHTML = '<div class="busca-vazio">Nenhum resultado</div>';
+      return;
+    }
+    painel.innerHTML = filtrados.slice(0, 100).map(function(v){
+      return '<div class="busca-item" data-valor="' + v.replace(/"/g,'&quot;') + '">' + v + '</div>';
+    }).join('');
+    painel.querySelectorAll('.busca-item').forEach(function(item){
+      item.onclick = function(){
+        input.value = item.dataset.valor;
+        painel.classList.remove('aberta');
+        btnLimpar.style.display = 'inline';
+        input.dispatchEvent(new Event('change'));
+      };
+    });
+  }
+
+  input.addEventListener('focus', function(){ renderizar(input.value); painel.classList.add('aberta'); });
+  input.addEventListener('input', function(){
+    renderizar(input.value);
+    painel.classList.add('aberta');
+    btnLimpar.style.display = input.value ? 'inline' : 'none';
+  });
+  document.addEventListener('click', function(e){
+    if (!wrap.contains(e.target)) painel.classList.remove('aberta');
+  });
+  btnLimpar.onclick = function(){
+    input.value = '';
+    btnLimpar.style.display = 'none';
+    input.focus();
+    renderizar('');
+    input.dispatchEvent(new Event('change'));
+  };
+}
+
+configurarComboBusca('equipamento', function(){ return frotas; });
+configurarComboBusca('local', function(){ return locais; });
 </script>
 </body>
 </html>
