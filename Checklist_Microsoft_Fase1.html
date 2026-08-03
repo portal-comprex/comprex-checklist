@@ -1403,6 +1403,15 @@ let contaAtual = null;
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
 /* =====================================================================
+   CONTROLE DE ACESSO — só estes e-mails têm o menu "Cadastrar equip./local"
+   ===================================================================== */
+const EMAILS_ADMIN = ['vagner.nicanor@comprex.com.br', 'lucas.maciel@comprex.com.br'];
+function usuarioEhAdmin(conta){
+  const email = (conta && conta.username || '').trim().toLowerCase();
+  return EMAILS_ADMIN.indexOf(email) !== -1;
+}
+
+/* =====================================================================
    LOGIN — fluxo redirect (mais confiável que pop-up)
    ===================================================================== */
 msalInstance.initialize().then(function(){
@@ -1444,6 +1453,10 @@ function entrarComoLogado(conta){
   const iniciais = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
   document.getElementById('user-nome').textContent = nome;
   document.getElementById('user-avatar').textContent = iniciais || '--';
+
+  if (!usuarioEhAdmin(conta)) {
+    document.getElementById('btn-abrir-cadastro').style.display = 'none';
+  }
 
   iniciarAplicacao();
 
@@ -2236,7 +2249,10 @@ const overlay = document.getElementById('modal-overlay');
 const modalFechar = document.getElementById('modal-fechar');
 let tabAtiva = 'equip';
 
-document.getElementById('btn-abrir-cadastro').onclick = function(){ overlay.classList.add('aberto'); renderizarListaModal(tabAtiva); };
+document.getElementById('btn-abrir-cadastro').onclick = function(){
+  if (!usuarioEhAdmin(contaAtual)) { alert('Você não tem permissão para acessar esta área.'); return; }
+  overlay.classList.add('aberto'); renderizarListaModal(tabAtiva);
+};
 modalFechar.onclick = function(){ overlay.classList.remove('aberto'); };
 overlay.onclick = function(e){ if (e.target === overlay) overlay.classList.remove('aberto'); };
 
