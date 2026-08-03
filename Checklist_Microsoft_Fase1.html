@@ -852,7 +852,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
         <div class="campo">
           <label>Horímetro <span class="obrig">*</span></label>
-          <input id="horimetro" type="number" inputmode="decimal" step="0.1" placeholder="0000">
+          <input id="horimetro" type="text" inputmode="decimal" placeholder="0,0">
           <div class="erro-hor" id="erro-hor"></div>
         </div>
         <div class="campo">
@@ -1907,13 +1907,24 @@ function atualizarCampoValidadeExtintor(valorSelecionado){
 }
 
 const inpHor  = document.getElementById('horimetro');
+/** Lê o valor do campo horímetro aceitando vírgula ou ponto como decimal. */
+function horimetroFloat(str){
+  return parseFloat(String(str).replace(',', '.'));
+}
+inpHor.addEventListener('input', function(){
+  // Permite apenas dígitos e uma única vírgula (converte ponto digitado em vírgula).
+  let v = inpHor.value.replace(/\./g, ',').replace(/[^0-9,]/g, '');
+  const partes = v.split(',');
+  if (partes.length > 2) v = partes[0] + ',' + partes.slice(1).join('');
+  inpHor.value = v;
+});
 const erroHor = document.getElementById('erro-hor');
 const btn     = document.getElementById('finalizar');
 const aviso   = document.getElementById('aviso');
 
 function horimetroValido(){
   const eq = document.getElementById('equipamento').value.toUpperCase();
-  const v  = parseFloat(inpHor.value);
+  const v  = horimetroFloat(inpHor.value);
   if (inpHor.value === '' || isNaN(v)) return false;
   const ult = ultimoHorimetro[eq];
   if (ult != null && v < ult){
@@ -1975,7 +1986,7 @@ function atualizarCardEquipamento(){
   badge.textContent = stTxt;
   badge.className = 'frota-st ' + situacao;
 
-  const horAtualInput = parseFloat(inpHor.value);
+  const horAtualInput = horimetroFloat(inpHor.value);
   const horAtual = !isNaN(horAtualInput) ? horAtualInput : (ultimoHorimetro[eq.toUpperCase()] != null ? ultimoHorimetro[eq.toUpperCase()] : null);
   document.getElementById('equip-card-horimetro').textContent = horAtual != null ? formatarHorimetro(horAtual) + ' h' : '—';
 
@@ -2187,7 +2198,7 @@ btn.onclick = async function(){
 
   const dados = {
     'Equipamento':        document.getElementById('equipamento').value,
-    'Horimetro':          inpHor.value,
+    'Horimetro':          horimetroFloat(inpHor.value),
     'Operador':           document.getElementById('operador').value,
     'Local':              document.getElementById('local').value,
     'Observacao':         observacaoCompleta,
@@ -2202,7 +2213,7 @@ btn.onclick = async function(){
     await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items', { fields: fields });
 
     const eqSalvo = document.getElementById('equipamento').value.toUpperCase();
-    const horSalvo = parseFloat(inpHor.value);
+    const horSalvo = horimetroFloat(inpHor.value);
     if (eqSalvo && !isNaN(horSalvo)) {
       if (ultimoHorimetro[eqSalvo] == null || horSalvo > ultimoHorimetro[eqSalvo]) ultimoHorimetro[eqSalvo] = horSalvo;
     }
