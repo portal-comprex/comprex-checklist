@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checklist Diário — Comprex (Microsoft)</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b6b34">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Checklist">
 <style>
 
  :root{
@@ -14,7 +21,7 @@
     --sidebar-w:230px;
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Roboto,Arial,sans-serif}
-  body{background:#f4f5f6;color:var(--tinta)}
+  body{background:#eef5ee;color:var(--tinta)}
 
   /* ===================== SHELL: SIDEBAR + MAIN ===================== */
   .shell{display:flex;min-height:100vh}
@@ -22,7 +29,8 @@
     display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
     border-right:1px solid var(--linha)}
   .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--linha)}
-  .sidebar-logo-img{display:block;height:72px;width:auto;max-width:100%}
+  .sidebar-logo-img{display:block;height:72px;width:auto;max-width:100%;border-radius:14px}
+  body.tema-escuro .sidebar-logo-img{background:#fff;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
   .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--navy)}
   .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:var(--cinza);margin-top:3px}
 
@@ -48,7 +56,7 @@
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
 
   /* ===================== TOPBAR ===================== */
-  .topbar{background:#fff;border-bottom:1px solid var(--linha);padding:16px 28px;
+  .topbar{background:#dcebdc;border-bottom:1px solid var(--linha);padding:16px 28px;
     display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
   .topbar-left{display:flex;align-items:center;gap:14px}
   .topbar-hamb{font-size:20px;color:var(--cinza);cursor:pointer;display:none}
@@ -3876,6 +3884,16 @@ function renderSegurancaV2(itens, itensAnterior){
       '<span class="ind2-comp-var '+l.classe+'" style="flex:0 0 70px;text-align:right">'+l.seta+' '+l.delta.toFixed(0)+' p.p.</span>' +
     '</div>';
   }).join('');
+}
+/* =====================================================================
+   PWA — registra o service worker (permite instalar como app)
+   ===================================================================== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(err){
+      console.warn('Falha ao registrar service worker: ' + err.message);
+    });
+  });
 }
 </script>
 </body>
