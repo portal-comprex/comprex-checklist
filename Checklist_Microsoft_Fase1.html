@@ -1912,11 +1912,15 @@ function horimetroFloat(str){
   return parseFloat(String(str).replace(',', '.'));
 }
 inpHor.addEventListener('input', function(){
-  // Permite apenas dígitos e uma única vírgula (converte ponto digitado em vírgula).
-  let v = inpHor.value.replace(/\./g, ',').replace(/[^0-9,]/g, '');
-  const partes = v.split(',');
-  if (partes.length > 2) v = partes[0] + ',' + partes.slice(1).join('');
-  inpHor.value = v;
+  // Máscara automática: o último dígito digitado sempre vira a casa decimal
+  // (ex.: digitar 1,0,2,4,5 forma "1024,5" sem precisar digitar a vírgula).
+  const digitos = inpHor.value.replace(/[^0-9]/g, '');
+  if (!digitos) { inpHor.value = ''; return; }
+  if (digitos.length === 1) { inpHor.value = '0,' + digitos; return; }
+  const dec = digitos.slice(-1);
+  const inteiro = digitos.slice(0, -1).replace(/^0+/, '') || '0';
+  inpHor.value = inteiro + ',' + dec;
+  inpHor.setSelectionRange(inpHor.value.length, inpHor.value.length);
 });
 const erroHor = document.getElementById('erro-hor');
 const btn     = document.getElementById('finalizar');
