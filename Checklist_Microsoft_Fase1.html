@@ -401,11 +401,6 @@
     padding:4px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
   .mli-editar{color:var(--navy)}
   .mli-editar:hover{background:#eef0f1}
-  .mli-mover{color:var(--tan)}
-  .mli-mover:hover{background:#fdf3e3}
-  .mli-mover-salvar{color:#fff;background:var(--tan)}
-  .mli-mover-salvar:hover{background:#a97c1e}
-  .mli-mover-salvar:disabled{background:#b7bcc0;cursor:not-allowed}
   .mli-salvar{color:#fff;background:var(--ok)}
   .mli-salvar:hover{background:#256b3a}
   .mli-salvar:disabled{background:#b7bcc0;cursor:not-allowed}
@@ -1554,18 +1549,6 @@ async function apagarItemSimples(listaId, itemId){
   if (!r.ok && r.status !== 204) { const texto = await r.text(); throw new Error('Erro ' + r.status); }
 }
 
-/** Extrai o "grupo raiz" de um local, ex: "AMT - Boleamento - 500008" -> "AMT". */
-function grupoDoLocal(nome){
-  const partes = String(nome).split(/\s*[-–—]\s*/);
-  return partes.length > 1 ? partes[0].trim() : String(nome).trim();
-}
-
-/** Retorna a parte do nome sem o prefixo do grupo, ex: "AMT - Garra (500002)" -> "Garra (500002)". */
-function partesSemGrupo(nome){
-  const partes = String(nome).split(/\s*[-–—]\s*/);
-  return partes.length > 1 ? partes.slice(1).join(' - ') : nome;
-}
-
 /** Adiciona um item numa lista simples (Frota/Locais). */
 async function adicionarItemSimples(listaId, valor){
   return graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items', {
@@ -1727,7 +1710,6 @@ let frotasIds = {};   // valor (texto) -> ID do item no SharePoint
 let locaisIds = {};   // valor (texto) -> ID do item no SharePoint
 let editandoEquip = null;
 let editandoLocal = null;
-let movendoLocal  = null;
 
 function preencherSelect(id, arr) {
   // "equipamento" e "local" agora são combos de busca customizados (ver configurarComboBusca)
@@ -2279,7 +2261,7 @@ document.querySelectorAll('.tab').forEach(function(tab){
   };
 });
 
-/** Renderiza a lista com opções de Editar/Apagar (e Mover, só para Local). */
+/** Renderiza a lista com opções de Editar/Apagar (e Foto, só para Equipamento). */
 function renderizarListaModal(tipo) {
   const lista = tipo === 'equip' ? frotas : locais;
   const mapaIds = tipo === 'equip' ? frotasIds : locaisIds;
@@ -2290,10 +2272,6 @@ function renderizarListaModal(tipo) {
     return;
   }
 
-  const gruposExistentes = tipo === 'local'
-    ? Array.from(new Set(locais.map(function(l){ return grupoDoLocal(l); }))).sort()
-    : [];
-
   el.innerHTML = lista.map(function(v){
     if (v === editando) {
       return '<div class="modal-lista-item mli-editando">' +
@@ -2302,30 +2280,12 @@ function renderizarListaModal(tipo) {
         '<button class="mli-btn mli-cancelar" data-tipo="'+tipo+'">Cancelar</button>' +
       '</div>';
     }
-    if (tipo === 'local' && v === movendoLocal) {
-      const grupoAtual = grupoDoLocal(v);
-      return '<div class="modal-lista-item mli-editando">' +
-        '<select class="mli-input" id="mli-mover-select" style="flex:1">' +
-          gruposExistentes.map(function(g){
-            return '<option value="'+g+'" '+(g===grupoAtual?'selected':'')+'>'+g+'</option>';
-          }).join('') +
-          '<option value="__novo__">+ Novo grupo…</option>' +
-        '</select>' +
-        '<input type="text" class="mli-input" id="mli-mover-novo-grupo" placeholder="Nome do novo grupo" style="display:none;max-width:140px">' +
-        '<button class="mli-btn mli-mover-salvar" data-antigo="'+v+'">Mover</button>' +
-        '<button class="mli-btn mli-cancelar" data-tipo="local">Cancelar</button>' +
-      '</div>';
-   }
-    const btnMover = tipo === 'local'
-      ? '<button class="mli-btn mli-mover" data-valor="'+v+'" title="Mover para outro grupo">🔀 Mover</button>'
-      : '';
     const btnFoto = tipo === 'equip'
       ? '<button class="mli-btn mli-foto" data-foto="'+v+'" title="Trocar foto">📷 Foto</button>'
       : '';
     return '<div class="modal-lista-item">' +
       '<span class="mli-nome">'+v+'</span>' +
       btnFoto +
-      btnMover +
       '<button class="mli-btn mli-editar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Editar">✏️ Editar</button>' +
       '<button class="mli-btn mli-apagar" data-tipo="'+tipo+'" data-valor="'+v+'" title="Apagar">🗑️ Apagar</button>' +
     '</div>';
@@ -2340,24 +2300,12 @@ function renderizarListaModal(tipo) {
   el.querySelectorAll('.mli-editar').forEach(function(btn){
     btn.onclick = function(){
       if (tipo === 'equip') editandoEquip = btn.dataset.valor; else editandoLocal = btn.dataset.valor;
-      movendoLocal = null;
       renderizarListaModal(tipo);
-    };
-  });
-  el.querySelectorAll('.mli-mover').forEach(function(btn){
-    btn.onclick = function(){
-      movendoLocal = btn.dataset.valor;
-      editandoLocal = null;
-      renderizarListaModal(tipo);
-      const sel = document.getElementById('mli-mover-select');
-      if (sel) sel.onchange = function(){
-        document.getElementById('mli-mover-novo-grupo').style.display = sel.value === '__novo__' ? 'block' : 'none';
-      };
     };
   });
   el.querySelectorAll('.mli-cancelar').forEach(function(btn){
     btn.onclick = function(){
-      if (tipo === 'equip') editandoEquip = null; else { editandoLocal = null; movendoLocal = null; }
+      if (tipo === 'equip') editandoEquip = null; else editandoLocal = null;
       renderizarListaModal(tipo);
     };
   });
@@ -2412,37 +2360,6 @@ function renderizarListaModal(tipo) {
       }).catch(function(err){
         btn.disabled = false; btn.textContent = 'Salvar';
         mostrarFeedback(tipo, false, 'Erro: ' + err.message);
-      });
-    };
-  });
-  el.querySelectorAll('.mli-mover-salvar').forEach(function(btn){
-    btn.onclick = function(){
-      const antigoValor = btn.dataset.antigo;
-      const sel = document.getElementById('mli-mover-select');
-      let novoGrupo = sel.value;
-      if (novoGrupo === '__novo__') {
-        novoGrupo = document.getElementById('mli-mover-novo-grupo').value.trim();
-        if (!novoGrupo) { mostrarFeedback('local', false, 'Digite o nome do novo grupo.'); return; }
-      }
-      const resto = partesSemGrupo(antigoValor);
-      const novoValor = resto === antigoValor ? novoGrupo : (novoGrupo + ' - ' + resto);
-      if (novoValor === antigoValor) { movendoLocal = null; renderizarListaModal('local'); return; }
-
-      const itemId = locaisIds[antigoValor];
-      btn.disabled = true; btn.textContent = 'Movendo…';
-      editarItemSimples(LISTA_LOCAIS_ID, itemId, novoValor).then(function(){
-        const i = locais.indexOf(antigoValor);
-        if (i >= 0) locais[i] = novoValor;
-        delete locaisIds[antigoValor];
-        locaisIds[novoValor] = itemId;
-        ordenarListas();
-        movendoLocal = null;
-        preencherSelect('local', locais);
-        renderizarListaModal('local');
-        mostrarFeedback('local', true, '✔ Movido para "' + novoGrupo + '" com sucesso!');
-      }).catch(function(err){
-        btn.disabled = false; btn.textContent = 'Mover';
-        mostrarFeedback('local', false, 'Erro: ' + err.message);
       });
     };
   });
