@@ -1598,6 +1598,53 @@ function montarFieldsChecklist(dadosPorRotulo){
 /* =====================================================================
    INICIALIZAÇÃO DA APLICAÇÃO (depois do login)
    ===================================================================== */
+/** Separa uma célula "várias linhas de texto" tipo "MÍNIMO, VAZIO" em ['MÍNIMO','VAZIO']. */
+function dividirRespostas(txt){
+  return String(txt || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+}
+
+/** Carrega as perguntas do checklist a partir da lista "ItensChecklist" no SharePoint.
+ *  Se der qualquer problema (rede, lista vazia, coluna faltando), lança erro e quem
+ *  chamou continua usando o ITENS_PADRAO — o Checklist nunca fica sem funcionar. */
+async function carregarItensChecklistDoSharePoint(){
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_ITENS_CHECKLIST_ID + '/items?$expand=fields&$top=999');
+  const linhas = (d.value || []).map(function(item){ return item.fields; })
+    .filter(function(f){ return String(f.Ativo || 'Sim').trim().toLowerCase() !== 'não' && String(f.Ativo || 'Sim').trim().toLowerCase() !== 'nao'; });
+
+  linhas.sort(function(a, b){ return (parseFloat(a.Ordem) || 0) - (parseFloat(b.Ordem) || 0); });
+
+  const novoItens = [];
+  let novoExtraData = null;
+  let novoLabelParada = null;
+
+  linhas.forEach(function(f){
+    const titulo = String(f.Title || '').trim();
+    if (!titulo) return;
+    const opcoes = [];
+    dividirRespostas(f.RespostasBoas).forEach(function(v){ opcoes.push([v, 'ok']); });
+    dividirRespostas(f.RespostasAtencao).forEach(function(v){ opcoes.push([v, 'at']); });
+    dividirRespostas(f.RespostasRuins).forEach(function(v){ opcoes.push([v, 'ru']); });
+    dividirRespostas(f.RespostasNaoSeAplica).forEach(function(v){ opcoes.push([v, 'na']); });
+    if (!opcoes.length) return;
+    novoItens.push([titulo, opcoes]);
+
+    if (!novoExtraData && String(f.CampoExtraTipo || '').trim().toLowerCase() === 'data') {
+      novoExtraData = {
+        label: titulo,
+        rotulo: String(f.CampoExtraRotulo || 'Data').trim() || 'Data',
+        opcionalSe: String(f.CampoExtraOpcionalSe || '').trim()
+      };
+    }
+    if (!novoLabelParada && String(f.EhItemDeParada || '').trim().toLowerCase() === 'sim') {
+      novoLabelParada = titulo;
+    }
+  });
+
+  if (!novoItens.length) throw new Error('A lista ItensChecklist não retornou nenhum item ativo válido.');
+
+  return { itens: novoItens, extraData: novoExtraData, labelParada: novoLabelParada };
+}
+
 async function iniciarAplicacao(){
   try {
     const [equipamentos, locais] = await Promise.all([
@@ -1609,6 +1656,19 @@ async function iniciarAplicacao(){
     document.getElementById('aviso-colunas-area').innerHTML =
       '<div class="aviso-coluna"><b>⚠️ Erro ao carregar as listas de equipamento/local</b>' + err.message + '</div>';
     inicializarListas([], []);
+  }
+
+  try {
+    const dados = await carregarItensChecklistDoSharePoint();
+    ITENS = dados.itens;
+    if (dados.extraData) ITEM_EXTRA_DATA = dados.extraData;
+    if (dados.labelParada) LABEL_ITEM_PARADA = dados.labelParada;
+    for (const k in respostas) delete respostas[k];
+    for (const k in observacoesItens) delete observacoesItens[k];
+    renderizarItensChecklist();
+    atualizarProgresso();
+  } catch(err) {
+    console.warn('Não foi possível carregar a lista ItensChecklist do SharePoint — usando lista padrão. Detalhe: ' + err.message);
   }
 
   try {
@@ -1649,7 +1709,12 @@ document.querySelectorAll('.sidebar-item.bloqueado').forEach(function(item){
   item.onclick = function(){ alert('Essa tela chega na próxima fase da migração. Por enquanto, só "Checklists" está disponível.'); };
 });
 
-const ITENS = [
+const LISTA_ITENS_CHECKLIST_ID = '3142f56e-9708-47ba-9762-01d9ac2cf66a';
+
+/** Lista fixa "de segurança" — usada se a lista ItensChecklist do SharePoint
+ *  não puder ser carregada (erro de rede, lista vazia, coluna faltando etc.).
+ *  Assim o Checklist NUNCA fica sem funcionar. */
+const ITENS_PADRAO = [
   ['NÍVEL DE ÁGUA DO RADIADOR',        [['MÁXIMO','ok'],['MÉDIO','at'],['MÍNIMO','ru'],['VAZIO','ru']]],
   ['NÍVEL DE ÓLEO HIDRÁULICO',         [['MÁXIMO','ok'],['MÉDIO','at'],['MÍNIMO','ru'],['VAZIO','ru']]],
   ['NÍVEL DE ÓLEO DE TRANSMISSÃO',     [['MÁXIMO','ok'],['MÉDIO','at'],['MÍNIMO','ru'],['VAZIO','ru']]],
@@ -1686,6 +1751,17 @@ const ITENS = [
   ['SISTEMA DE DETECÇÃO DE PROXIMIDADE (FUNCIONA)', [['SIM','ok'],['NÃO','ru'],['NÃO SE APLICA','na']]],
   ['NECESSITA PARALIZAR O EQUIPAMENTO?', [['NÃO','ok'],['SIM','ru']]]
 ];
+
+/** ITENS agora é mutável: começa com o padrão fixo (render instantâneo, sem
+ *  esperar rede) e é substituído pelos dados do SharePoint quando chegarem. */
+let ITENS = ITENS_PADRAO;
+
+/** Config do "campo extra" (hoje só a validade do extintor) — description
+ *  vem da lista ItensChecklist; cai no padrão de sempre se não configurado. */
+let ITEM_EXTRA_DATA = { label: 'EXTINTOR DE INCÊNDIO', rotulo: 'Validade do extintor', opcionalSe: 'NÃO POSSUI' };
+
+/** Label do item que, se respondido com a opção "ruim", bloqueia o equipamento. */
+let LABEL_ITEM_PARADA = 'NECESSITA PARALIZAR O EQUIPAMENTO?';
 
 /* =====================================================================
    ESTADO DA APLICAÇÃO
@@ -1842,56 +1918,60 @@ cont.addEventListener('drop', function(e){
   salvarOrdemItens();
 });
 
-const ordemItens = obterOrdemItens();
-ordemItens.forEach(function(i){
-  const item = ITENS[i];
-  const label = item[0], opts = item[1];
-  const div = document.createElement('div');
-  div.className = 'item'; div.id = 'item-'+i; div.dataset.idx = i;
-  div.draggable = true;
+function renderizarItensChecklist(){
+  cont.innerHTML = '';
+  const ordemItens = obterOrdemItens();
+  ordemItens.forEach(function(i){
+    const item = ITENS[i];
+    const label = item[0], opts = item[1];
+    const div = document.createElement('div');
+    div.className = 'item'; div.id = 'item-'+i; div.dataset.idx = i;
+    div.draggable = true;
 
-  const lbl = document.createElement('div');
-  lbl.className = 'lbl';
-  lbl.innerHTML = '<span class="item-alca">⋮⋮</span><span class="n">'+String(ordemItens.indexOf(i)+1).padStart(2,'0')+'</span>'+prettify(label);
+    const lbl = document.createElement('div');
+    lbl.className = 'lbl';
+    lbl.innerHTML = '<span class="item-alca">⋮⋮</span><span class="n">'+String(ordemItens.indexOf(i)+1).padStart(2,'0')+'</span>'+prettify(label);
 
-  const box = document.createElement('div');
-  box.className = 'opts';
-  opts.forEach(function(o){
-    const val = o[0], sev = o[1];
-    const b = document.createElement('button');
-    b.className = 'opt'; b.type = 'button'; b.textContent = val;
-    b.onclick = function(){
-      box.querySelectorAll('.opt').forEach(function(x){ x.className='opt'; });
-      b.className = 'opt sel '+sev;
-      respostas[i] = { label: label, valor: val, sev: sev };
-      div.className = 'item respondido item-com-obs' + (sev==='ru' ? ' impeditivo' : '');
-      if (label === 'EXTINTOR DE INCÊNDIO') atualizarCampoValidadeExtintor(val);
-      atualizarProgresso();
-    };
-    box.appendChild(b);
+    const box = document.createElement('div');
+    box.className = 'opts';
+    opts.forEach(function(o){
+      const val = o[0], sev = o[1];
+      const b = document.createElement('button');
+      b.className = 'opt'; b.type = 'button'; b.textContent = val;
+      b.onclick = function(){
+        box.querySelectorAll('.opt').forEach(function(x){ x.className='opt'; });
+        b.className = 'opt sel '+sev;
+        respostas[i] = { label: label, valor: val, sev: sev };
+        div.className = 'item respondido item-com-obs' + (sev==='ru' ? ' impeditivo' : '');
+        if (label === ITEM_EXTRA_DATA.label) atualizarCampoValidadeExtintor(val);
+        atualizarProgresso();
+      };
+      box.appendChild(b);
+    });
+
+    const obsInput = document.createElement('input');
+    obsInput.type = 'text'; obsInput.className = 'item-obs-input';
+    obsInput.placeholder = 'Observação sobre este item (opcional)';
+    obsInput.id = 'obs-item-' + i;
+    obsInput.addEventListener('input', function(){ observacoesItens[i] = obsInput.value; });
+
+    div.className = 'item item-com-obs';
+    div.appendChild(lbl); div.appendChild(box); div.appendChild(obsInput);
+    cont.appendChild(div);
+    // Logo após o item do extintor, insere o campo de validade —
+    // fica no fluxo natural do checklist, junto com a pergunta relacionada.
+    if (label === ITEM_EXTRA_DATA.label) {
+      const divData = document.createElement('div');
+      divData.className = 'item item-data';
+      divData.innerHTML =
+        '<div class="lbl"><span class="n">--</span>' + ITEM_EXTRA_DATA.rotulo + ' <span class="obrig" id="validade-extintor-obrig">*</span></div>' +
+        '<input type="date" id="validade-extintor" class="item-data-input">';
+      cont.appendChild(divData);
+      document.getElementById('validade-extintor').addEventListener('input', atualizarProgresso);
+    }
   });
-
-  const obsInput = document.createElement('input');
-  obsInput.type = 'text'; obsInput.className = 'item-obs-input';
-  obsInput.placeholder = 'Observação sobre este item (opcional)';
-  obsInput.id = 'obs-item-' + i;
-  obsInput.addEventListener('input', function(){ observacoesItens[i] = obsInput.value; });
-
-  div.className = 'item item-com-obs';
-  div.appendChild(lbl); div.appendChild(box); div.appendChild(obsInput);
-  cont.appendChild(div);
-  // Logo após "Extintor de incêndio", insere o campo de validade —
-  // fica no fluxo natural do checklist, junto com a pergunta relacionada.
-  if (label === 'EXTINTOR DE INCÊNDIO') {
-    const divData = document.createElement('div');
-    divData.className = 'item item-data';
-    divData.innerHTML =
-      '<div class="lbl"><span class="n">--</span>Validade do extintor <span class="obrig" id="validade-extintor-obrig">*</span></div>' +
-      '<input type="date" id="validade-extintor" class="item-data-input">';
-    cont.appendChild(divData);
-    document.getElementById('validade-extintor').addEventListener('input', atualizarProgresso);
-  }
-});
+}
+renderizarItensChecklist();
 
 /* =====================================================================
    VALIDAÇÃO E PROGRESSO
@@ -1900,7 +1980,7 @@ function atualizarCampoValidadeExtintor(valorSelecionado){
   const campo = document.getElementById('validade-extintor');
   const obrig = document.getElementById('validade-extintor-obrig');
   if (!campo) return;
-  if (valorSelecionado === 'NÃO POSSUI') {
+  if (valorSelecionado === ITEM_EXTRA_DATA.opcionalSe) {
     campo.value = '';
     campo.disabled = true;
     if (obrig) obrig.style.display = 'none';
@@ -2094,7 +2174,7 @@ function atualizarResumo(){
   document.getElementById('info-criticos').textContent = cont.ru;
 
   // Verifica se o item "Necessita paralisar" foi marcado como SIM
-  const idxParar = ITENS.findIndex(function(it){ return it[0] === 'NECESSITA PARALIZAR O EQUIPAMENTO?'; });
+  const idxParar = ITENS.findIndex(function(it){ return it[0] === LABEL_ITEM_PARADA; });
   const paralisar = idxParar >= 0 && respostas[idxParar] && respostas[idxParar].valor === 'SIM';
   document.getElementById('resumo-alerta').style.display = paralisar ? 'block' : 'none';
 }
@@ -2109,8 +2189,8 @@ function validar(){
   const opOk   = document.getElementById('operador').value.trim() !== '';
   const horOk  = horimetroValido();
   const itsOk  = Object.keys(respostas).length === ITENS.length;
-  const idxExtintor = ITENS.findIndex(function(it){ return it[0] === 'EXTINTOR DE INCÊNDIO'; });
-  const extintorNaoPossui = idxExtintor >= 0 && respostas[idxExtintor] && respostas[idxExtintor].valor === 'NÃO POSSUI';
+  const idxExtintor = ITENS.findIndex(function(it){ return it[0] === ITEM_EXTRA_DATA.label; });
+  const extintorNaoPossui = idxExtintor >= 0 && respostas[idxExtintor] && respostas[idxExtintor].valor === ITEM_EXTRA_DATA.opcionalSe;
   const dataExtintorOk = extintorNaoPossui || document.getElementById('validade-extintor').value !== '';
   const completo = eqOk && opOk && horOk && itsOk && dataExtintorOk;
   btn.className = 'finalizar' + (completo ? ' pronto' : '');
@@ -2456,7 +2536,7 @@ function severidadeDaResposta(rotuloOriginal, valor){
 function statusDoChecklist(fieldsPorRotulo){
   // A partir de agora, SÓ a resposta explícita a esta pergunta define "necessita paralisar".
   // Itens isolados marcados como "Ruim" não paralisam sozinhos — passam a contar como "Atenção".
-  if (fieldsPorRotulo['NECESSITA PARALIZAR O EQUIPAMENTO?'] === 'SIM') return { texto: 'Necessita paralisar!', classe: 'parar' };
+  if (fieldsPorRotulo[LABEL_ITEM_PARADA] === 'SIM') return { texto: 'Necessita paralisar!', classe: 'parar' };
   let pior = 'ok';
   ITENS.forEach(function(item){
     const valor = fieldsPorRotulo[item[0]];
