@@ -212,16 +212,6 @@
     margin:14px 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
   .equip-foto{width:64px;height:64px;border-radius:10px;background:var(--cream);display:flex;
     align-items:center;justify-content:center;font-size:30px;flex-shrink:0;overflow:hidden}
-  .equip-foto-wrap{position:relative;flex-shrink:0}
-  .equip-foto-trocar{position:absolute;bottom:-4px;right:-4px;width:24px;height:24px;border-radius:50%;
-    background:var(--navy);color:#fff;border:2px solid var(--card);font-size:11px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
-  .equip-foto-trocar:hover{background:var(--navy-2)}
-  .equip-foto-feedback{position:absolute;top:100%;left:0;margin-top:6px;font-size:11px;font-weight:600;
-    white-space:nowrap;background:var(--card);border:1px solid var(--linha);border-radius:6px;
-    padding:4px 8px;display:none;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,.12)}
-  .equip-foto-feedback.ok{color:var(--ok);display:block}
-  .equip-foto-feedback.erro{color:var(--ru);display:block}
   .equip-info{flex:1;min-width:220px}
   .equip-nome-linha{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .equip-nome{font-size:16px;font-weight:800;color:var(--tinta)}
@@ -897,11 +887,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
 
     <!-- ===================== CARD DO EQUIPAMENTO ===================== -->
     <div class="equip-card" id="equip-card" style="display:none">
-      <div class="equip-foto-wrap">
-        <div class="equip-foto" id="equip-card-foto">🚜</div>
-        <button type="button" class="equip-foto-trocar" id="equip-card-foto-trocar" title="Trocar foto do equipamento">📷</button>
-        <div class="equip-foto-feedback" id="equip-foto-feedback"></div>
-      </div>
+      <div class="equip-foto" id="equip-card-foto">🚜</div>
       <div class="equip-info">
         <div class="equip-nome-linha">
           <span class="equip-nome" id="equip-card-nome">—</span>
@@ -3467,36 +3453,15 @@ async function buscarUrlFotoEquipamento(equipCode){
 
 /* ---- Botão "📷 Foto" na tela de Cadastro ---- */
 let equipFotoAlvo = null;
-document.getElementById('equip-card-foto-trocar').onclick = function(){
-  const eq = document.getElementById('equipamento').value;
-  if (!eq) return;
-  equipFotoAlvo = eq;
-  document.getElementById('input-foto-equip').click();
-};
 document.getElementById('input-foto-equip').addEventListener('change', async function(e){
   const file = e.target.files[0];
   this.value = '';
   if (!file || !equipFotoAlvo) return;
-  const fbCard = document.getElementById('equip-foto-feedback');
   try {
     await uploadFotoEquipamento(equipFotoAlvo, file);
     mostrarFeedback('equip', true, '✔ Foto de ' + equipFotoAlvo + ' salva com sucesso!');
-    if (document.getElementById('equipamento').value === equipFotoAlvo) {
-      delete cacheFotoEquip[equipFotoAlvo.toUpperCase()];
-      buscarUrlFotoEquipamento(equipFotoAlvo).then(function(url){
-        document.getElementById('equip-card-foto').innerHTML = url
-          ? '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px">'
-          : '🚜';
-      });
-      fbCard.className = 'equip-foto-feedback ok';
-      fbCard.textContent = '✔ Foto atualizada!';
-      setTimeout(function(){ fbCard.className = 'equip-foto-feedback'; }, 4000);
-    }
   } catch(err) {
     mostrarFeedback('equip', false, 'Erro ao enviar foto: ' + err.message);
-    fbCard.className = 'equip-foto-feedback erro';
-    fbCard.textContent = 'Erro ao enviar foto.';
-    setTimeout(function(){ fbCard.className = 'equip-foto-feedback'; }, 4000);
   }
   equipFotoAlvo = null;
 });
