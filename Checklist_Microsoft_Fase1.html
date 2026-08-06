@@ -2227,7 +2227,7 @@ btn.onclick = async function(){
     'Operador':           document.getElementById('operador').value,
     'Local':              document.getElementById('local').value,
     'Observacao':         observacaoCompleta,
-    'DATA DE VALIDADE DO EXTINTOR': valExtintor ? (valExtintor + 'T00:00:00') : ''
+    'DATA DE VALIDADE DO EXTINTOR': valExtintor ? (valExtintor + 'T00:00:00Z') : ''
   };
   ITENS.forEach(function(item, i){
     if (respostas[i]) dados[item[0]] = respostas[i].valor;
