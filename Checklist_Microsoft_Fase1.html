@@ -332,7 +332,8 @@
   .ok-msg{display:none;background:#e9f4ee;border:1px solid #bfe3cd;color:var(--ok);
     border-radius:10px;padding:14px;text-align:center;font-weight:600;margin-top:12px;font-size:15px}
   .erro-msg{display:none;background:#fbe9e7;border:1px solid #f0c4bd;color:var(--ru);
-    border-radius:10px;padding:14px;text-align:center;font-weight:600;margin-top:12px;font-size:13px}
+    border-radius:10px;padding:14px;text-align:left;font-weight:600;margin-top:12px;font-size:13px;
+    white-space:pre-wrap;word-break:break-word}
 
   /* ---- ALERTA WEBAPP NÃO CONFIGURADO ---- */
   .alerta-config{background:#fdf3e3;border:1px solid #f2ddb3;border-radius:10px;
@@ -2201,7 +2202,7 @@ function mostrarErro(msg){
   const el = document.getElementById('erro-msg');
   el.textContent = '⚠️ ' + msg;
   el.style.display = 'block';
-  setTimeout(function(){ el.style.display='none'; }, 6000);
+  setTimeout(function(){ el.style.display='none'; }, 30000);
 }
 
 /* =====================================================================
@@ -2233,8 +2234,8 @@ btn.onclick = async function(){
     if (respostas[i]) dados[item[0]] = respostas[i].valor;
   });
 
+  const fields = montarFieldsChecklist(dados);
   try {
-    const fields = montarFieldsChecklist(dados);
     await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CHECKLISTS_ID + '/items', { fields: fields });
 
     const eqSalvo = document.getElementById('equipamento').value.toUpperCase();
@@ -2246,7 +2247,9 @@ btn.onclick = async function(){
 
     mostrarSucesso();
   } catch(err) {
-    mostrarErro('Falha ao enviar. Tente novamente.\n' + err.message);
+    let detalhe = err.message;
+    try { detalhe += '\n\nDados enviados: ' + JSON.stringify(fields); } catch(e2) {}
+    mostrarErro('Falha ao enviar. Tente novamente.\n' + detalhe);
   }
 };
 
