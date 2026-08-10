@@ -2750,10 +2750,6 @@ document.getElementById('btn-salvar-operador').onclick = async function(){
 /* =====================================================================
    PARTE DIÁRIA — registro de atividades e paradas do dia
    ===================================================================== */
-configurarComboBusca('pd-equipamento', function(){ return frotas; });
-configurarComboBusca('pd-operador', function(){ return operadores; });
-configurarComboBusca('pd-local', function(){ return locais; });
-
 let pdInicializada = false;
 let pdAtividades = [];
 let pdParadas = [];
@@ -4067,6 +4063,9 @@ function configurarComboBusca(inputId, listaOrigemFn){
 configurarComboBusca('equipamento', function(){ return frotas; });
 configurarComboBusca('local', function(){ return locais; });
 configurarComboBusca('operador', function(){ return operadores; });
+configurarComboBusca('pd-equipamento', function(){ return frotas; });
+configurarComboBusca('pd-operador', function(){ return operadores; });
+configurarComboBusca('pd-local', function(){ return locais; });
  /* =====================================================================
    INDICADORES V2 — filtros de período + KPIs com sparkline (Fase 1)
    ===================================================================== */
