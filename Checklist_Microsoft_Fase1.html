@@ -58,6 +58,7 @@
   /* ===================== TOPBAR ===================== */
   .topbar{background:#dcebdc;border-bottom:1px solid var(--linha);padding:16px 28px;
     display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .topbar > .topbar-left, .topbar > .topbar-right{position:relative;z-index:1}
   .topbar-left{display:flex;align-items:center;gap:14px}
   .topbar-hamb{font-size:20px;color:var(--cinza);cursor:pointer;display:none}
   .topbar-titulo{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--tinta)}
@@ -181,7 +182,8 @@
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
 
   /* ---- Toggle Checklists / Parte Diária (topbar) ---- */
-  .topo-toggle{display:flex;align-items:center;gap:4px;background:var(--cream);border-radius:24px;padding:4px}
+  .topo-toggle{display:flex;align-items:center;gap:4px;background:var(--card);border-radius:24px;padding:4px;
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.08)}
   .topo-toggle-opt{border:none;background:transparent;padding:8px 18px;border-radius:20px;font-size:13px;
     font-weight:700;color:var(--cinza);cursor:pointer;font-family:inherit}
   .topo-toggle-opt.ativo{background:var(--navy);color:#fff}
@@ -859,10 +861,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="topbar">
       <div class="topbar-left">
         <span class="topbar-titulo" id="topbar-titulo">Checklists</span>
-        <div class="topo-toggle" id="topo-toggle" style="display:none">
-          <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
-          <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
-        </div>
+      </div>
+      <div class="topo-toggle" id="topo-toggle">
+        <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
+        <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -1060,10 +1062,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           </div>
         </div>
         <div class="campo">
-          <label>Horímetro atual <span class="obrig">*</span></label>
-          <input id="pd-horimetro" type="text" inputmode="decimal" placeholder="0,0">
-        </div>
-        <div class="campo">
           <label>Data <span class="obrig">*</span></label>
           <input id="pd-data" type="date">
         </div>
@@ -1086,6 +1084,16 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
             <span class="busca-seta">⌄</span>
             <div class="busca-lista"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== CARD DO EQUIPAMENTO (mesma foto do Checklist) ===================== -->
+    <div class="equip-card" id="pd-equip-card" style="display:none">
+      <div class="equip-foto" id="pd-equip-card-foto">🚜</div>
+      <div class="equip-info">
+        <div class="equip-nome-linha">
+          <span class="equip-nome" id="pd-equip-card-nome">—</span>
         </div>
       </div>
     </div>
@@ -2919,8 +2927,8 @@ function pdLimparCampos(limparEquipamento){
   if (limparEquipamento !== false) {
     document.getElementById('pd-equipamento').value = '';
     document.getElementById('pd-local').value = '';
+    pdAtualizarCardEquipamento('');
   }
-  document.getElementById('pd-horimetro').value = '';
   document.getElementById('pd-operador').value = '';
   document.getElementById('pd-observacoes').value = '';
   document.getElementById('pd-obs-contador').textContent = '0 / 500';
@@ -2981,23 +2989,44 @@ async function pdCarregarUltimas(equipamento){
 }
 
 document.getElementById('pd-equipamento').addEventListener('change', function(){
-  pdCarregarUltimas(this.value.trim().toUpperCase());
+  const eq = this.value.trim().toUpperCase();
+  pdCarregarUltimas(eq);
+  pdAtualizarCardEquipamento(eq);
 });
+
+function pdAtualizarCardEquipamento(eq){
+  const card = document.getElementById('pd-equip-card');
+  if (!eq) { card.style.display = 'none'; return; }
+  card.style.display = 'flex';
+  document.getElementById('pd-equip-card-nome').textContent = eq;
+  const fotoEl = document.getElementById('pd-equip-card-foto');
+  fotoEl.textContent = '🚜';
+  buscarUrlFotoEquipamento(eq).then(function(url){
+    if (document.getElementById('pd-equipamento').value.trim().toUpperCase() !== eq) return;
+    fotoEl.innerHTML = url
+      ? '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px">'
+      : '🚜';
+  });
+}
 
 document.getElementById('pd-salvar').onclick = async function(){
   const equipamento = document.getElementById('pd-equipamento').value.trim().toUpperCase();
-  const horimetro = document.getElementById('pd-horimetro').value.trim();
   const data = document.getElementById('pd-data').value;
   const operador = document.getElementById('pd-operador').value.trim();
   const local = document.getElementById('pd-local').value.trim();
   const observacoes = document.getElementById('pd-observacoes').value.trim();
+  const horimetro = pdAtividades.length ? (pdAtividades[0].horIni || '').trim() : '';
 
-  if (!equipamento || !horimetro || !data || !operador || !local) {
-    pdMostrarErro('Preencha equipamento, horímetro, data, operador e local.');
+  if (!equipamento || !data || !operador || !local) {
+    pdMostrarErro('Preencha equipamento, data, operador e local.');
     return;
   }
   if (!pdAtividades.length && !pdParadas.length) {
     pdMostrarErro('Adicione ao menos uma atividade ou uma parada antes de salvar.');
+    return;
+  }
+  if (!horimetro) {
+    pdMostrarErro('Informe o horímetro inicial na primeira atividade.');
     return;
   }
 
@@ -3051,12 +3080,11 @@ function mostrarView(nome){
 const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
 
-  const ehParDiariaOuChecklist = nome === 'novo' || nome === 'partediaria';
-  document.getElementById('topbar-titulo').style.display = ehParDiariaOuChecklist ? 'none' : '';
+  const ehSecaoParteDiaria = nome === 'partediaria';
   const toggle = document.getElementById('topo-toggle');
-  toggle.style.display = ehParDiariaOuChecklist ? 'flex' : 'none';
   toggle.querySelectorAll('.topo-toggle-opt').forEach(function(b){
-    b.classList.toggle('ativo', b.dataset.ir === nome);
+    const ehBotaoParteDiaria = b.dataset.ir === 'partediaria';
+    b.classList.toggle('ativo', ehBotaoParteDiaria === ehSecaoParteDiaria);
   });
 
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
