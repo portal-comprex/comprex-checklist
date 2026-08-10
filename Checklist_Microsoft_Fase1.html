@@ -179,6 +179,43 @@
 
   .cab{background:var(--cream);border:1px solid #cfe8d2;color:var(--tinta);border-radius:14px;padding:16px 20px}
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
+
+  /* ---- Toggle Checklists / Parte Diária (topbar) ---- */
+  .topo-toggle{display:flex;align-items:center;gap:4px;background:var(--cream);border-radius:24px;padding:4px}
+  .topo-toggle-opt{border:none;background:transparent;padding:8px 18px;border-radius:20px;font-size:13px;
+    font-weight:700;color:var(--cinza);cursor:pointer;font-family:inherit}
+  .topo-toggle-opt.ativo{background:var(--navy);color:#fff}
+
+  /* ---- Parte Diária: seções dinâmicas ---- */
+  .pd-secao{margin-top:20px}
+  .pd-secao-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .pd-secao-titulo{font-size:14px;font-weight:800;color:var(--navy)}
+  .pd-total-badge{background:var(--cream);border:1px solid #cfe8d2;border-radius:10px;padding:8px 14px;text-align:right;min-width:150px}
+  .pd-total-badge.parada{background:#fdf3e3;border-color:#f2ddb3}
+  .pd-total-badge-lbl{font-size:9px;font-weight:700;color:var(--cinza);letter-spacing:.5px}
+  .pd-total-badge-val{font-size:16px;font-weight:800;color:var(--tinta)}
+  .pd-tabela-cab{display:grid;gap:10px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;
+    padding:0 4px 6px;border-bottom:1px solid var(--linha)}
+  .pd-tabela-cab.ativ, .pd-linha.ativ{grid-template-columns:110px 1fr 100px 100px 90px 34px}
+  .pd-tabela-cab.par, .pd-linha.par{grid-template-columns:160px 1fr 100px 100px 90px 34px}
+  .pd-linha{display:grid;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--linha)}
+  .pd-linha input, .pd-linha select{width:100%;padding:8px 9px;border:1px solid var(--linha);border-radius:8px;
+    font-size:12px;font-family:inherit;background:var(--card);color:var(--tinta)}
+  .pd-linha-total{font-size:12px;font-weight:700;color:var(--tinta);text-align:right}
+  .pd-linha-apagar{background:none;border:none;color:var(--ru);cursor:pointer;font-size:15px}
+  .pd-add-btn{margin-top:10px;padding:9px 16px;border:1px dashed #8fb99a;border-radius:9px;background:var(--cream);
+    color:var(--navy);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .pd-vazio{font-size:12px;color:var(--cinza);padding:14px 4px;text-align:center}
+  .pd-obs-wrap{position:relative}
+  .pd-obs-contador{position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--cinza)}
+  .pd-acoes{display:flex;justify-content:space-between;align-items:center;margin-top:22px}
+  .pd-resumo-final{display:flex;align-items:center;gap:16px;margin-top:18px;background:var(--cream);
+    border:1px solid #cfe8d2;border-radius:14px;padding:16px 20px;flex-wrap:wrap}
+  .pd-resumo-bloco{text-align:center}
+  .pd-resumo-bloco-lbl{font-size:9.5px;font-weight:700;color:var(--cinza);letter-spacing:.4px}
+  .pd-resumo-bloco-val{font-size:19px;font-weight:800}
+  .pd-resumo-op{font-size:20px;color:var(--cinza);font-weight:300}
+  .pd-resumo-nota{font-size:10.5px;color:var(--cinza);margin-top:8px;width:100%}
   .campo label{display:block;font-size:10px;letter-spacing:1px;color:var(--cinza);text-transform:uppercase;margin-bottom:4px}
   .campo input,.campo select{
     width:100%;background:#fff;border:1.5px solid #d8dee3;color:var(--tinta);
@@ -803,6 +840,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
     <nav class="sidebar-nav">
     <div class="sidebar-item ativo" data-view="novo"><i>📋</i> Checklists</div>
+      <div class="sidebar-item" data-view="partediaria"><i>📝</i> Parte Diária</div>
       <div class="sidebar-item" data-view="historico"><i>🕒</i> Histórico</div>
       <div class="sidebar-item" data-view="dashboard"><i>📊</i> Dashboard</div>
      <div class="sidebar-item" data-view="ocorrencias"><i>⚠️</i> Ocorrências</div>
@@ -821,6 +859,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="topbar">
       <div class="topbar-left">
         <span class="topbar-titulo" id="topbar-titulo">Checklists</span>
+        <div class="topo-toggle" id="topo-toggle" style="display:none">
+          <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
+          <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
+        </div>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -865,7 +907,13 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
         <div class="campo">
           <label>Operador <span class="obrig">*</span></label>
-          <input id="operador" placeholder="Nome">
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="operador" placeholder="Buscar operador…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
         </div>
         <div class="campo">
           <label>Local / Obra</label>
@@ -989,6 +1037,148 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         <div class="info-rapida-linha"><span>🕐 Iniciado em</span><b id="info-iniciado">—</b></div>
         <div class="info-rapida-linha"><span>⚠️ Itens críticos encontrados</span><b id="info-criticos">0</b></div>
         <div class="info-rapida-linha"><span>📷 Fotos anexadas</span><b id="info-fotos">0</b></div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+<div class="view" id="view-partediaria">
+  <div class="forma-layout">
+    <div class="forma-principal">
+
+    <div class="cab">
+      <div class="grid">
+        <div class="campo">
+          <label>Equipamento <span class="obrig">*</span></label>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="pd-equipamento" placeholder="Buscar equipamento…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Horímetro atual <span class="obrig">*</span></label>
+          <input id="pd-horimetro" type="text" inputmode="decimal" placeholder="0,0">
+        </div>
+        <div class="campo">
+          <label>Data <span class="obrig">*</span></label>
+          <input id="pd-data" type="date">
+        </div>
+        <div class="campo">
+          <label>Operador <span class="obrig">*</span></label>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="pd-operador" placeholder="Buscar operador…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Local / Obra <span class="obrig">*</span></label>
+          <div class="busca-wrap">
+            <span class="busca-icone">🔍</span>
+            <input type="text" id="pd-local" placeholder="Buscar local…" autocomplete="off">
+            <button type="button" class="busca-limpar" style="display:none">✕</button>
+            <span class="busca-seta">⌄</span>
+            <div class="busca-lista"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 1. REGISTRO DE ATIVIDADES ===================== -->
+    <div class="pd-secao">
+      <div class="pd-secao-cab">
+        <span class="pd-secao-titulo">1. REGISTRO DE ATIVIDADES</span>
+        <div class="pd-total-badge">
+          <div class="pd-total-badge-lbl">TOTAL DE HORAS TRABALHADAS</div>
+          <div class="pd-total-badge-val" id="pd-total-trabalhadas">0,00 h</div>
+        </div>
+      </div>
+      <div class="pd-tabela-cab ativ">
+        <span>HORÍMETRO INICIAL</span><span>DESCRIÇÃO DA ATIVIDADE</span><span>DE</span><span>ATÉ</span><span>TOTAL</span><span></span>
+      </div>
+      <div id="pd-lista-atividades"></div>
+      <button type="button" class="pd-add-btn" id="pd-add-atividade">+ Adicionar atividade</button>
+    </div>
+
+    <!-- ===================== 2. REGISTRO DE PARADAS ===================== -->
+    <div class="pd-secao">
+      <div class="pd-secao-cab">
+        <span class="pd-secao-titulo">2. REGISTRO DE PARADAS</span>
+        <div class="pd-total-badge parada">
+          <div class="pd-total-badge-lbl">TOTAL DE HORAS PARADAS</div>
+          <div class="pd-total-badge-val" id="pd-total-paradas">0,00 h</div>
+        </div>
+      </div>
+      <div class="pd-tabela-cab par">
+        <span>TIPO DE PARADA</span><span>DESCRIÇÃO (OPCIONAL)</span><span>INÍCIO</span><span>FIM</span><span>TOTAL</span><span></span>
+      </div>
+      <div id="pd-lista-paradas"></div>
+      <button type="button" class="pd-add-btn" id="pd-add-parada">+ Adicionar parada</button>
+    </div>
+
+    <!-- ===================== 3. OBSERVAÇÕES ===================== -->
+    <div class="pd-secao">
+      <div class="pd-secao-cab"><span class="pd-secao-titulo">3. OBSERVAÇÕES</span></div>
+      <div class="pd-obs-wrap">
+        <textarea id="pd-observacoes" maxlength="500" rows="4" placeholder="Informe observações sobre a operação, manutenção, condição do equipamento, entre outros…" style="width:100%;padding:12px;border:1px solid var(--linha);border-radius:10px;font-family:inherit;font-size:13px;resize:vertical;background:var(--card);color:var(--tinta)"></textarea>
+        <span class="pd-obs-contador" id="pd-obs-contador">0 / 500</span>
+      </div>
+    </div>
+
+    <div class="pd-resumo-final">
+      <div class="pd-resumo-bloco">
+        <div class="pd-resumo-bloco-lbl">TOTAL DE HORAS TRABALHADAS</div>
+        <div class="pd-resumo-bloco-val" id="pd-final-trabalhadas" style="color:var(--ok)">0,00 h</div>
+      </div>
+      <span class="pd-resumo-op">−</span>
+      <div class="pd-resumo-bloco">
+        <div class="pd-resumo-bloco-lbl">TOTAL DE HORAS PARADAS</div>
+        <div class="pd-resumo-bloco-val" id="pd-final-paradas" style="color:#a06800">0,00 h</div>
+      </div>
+      <span class="pd-resumo-op">=</span>
+      <div class="pd-resumo-bloco">
+        <div class="pd-resumo-bloco-lbl">HORAS LÍQUIDAS (TRABALHADAS)</div>
+        <div class="pd-resumo-bloco-val" id="pd-final-liquidas" style="color:var(--navy)">0,00 h</div>
+      </div>
+      <div class="pd-resumo-nota">Horas líquidas representam o tempo efetivo de operação do equipamento.</div>
+    </div>
+
+    <div class="pd-acoes">
+      <button type="button" class="rel-btn-secundario" id="pd-limpar">🗑️ Limpar campos</button>
+      <button type="button" class="rel-btn-primario" id="pd-salvar">💾 Salvar parte diária</button>
+    </div>
+    <div class="erro-msg" id="pd-erro-msg"></div>
+    <div class="ok-msg" id="pd-ok-msg">✔ Parte diária salva com sucesso!</div>
+
+    </div>
+
+    <!-- ===================== PAINEL DE RESUMO ===================== -->
+    <div class="forma-resumo">
+      <div class="resumo-card">
+        <h3>Resumo do dia</h3>
+        <div id="pd-resumo-donut-visual" style="width:80px;height:80px;border-radius:50%;margin:0 auto 16px;display:none"></div>
+        <div class="resumo-contagens">
+          <div class="resumo-linha"><span class="resumo-dot" style="background:var(--ok)"></span><span class="resumo-lbl">Trabalhadas</span><b id="pd-resumo-trab-h">0,00 h</b></div>
+          <div class="resumo-linha"><span class="resumo-dot" style="background:#c79a3a"></span><span class="resumo-lbl">Paradas</span><b id="pd-resumo-par-h">0,00 h</b></div>
+        </div>
+      </div>
+
+      <div class="resumo-card" id="pd-ultimos-card" style="margin-top:16px;display:none">
+        <h3>Últimas partes diárias</h3>
+        <div id="pd-ultimos-conteudo"></div>
+      </div>
+
+      <div class="resumo-card" style="margin-top:16px">
+        <h3>Informações rápidas</h3>
+        <div class="info-rapida-linha"><span>📋 Atividades registradas</span><b id="pd-info-atividades">0</b></div>
+        <div class="info-rapida-linha"><span>⏸️ Paradas registradas</span><b id="pd-info-paradas">0</b></div>
+        <div class="info-rapida-linha"><span>📝 Observação</span><b id="pd-info-obs">Não</b></div>
       </div>
     </div>
 
@@ -1300,6 +1490,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="modal-tabs">
       <div class="tab ativo" data-tab="equip">🚜 Equipamento</div>
       <div class="tab" data-tab="local">📍 Local / Obra</div>
+      <div class="tab" data-tab="operador">👷 Operador</div>
     </div>
 
     <!-- Painel Equipamento -->
@@ -1325,6 +1516,18 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <button class="btn-salvar" id="btn-salvar-local">Salvar local</button>
       <div class="feedback-cadastro" id="fb-local"></div>
     </div>
+
+    <!-- Painel Operador -->
+    <div class="modal-body" id="painel-operador" style="display:none">
+      <div class="modal-campo">
+        <label>Nome do operador</label>
+        <input type="text" id="input-operador" placeholder="Ex: João da Silva" autocomplete="off">
+        <div class="modal-dica">Será adicionado na lista de operadores do checklist e da parte diária.</div>
+      </div>
+      <div class="modal-lista" id="lista-operador"></div>
+      <button class="btn-salvar" id="btn-salvar-operador">Salvar operador</button>
+      <div class="feedback-cadastro" id="fb-operador"></div>
+    </div>
   </div>
 </div>
 
@@ -1349,6 +1552,8 @@ const SITE_ID = 'granitozucchicombr.sharepoint.com,83e0ab83-97de-4d0a-a562-2959d
 const LISTA_CHECKLISTS_ID = '451a0552-d57a-4513-8f71-cadc1bbac288';
 const LISTA_FROTA_ID      = 'cfee676a-8fc0-4605-b90f-d9976bb2e820';
 const LISTA_LOCAIS_ID     = '4551e8ac-2403-4ae4-950b-aee1908471ae';
+const LISTA_OPERADORES_ID    = 'e9a31405-b56e-436e-800d-2e677d31169d';
+const LISTA_PARTE_DIARIA_ID  = '41e6bd19-ccb0-41de-98fc-b6463a9b39a0';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 /**
@@ -1645,13 +1850,32 @@ async function carregarItensChecklistDoSharePoint(){
   return { itens: novoItens, extraData: novoExtraData, labelParada: novoLabelParada };
 }
 
+/** Lê a lista de Operadores, ignorando quem estiver marcado como "Ativo: Não". */
+async function lerListaOperadores(){
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_OPERADORES_ID + '/items?$expand=fields&$top=999');
+  const valores = [];
+  (d.value || []).forEach(function(item){
+    const f = item.fields;
+    const v = (f.Title || '').trim();
+    if (!v) return;
+    const ativo = String(f.Ativo || 'Sim').trim().toLowerCase();
+    if (ativo === 'não' || ativo === 'nao') return;
+    valores.push(v);
+    operadoresIds[v] = item.id;
+  });
+  return valores;
+}
+
 async function iniciarAplicacao(){
   try {
-    const [equipamentos, locais] = await Promise.all([
+    const [equipamentos, locais, listaOperadores] = await Promise.all([
       lerListaSimples(LISTA_FROTA_ID, frotasIds),
-      lerListaSimples(LISTA_LOCAIS_ID, locaisIds)
+      lerListaSimples(LISTA_LOCAIS_ID, locaisIds),
+      lerListaOperadores()
     ]);
     inicializarListas(equipamentos, locais);
+    operadores = listaOperadores.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
+    renderizarListaModal('operador');
   } catch(err) {
     document.getElementById('aviso-colunas-area').innerHTML =
       '<div class="aviso-coluna"><b>⚠️ Erro ao carregar as listas de equipamento/local</b>' + err.message + '</div>';
@@ -1782,10 +2006,11 @@ function salvarExtras(chave, arr) {
 
 let frotas  = [];
 let locais  = [];
+let operadores = [];
 let frotasIds = {};   // valor (texto) -> ID do item no SharePoint
 let locaisIds = {};   // valor (texto) -> ID do item no SharePoint
-let editandoEquip = null;
-let editandoLocal = null;
+let operadoresIds = {};
+let editandoPorTipo = { equip: null, local: null, operador: null };
 
 function preencherSelect(id, arr) {
   // "equipamento" e "local" agora são combos de busca customizados (ver configurarComboBusca)
@@ -1831,6 +2056,7 @@ function inicializarListas(equipamentosServidor, locaisServidor) {
 function ordenarListas(){
   frotas.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
   locais.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
+  operadores.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
 }
 
 /* =====================================================================
@@ -2337,15 +2563,23 @@ document.querySelectorAll('.tab').forEach(function(tab){
     tabAtiva = tab.dataset.tab;
     document.getElementById('painel-equip').style.display = tabAtiva === 'equip' ? 'block' : 'none';
     document.getElementById('painel-local').style.display = tabAtiva === 'local' ? 'block' : 'none';
+    document.getElementById('painel-operador').style.display = tabAtiva === 'operador' ? 'block' : 'none';
     renderizarListaModal(tabAtiva);
   };
 });
 
+function configModalTipo(tipo){
+  if (tipo === 'equip') return { lista: frotas, mapaIds: frotasIds, listaId: LISTA_FROTA_ID, rotulo: 'equipamento' };
+  if (tipo === 'local') return { lista: locais, mapaIds: locaisIds, listaId: LISTA_LOCAIS_ID, rotulo: 'local' };
+  return { lista: operadores, mapaIds: operadoresIds, listaId: LISTA_OPERADORES_ID, rotulo: 'operador' };
+}
+
 /** Renderiza a lista com opções de Editar/Apagar (e Foto, só para Equipamento). */
 function renderizarListaModal(tipo) {
-  const lista = tipo === 'equip' ? frotas : locais;
-  const mapaIds = tipo === 'equip' ? frotasIds : locaisIds;
-  const editando = tipo === 'equip' ? editandoEquip : editandoLocal;
+  const cfg = configModalTipo(tipo);
+  const lista = cfg.lista;
+  const mapaIds = cfg.mapaIds;
+  const editando = editandoPorTipo[tipo];
   const el = document.getElementById('lista-' + tipo);
   if (!lista.length) {
     el.innerHTML = '<div class="modal-lista-vazio">Nenhum cadastrado ainda.</div>';
@@ -2379,32 +2613,28 @@ function renderizarListaModal(tipo) {
   });
   el.querySelectorAll('.mli-editar').forEach(function(btn){
     btn.onclick = function(){
-      if (tipo === 'equip') editandoEquip = btn.dataset.valor; else editandoLocal = btn.dataset.valor;
+      editandoPorTipo[tipo] = btn.dataset.valor;
       renderizarListaModal(tipo);
     };
   });
   el.querySelectorAll('.mli-cancelar').forEach(function(btn){
     btn.onclick = function(){
-      if (tipo === 'equip') editandoEquip = null; else editandoLocal = null;
+      editandoPorTipo[tipo] = null;
       renderizarListaModal(tipo);
     };
   });
   el.querySelectorAll('.mli-apagar').forEach(function(btn){
     btn.onclick = function(){
       const valor = btn.dataset.valor;
-      const rotulo = tipo === 'equip' ? 'equipamento' : 'local';
-      if (!confirm('Apagar o ' + rotulo + ' "' + valor + '" da lista?\n\nOs checklists já lançados com esse ' + rotulo + ' não serão apagados, só deixa de aparecer para novos lançamentos.')) return;
+      const rotulo = cfg.rotulo;
+      if (!confirm('Apagar o ' + rotulo + ' "' + valor + '" da lista?\n\nOs registros já lançados com esse ' + rotulo + ' não serão apagados, só deixa de aparecer para novos lançamentos.')) return;
 
-      const listaId = tipo === 'equip' ? LISTA_FROTA_ID : LISTA_LOCAIS_ID;
       const itemId = mapaIds[valor];
       btn.disabled = true; btn.textContent = 'Apagando…';
-      apagarItemSimples(listaId, itemId).then(function(){
-        const listaRef = tipo === 'equip' ? frotas : locais;
-        const i = listaRef.indexOf(valor);
-        if (i >= 0) listaRef.splice(i, 1);
+      apagarItemSimples(cfg.listaId, itemId).then(function(){
+        const i = lista.indexOf(valor);
+        if (i >= 0) lista.splice(i, 1);
         delete mapaIds[valor];
-        if (tipo === 'equip') preencherSelect('equipamento', frotas);
-        else preencherSelect('local', locais);
         renderizarListaModal(tipo);
         mostrarFeedback(tipo, true, '✔ Removido com sucesso!');
       }).catch(function(err){
@@ -2419,22 +2649,19 @@ function renderizarListaModal(tipo) {
       const antigoValor = btn.dataset.antigo;
       if (!novoValor) return;
       if (novoValor === antigoValor) {
-        if (tipo === 'equip') editandoEquip = null; else editandoLocal = null;
+        editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         return;
       }
-      const listaId = tipo === 'equip' ? LISTA_FROTA_ID : LISTA_LOCAIS_ID;
       const itemId = mapaIds[antigoValor];
       btn.disabled = true; btn.textContent = 'Salvando…';
-      editarItemSimples(listaId, itemId, novoValor).then(function(){
-        const listaRef = tipo === 'equip' ? frotas : locais;
-        const i = listaRef.indexOf(antigoValor);
-        if (i >= 0) listaRef[i] = novoValor;
+      editarItemSimples(cfg.listaId, itemId, novoValor).then(function(){
+        const i = lista.indexOf(antigoValor);
+        if (i >= 0) lista[i] = novoValor;
         delete mapaIds[antigoValor];
         mapaIds[novoValor] = itemId;
         ordenarListas();
-        if (tipo === 'equip') { editandoEquip = null; preencherSelect('equipamento', frotas); }
-        else { editandoLocal = null; preencherSelect('local', locais); }
+        editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         mostrarFeedback(tipo, true, '✔ Atualizado com sucesso!');
       }).catch(function(err){
@@ -2498,6 +2725,319 @@ document.getElementById('btn-salvar-local').onclick = async function(){
   }
 };
 
+document.getElementById('btn-salvar-operador').onclick = async function(){
+  const val = document.getElementById('input-operador').value.trim();
+  if (!val) { mostrarFeedback('operador', false, 'Digite o nome do operador.'); return; }
+  if (operadores.indexOf(val) >= 0) { mostrarFeedback('operador', false, 'Operador já existe na lista.'); return; }
+
+  const botao = document.getElementById('btn-salvar-operador');
+  botao.disabled = true; botao.textContent = 'Salvando…';
+  try {
+    const resultado = await adicionarItemSimples(LISTA_OPERADORES_ID, val);
+    operadores.push(val);
+    operadoresIds[val] = resultado.id;
+    ordenarListas();
+    document.getElementById('input-operador').value = '';
+    renderizarListaModal('operador');
+    mostrarFeedback('operador', true, '✔ Operador adicionado com sucesso!');
+  } catch(err) {
+    mostrarFeedback('operador', false, 'Erro: ' + err.message);
+  } finally {
+    botao.disabled = false; botao.textContent = 'Salvar operador';
+  }
+};
+
+/* =====================================================================
+   PARTE DIÁRIA — registro de atividades e paradas do dia
+   ===================================================================== */
+configurarComboBusca('pd-equipamento', function(){ return frotas; });
+configurarComboBusca('pd-operador', function(){ return operadores; });
+configurarComboBusca('pd-local', function(){ return locais; });
+
+let pdInicializada = false;
+let pdAtividades = [];
+let pdParadas = [];
+const PD_TIPOS_PARADA = ['ALMOÇO', 'REVISÃO PREVENTIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'];
+
+function inicializarTelaParteDiariaSeNecessario(){
+  if (pdInicializada) return;
+  pdInicializada = true;
+  const hoje = new Date();
+  document.getElementById('pd-data').value = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+  pdRenderizarAtividades();
+  pdRenderizarParadas();
+  pdAtualizarTotais();
+}
+
+/** Calcula a diferença em horas decimais entre dois horários "HH:MM". */
+function pdCalcularHoras(ini, fim){
+  if (!ini || !fim) return 0;
+  const p1 = ini.split(':'), p2 = fim.split(':');
+  const h1 = parseInt(p1[0],10), m1 = parseInt(p1[1],10);
+  const h2 = parseInt(p2[0],10), m2 = parseInt(p2[1],10);
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+  let minutos = (h2*60+m2) - (h1*60+m1);
+  if (minutos < 0) minutos += 24*60; // atravessou a meia-noite
+  return minutos / 60;
+}
+
+function pdFormatarHoras(h){
+  return h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' h';
+}
+
+function pdRenderizarAtividades(){
+  const cont = document.getElementById('pd-lista-atividades');
+  if (!pdAtividades.length) {
+    cont.innerHTML = '<div class="pd-vazio">Nenhuma atividade adicionada ainda.</div>';
+    return;
+  }
+  cont.innerHTML = pdAtividades.map(function(a, i){
+    const horas = pdCalcularHoras(a.de, a.ate);
+    return '<div class="pd-linha ativ" data-idx="'+i+'">' +
+      '<input type="text" class="pd-campo" data-campo="horIni" data-idx="'+i+'" value="'+(a.horIni||'').replace(/"/g,'&quot;')+'" placeholder="0,0">' +
+      '<input type="text" class="pd-campo" data-campo="desc" data-idx="'+i+'" value="'+(a.desc||'').replace(/"/g,'&quot;')+'" placeholder="Descrição da atividade">' +
+      '<input type="time" class="pd-campo" data-campo="de" data-idx="'+i+'" value="'+(a.de||'')+'">' +
+      '<input type="time" class="pd-campo" data-campo="ate" data-idx="'+i+'" value="'+(a.ate||'')+'">' +
+      '<span class="pd-linha-total">'+pdFormatarHoras(horas)+'</span>' +
+      '<button type="button" class="pd-linha-apagar" data-idx="'+i+'" title="Remover">🗑️</button>' +
+    '</div>';
+  }).join('');
+
+  cont.querySelectorAll('.pd-campo').forEach(function(input){
+    input.addEventListener('input', function(){
+      const idx = parseInt(input.dataset.idx, 10);
+      pdAtividades[idx][input.dataset.campo] = input.value;
+      if (input.dataset.campo === 'de' || input.dataset.campo === 'ate') {
+        const linha = input.closest('.pd-linha');
+        const a = pdAtividades[idx];
+        linha.querySelector('.pd-linha-total').textContent = pdFormatarHoras(pdCalcularHoras(a.de, a.ate));
+      }
+      pdAtualizarTotais();
+    });
+  });
+  cont.querySelectorAll('.pd-linha-apagar').forEach(function(btn){
+    btn.onclick = function(){
+      pdAtividades.splice(parseInt(btn.dataset.idx, 10), 1);
+      pdRenderizarAtividades();
+      pdAtualizarTotais();
+    };
+  });
+}
+
+function pdRenderizarParadas(){
+  const cont = document.getElementById('pd-lista-paradas');
+  if (!pdParadas.length) {
+    cont.innerHTML = '<div class="pd-vazio">Nenhuma parada adicionada ainda.</div>';
+    return;
+  }
+  cont.innerHTML = pdParadas.map(function(p, i){
+    const horas = pdCalcularHoras(p.ini, p.fim);
+    const opcoes = PD_TIPOS_PARADA.map(function(t){
+      return '<option value="'+t+'" '+(p.tipo===t?'selected':'')+'>'+t+'</option>';
+    }).join('');
+    return '<div class="pd-linha par" data-idx="'+i+'">' +
+      '<select class="pd-campo" data-campo="tipo" data-idx="'+i+'"><option value="">Selecione…</option>'+opcoes+'</select>' +
+      '<input type="text" class="pd-campo" data-campo="desc" data-idx="'+i+'" value="'+(p.desc||'').replace(/"/g,'&quot;')+'" placeholder="Descrição (opcional)">' +
+      '<input type="time" class="pd-campo" data-campo="ini" data-idx="'+i+'" value="'+(p.ini||'')+'">' +
+      '<input type="time" class="pd-campo" data-campo="fim" data-idx="'+i+'" value="'+(p.fim||'')+'">' +
+      '<span class="pd-linha-total">'+pdFormatarHoras(horas)+'</span>' +
+      '<button type="button" class="pd-linha-apagar" data-idx="'+i+'" title="Remover">🗑️</button>' +
+    '</div>';
+  }).join('');
+
+  cont.querySelectorAll('.pd-campo').forEach(function(campo){
+    campo.addEventListener(campo.tagName === 'SELECT' ? 'change' : 'input', function(){
+      const idx = parseInt(campo.dataset.idx, 10);
+      pdParadas[idx][campo.dataset.campo] = campo.value;
+      if (campo.dataset.campo === 'ini' || campo.dataset.campo === 'fim') {
+        const linha = campo.closest('.pd-linha');
+        const p = pdParadas[idx];
+        linha.querySelector('.pd-linha-total').textContent = pdFormatarHoras(pdCalcularHoras(p.ini, p.fim));
+      }
+      pdAtualizarTotais();
+    });
+  });
+  cont.querySelectorAll('.pd-linha-apagar').forEach(function(btn){
+    btn.onclick = function(){
+      pdParadas.splice(parseInt(btn.dataset.idx, 10), 1);
+      pdRenderizarParadas();
+      pdAtualizarTotais();
+    };
+  });
+}
+
+document.getElementById('pd-add-atividade').onclick = function(){
+  pdAtividades.push({ horIni: '', desc: '', de: '', ate: '' });
+  pdRenderizarAtividades();
+  pdAtualizarTotais();
+};
+document.getElementById('pd-add-parada').onclick = function(){
+  pdParadas.push({ tipo: '', desc: '', ini: '', fim: '' });
+  pdRenderizarParadas();
+  pdAtualizarTotais();
+};
+
+function pdCalcularTotais(){
+  const trabalhadas = pdAtividades.reduce(function(soma, a){ return soma + pdCalcularHoras(a.de, a.ate); }, 0);
+  const paradas = pdParadas.reduce(function(soma, p){ return soma + pdCalcularHoras(p.ini, p.fim); }, 0);
+  return { trabalhadas: trabalhadas, paradas: paradas, liquidas: trabalhadas - paradas };
+}
+
+function pdAtualizarTotais(){
+  const t = pdCalcularTotais();
+  document.getElementById('pd-total-trabalhadas').textContent = pdFormatarHoras(t.trabalhadas);
+  document.getElementById('pd-total-paradas').textContent = pdFormatarHoras(t.paradas);
+  document.getElementById('pd-final-trabalhadas').textContent = pdFormatarHoras(t.trabalhadas);
+  document.getElementById('pd-final-paradas').textContent = pdFormatarHoras(t.paradas);
+  document.getElementById('pd-final-liquidas').textContent = pdFormatarHoras(t.liquidas);
+  document.getElementById('pd-resumo-trab-h').textContent = pdFormatarHoras(t.trabalhadas);
+  document.getElementById('pd-resumo-par-h').textContent = pdFormatarHoras(t.paradas);
+  document.getElementById('pd-info-atividades').textContent = pdAtividades.length;
+  document.getElementById('pd-info-paradas').textContent = pdParadas.length;
+  document.getElementById('pd-info-obs').textContent = document.getElementById('pd-observacoes').value.trim() ? 'Sim' : 'Não';
+
+  const donut = document.getElementById('pd-resumo-donut-visual');
+  const total = t.trabalhadas + t.paradas;
+  if (total <= 0) {
+    donut.style.display = 'none';
+  } else {
+    donut.style.display = 'block';
+    const pctTrab = t.trabalhadas / total * 100;
+    donut.style.background = 'conic-gradient(var(--ok) 0%, var(--ok) ' + pctTrab.toFixed(1) + '%, #c79a3a ' + pctTrab.toFixed(1) + '%, #c79a3a 100%)';
+  }
+}
+
+document.getElementById('pd-observacoes').addEventListener('input', function(){
+  document.getElementById('pd-obs-contador').textContent = this.value.length + ' / 500';
+  document.getElementById('pd-info-obs').textContent = this.value.trim() ? 'Sim' : 'Não';
+});
+
+function pdMostrarErro(msg){
+  const el = document.getElementById('pd-erro-msg');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 6000);
+}
+
+function pdLimparCampos(limparEquipamento){
+  if (limparEquipamento !== false) {
+    document.getElementById('pd-equipamento').value = '';
+    document.getElementById('pd-local').value = '';
+  }
+  document.getElementById('pd-horimetro').value = '';
+  document.getElementById('pd-operador').value = '';
+  document.getElementById('pd-observacoes').value = '';
+  document.getElementById('pd-obs-contador').textContent = '0 / 500';
+  pdAtividades = [];
+  pdParadas = [];
+  pdRenderizarAtividades();
+  pdRenderizarParadas();
+  pdAtualizarTotais();
+}
+
+document.getElementById('pd-limpar').onclick = function(){
+  if (confirm('Limpar todos os campos da parte diária atual?')) pdLimparCampos(true);
+};
+
+/* ---- Cadastro/consulta das partes diárias já salvas ---- */
+let partesDiariasCarregadas = false;
+let partesDiariasItens = [];
+
+async function garantirDadosPartesDiarias(forcar){
+  if (partesDiariasCarregadas && !forcar) return partesDiariasItens;
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_PARTE_DIARIA_ID + '/items?$expand=fields&$top=999');
+  partesDiariasItens = (d.value || []).map(function(item){
+    const f = item.fields;
+    return {
+      id: item.id,
+      criado: item.createdDateTime,
+      equipamento: f.Equipamento || '',
+      operador: f.Operador || '',
+      local: f.Local || '',
+      data: f.Data || item.createdDateTime,
+      trabalhadas: parseFloat(String(f.TotalTrabalhadas || '0').replace(',', '.')) || 0,
+      paradas: parseFloat(String(f.TotalParadas || '0').replace(',', '.')) || 0,
+      liquidas: parseFloat(String(f.HorasLiquidas || '0').replace(',', '.')) || 0
+    };
+  }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  partesDiariasCarregadas = true;
+  return partesDiariasItens;
+}
+
+async function pdCarregarUltimas(equipamento){
+  const card = document.getElementById('pd-ultimos-card');
+  const cont = document.getElementById('pd-ultimos-conteudo');
+  if (!equipamento) { card.style.display = 'none'; return; }
+  try {
+    const todas = await garantirDadosPartesDiarias();
+    const doEquip = todas.filter(function(p){ return p.equipamento === equipamento; });
+    if (!doEquip.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    cont.innerHTML = doEquip.slice(0, 5).map(function(p){
+      return '<div class="ultimos-item">' +
+        '<span class="ultimos-data">' + formatarDataHist(p.criado) + '</span>' +
+        '<b>' + pdFormatarHoras(p.liquidas) + '</b>' +
+      '</div>';
+    }).join('');
+  } catch(err) {
+    card.style.display = 'none';
+  }
+}
+
+document.getElementById('pd-equipamento').addEventListener('change', function(){
+  pdCarregarUltimas(this.value.trim().toUpperCase());
+});
+
+document.getElementById('pd-salvar').onclick = async function(){
+  const equipamento = document.getElementById('pd-equipamento').value.trim().toUpperCase();
+  const horimetro = document.getElementById('pd-horimetro').value.trim();
+  const data = document.getElementById('pd-data').value;
+  const operador = document.getElementById('pd-operador').value.trim();
+  const local = document.getElementById('pd-local').value.trim();
+  const observacoes = document.getElementById('pd-observacoes').value.trim();
+
+  if (!equipamento || !horimetro || !data || !operador || !local) {
+    pdMostrarErro('Preencha equipamento, horímetro, data, operador e local.');
+    return;
+  }
+  if (!pdAtividades.length && !pdParadas.length) {
+    pdMostrarErro('Adicione ao menos uma atividade ou uma parada antes de salvar.');
+    return;
+  }
+
+  const totais = pdCalcularTotais();
+  const fields = {
+    Equipamento: equipamento,
+    Horimetro: horimetro,
+    Data: data + 'T00:00:00Z',
+    Operador: operador,
+    Local: local,
+    Atividades: JSON.stringify(pdAtividades),
+    Paradas: JSON.stringify(pdParadas),
+    Observacoes: observacoes,
+    TotalTrabalhadas: totais.trabalhadas.toFixed(2).replace('.', ','),
+    TotalParadas: totais.paradas.toFixed(2).replace('.', ','),
+    HorasLiquidas: totais.liquidas.toFixed(2).replace('.', ',')
+  };
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_PARTE_DIARIA_ID + '/items', { fields: fields });
+    const ok = document.getElementById('pd-ok-msg');
+    ok.style.display = 'block';
+    setTimeout(function(){ ok.style.display = 'none'; }, 5000);
+    partesDiariasCarregadas = false; // força reconsulta na próxima vez
+    pdLimparCampos(false);
+    pdCarregarUltimas(equipamento);
+  } catch(err) {
+    pdMostrarErro('Falha ao enviar. Tente novamente. ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar parte diária';
+  }
+};
+
+
   /* =====================================================================
    NAVEGAÇÃO ENTRE TELAS — Fase 2 (Histórico)
    ===================================================================== */
@@ -2512,18 +3052,32 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { novo: 'Checklists', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores' };
+const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
+
+  const ehParDiariaOuChecklist = nome === 'novo' || nome === 'partediaria';
+  document.getElementById('topbar-titulo').style.display = ehParDiariaOuChecklist ? 'none' : '';
+  const toggle = document.getElementById('topo-toggle');
+  toggle.style.display = ehParDiariaOuChecklist ? 'flex' : 'none';
+  toggle.querySelectorAll('.topo-toggle-opt').forEach(function(b){
+    b.classList.toggle('ativo', b.dataset.ir === nome);
+  });
+
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
   if (nome === 'dashboard') carregarDashboard();
   if (nome === 'ocorrencias') carregarOcorrencias();
   if (nome === 'frota') carregarFrota();
   if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
   if (nome === 'indicadores') { carregarIndicadoresV2(); }
+  if (nome === 'partediaria') inicializarTelaParteDiariaSeNecessario();
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
   item.onclick = function(){ mostrarView(item.dataset.view); };
+});
+
+document.querySelectorAll('.topo-toggle-opt').forEach(function(btn){
+  btn.onclick = function(){ mostrarView(btn.dataset.ir); };
 });
 
 function severidadeDaResposta(rotuloOriginal, valor){
@@ -3512,6 +4066,7 @@ function configurarComboBusca(inputId, listaOrigemFn){
 
 configurarComboBusca('equipamento', function(){ return frotas; });
 configurarComboBusca('local', function(){ return locais; });
+configurarComboBusca('operador', function(){ return operadores; });
  /* =====================================================================
    INDICADORES V2 — filtros de período + KPIs com sparkline (Fase 1)
    ===================================================================== */
