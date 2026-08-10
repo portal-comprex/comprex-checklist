@@ -830,6 +830,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .ind2-nivel.medio{background:#fdf3e3;color:#a06800}
   .ind2-nivel.baixo{background:#e9f4ee;color:var(--ok)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1229,6 +1230,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <label>&nbsp;</label>
       <button type="button" class="rel-btn-secundario" id="hist-pd-limpar-filtros">Limpar filtros</button>
     </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="hist-pd-exportar-excel">📊 Exportar Excel</button>
+    </div>
   </div>
   <div class="hist-wrap">
     <table class="hist-tabela" id="hist-pd-tabela">
@@ -1346,6 +1351,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="hist-filtro-campo" style="justify-content:flex-end">
       <label>&nbsp;</label>
       <button type="button" class="rel-btn-primario" id="hist-imprimir">🖨️ Imprimir / Exportar PDF</button>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="hist-exportar-excel">📊 Exportar Excel</button>
     </div>
   </div>
   <div id="hist-print-area" style="display:none"></div>
@@ -1589,6 +1598,19 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
     <div class="hist-detalhe-corpo" id="hist-detalhe-corpo"></div>
+  </div>
+</div>
+
+<div class="hist-detalhe-overlay" id="pd-detalhe-overlay">
+  <div class="hist-detalhe-modal">
+    <div class="hist-detalhe-header">
+      <h3 id="pd-detalhe-titulo">Detalhes da parte diária</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="rel-btn-primario" id="pd-detalhe-imprimir" style="padding:6px 12px;font-size:12px">🖨️ Imprimir</button>
+        <button class="modal-fechar" id="pd-detalhe-fechar" style="color:#1a2430">✕</button>
+      </div>
+    </div>
+    <div class="hist-detalhe-corpo" id="pd-detalhe-corpo"></div>
   </div>
 </div>
 
@@ -2887,7 +2909,7 @@ function pdAplicarMascaraHorario(campo){
 }
 let pdAtividades = [];
 let pdParadas = [];
-const PD_TIPOS_PARADA = ['ALMOÇO', 'REVISÃO PREVENTIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'];
+const PD_TIPOS_PARADA = ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'];
 
 function inicializarTelaParteDiariaSeNecessario(){
   if (pdInicializada) return;
@@ -3002,7 +3024,7 @@ function pdRenderizarParadas(){
 }
 
 document.getElementById('pd-add-atividade').onclick = function(){
-  pdAtividades.push({ horIni: '', desc: '', de: '', ate: '' });
+  pdAtividades.push({ horIni: '', desc: 'OPERAÇÃO', de: '', ate: '' });
   pdRenderizarAtividades();
   pdAtualizarTotais();
 };
@@ -3122,7 +3144,9 @@ async function garantirDadosPartesDiarias(forcar){
   partesDiariasItens = (d.value || []).map(function(item){
     const f = item.fields;
     let paradasDetalhe = [];
+    let atividadesDetalhe = [];
     try { paradasDetalhe = JSON.parse(f.Paradas || '[]'); } catch(e) { paradasDetalhe = []; }
+    try { atividadesDetalhe = JSON.parse(f.Atividades || '[]'); } catch(e) { atividadesDetalhe = []; }
     return {
       id: item.id,
       criado: item.createdDateTime,
@@ -3130,10 +3154,12 @@ async function garantirDadosPartesDiarias(forcar){
       operador: f.Operador || '',
       local: f.Local || '',
       data: f.Data || item.createdDateTime,
+      observacoes: f.Observacoes || '',
       trabalhadas: parseFloat(String(f.TotalTrabalhadas || '0').replace(',', '.')) || 0,
       paradas: parseFloat(String(f.TotalParadas || '0').replace(',', '.')) || 0,
       liquidas: parseFloat(String(f.HorasLiquidas || '0').replace(',', '.')) || 0,
-      paradasDetalhe: paradasDetalhe
+      paradasDetalhe: paradasDetalhe,
+      atividadesDetalhe: atividadesDetalhe
     };
   }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
   partesDiariasCarregadas = true;
@@ -3209,7 +3235,7 @@ function pdRenderizarTabelaHistorico(itensCompletos){
     return;
   }
   tbody.innerHTML = filtrados.map(function(p){
-    return '<tr>' +
+    return '<tr class="hist-linha-clicavel" data-id="' + p.id + '" style="cursor:pointer">' +
       '<td>' + formatarDataHist(p.criado) + '</td>' +
       '<td>' + p.equipamento + '</td>' +
       '<td>' + p.operador + '</td>' +
@@ -3219,7 +3245,71 @@ function pdRenderizarTabelaHistorico(itensCompletos){
       '<td><b>' + pdFormatarHoras(p.liquidas) + '</b></td>' +
     '</tr>';
   }).join('');
+  tbody.querySelectorAll('.hist-linha-clicavel').forEach(function(tr){
+    tr.onclick = function(){ pdAbrirDetalhe(tr.dataset.id); };
+  });
 }
+
+let pdDetalheAberto = null;
+
+function pdAbrirDetalhe(id){
+  const p = partesDiariasItens.find(function(x){ return String(x.id) === String(id); });
+  if (!p) return;
+  pdDetalheAberto = p;
+  document.getElementById('pd-detalhe-titulo').textContent = p.equipamento + ' — ' + formatarDataHist(p.criado);
+  document.getElementById('pd-detalhe-corpo').innerHTML = pdMontarConteudoDetalhe(p);
+  document.getElementById('pd-detalhe-overlay').classList.add('aberto');
+}
+
+function pdMontarConteudoDetalhe(p){
+  let html = '<div class="hist-detalhe-meta">Operador: <b>' + p.operador + '</b> · Local: <b>' + (p.local||'—') + '</b></div>';
+
+  html += '<div style="font-weight:800;color:var(--navy);font-size:13px;margin:14px 0 8px">1. Atividades</div>';
+  if (p.atividadesDetalhe && p.atividadesDetalhe.length) {
+    p.atividadesDetalhe.forEach(function(a, i){
+      const horas = pdCalcularHoras(a.de, a.ate);
+      html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + (i+1) + '. ' + (a.desc||'Atividade') + ' — horímetro ' + (a.horIni||'—') + ' (' + (a.de||'—') + ' às ' + (a.ate||'—') + ')</span>' +
+        '<span class="hist-detalhe-resposta">' + pdFormatarHoras(horas) + '</span></div>';
+    });
+  } else {
+    html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">Nenhuma atividade registrada.</span></div>';
+  }
+
+  html += '<div style="font-weight:800;color:var(--navy);font-size:13px;margin:14px 0 8px">2. Paradas</div>';
+  if (p.paradasDetalhe && p.paradasDetalhe.length) {
+    p.paradasDetalhe.forEach(function(par, i){
+      const horas = pdCalcularHoras(par.ini, par.fim);
+      const horim = (par.horIni || par.horFim) ? (' — horímetro ' + (par.horIni||'—') + ' a ' + (par.horFim||'—')) : '';
+      html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + (i+1) + '. ' + (par.tipo||'Parada') + horim + ' (' + (par.ini||'—') + ' às ' + (par.fim||'—') + ')</span>' +
+        '<span class="hist-detalhe-resposta at">' + pdFormatarHoras(horas) + '</span></div>';
+    });
+  } else {
+    html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">Nenhuma parada registrada.</span></div>';
+  }
+
+  html += '<div class="hist-detalhe-linha" style="margin-top:10px;border-top:2px solid var(--linha);padding-top:10px">' +
+    '<span class="hist-detalhe-pergunta"><b>Total trabalhadas: ' + pdFormatarHoras(p.trabalhadas) + ' — Total paradas: ' + pdFormatarHoras(p.paradas) + '</b></span>' +
+    '<span class="hist-detalhe-resposta"><b>Líquidas: ' + pdFormatarHoras(p.liquidas) + '</b></span></div>';
+
+  if (p.observacoes) html += '<div class="hist-detalhe-obs">Observação: ' + p.observacoes + '</div>';
+  return html;
+}
+
+document.getElementById('pd-detalhe-fechar').onclick = function(){
+  document.getElementById('pd-detalhe-overlay').classList.remove('aberto');
+};
+document.getElementById('pd-detalhe-overlay').onclick = function(e){
+  if (e.target === document.getElementById('pd-detalhe-overlay')) document.getElementById('pd-detalhe-overlay').classList.remove('aberto');
+};
+document.getElementById('pd-detalhe-imprimir').onclick = function(){
+  if (!pdDetalheAberto) return;
+  const titulo = pdDetalheAberto.equipamento + ' — ' + formatarDataHist(pdDetalheAberto.criado);
+  document.getElementById('hist-print-area').innerHTML =
+    '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">' + titulo + '<small>Parte Diária — Comprex Máquinas e Serviços</small></div></div>' +
+    '<div class="hist-detalhe-print">' + pdMontarConteudoDetalhe(pdDetalheAberto) + '</div>';
+  window.print();
+};
+
 
 ['hist-pd-filtro-de','hist-pd-filtro-ate','hist-pd-filtro-equip','hist-pd-filtro-operador','hist-pd-filtro-local'].forEach(function(id){
   document.getElementById(id).addEventListener('input', function(){
@@ -3233,6 +3323,28 @@ document.getElementById('hist-pd-limpar-filtros').onclick = function(){
   document.getElementById('hist-pd-filtro-operador').value = '';
   document.getElementById('hist-pd-filtro-local').value = '';
   garantirDadosPartesDiarias().then(pdRenderizarTabelaHistorico);
+};
+
+document.getElementById('hist-pd-exportar-excel').onclick = async function(){
+  const todos = await garantirDadosPartesDiarias();
+  const filtrados = pdFiltrarHistorico(todos);
+  if (!filtrados.length) { alert('Nenhuma parte diária encontrada para exportar com esses filtros.'); return; }
+  const linhas = filtrados.map(function(p){
+    return {
+      'Data': formatarDataHist(p.criado),
+      'Equipamento': p.equipamento || '',
+      'Operador': p.operador || '',
+      'Local': p.local || '',
+      'Horas trabalhadas': p.trabalhadas.toFixed(2).replace('.', ','),
+      'Horas paradas': p.paradas.toFixed(2).replace('.', ','),
+      'Horas líquidas': p.liquidas.toFixed(2).replace('.', ',')
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = [{wch:12},{wch:16},{wch:22},{wch:26},{wch:14},{wch:12},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Histórico Parte Diária');
+  XLSX.writeFile(wb, 'Historico_ParteDiaria_' + new Date().toISOString().slice(0,10) + '.xlsx');
 };
 
 /* ---- Dashboard da Parte Diária ---- */
@@ -3625,6 +3737,27 @@ document.getElementById('hist-imprimir').onclick = function(){
   const filtrados = obterHistoricoFiltrado();
   document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico(filtrados);
   window.print();
+};
+
+document.getElementById('hist-exportar-excel').onclick = function(){
+  const filtrados = obterHistoricoFiltrado();
+  if (!filtrados.length) { alert('Nenhum checklist encontrado para exportar com esses filtros.'); return; }
+  const linhas = filtrados.map(function(h){
+    return {
+      'Data/Hora': formatarDataHist(h.criado),
+      'Equipamento': h.equipamento || '',
+      'Horímetro': formatarHorimetro(h.horimetro),
+      'Operador': h.operador || '',
+      'Local': h.local || '',
+      'Situação': h.status.texto,
+      'Itens com apontamento': h.itensProblema
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = [{wch:16},{wch:16},{wch:12},{wch:22},{wch:26},{wch:20},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Histórico Checklist');
+  XLSX.writeFile(wb, 'Historico_Checklist_' + new Date().toISOString().slice(0,10) + '.xlsx');
 };
 
 function abrirDetalheHistorico(id){
