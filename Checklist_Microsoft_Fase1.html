@@ -41,6 +41,7 @@
     font-size:13px;font-weight:600;color:#4b5563;cursor:pointer;transition:all .15s;margin-bottom:2px;
     border-left:3px solid transparent}
   .sidebar-item[data-secao="partediaria"]{display:none}
+  .sidebar-item[data-secao="rastreamento"]{display:none}
   .sidebar-item i{font-style:normal;font-size:16px;width:18px;text-align:center}
   .sidebar-item:hover{background:var(--cream);color:var(--navy)}
   .sidebar-item.ativo{background:var(--cream);color:var(--navy);font-weight:700;border-left:3px solid var(--navy)}
@@ -222,6 +223,16 @@
   .pd-alerta-divergencia{background:#fdf3e3;border:1px solid #f2ddb3;border-radius:10px;padding:12px 16px;
     font-size:12.5px;color:#a06800;line-height:1.5}
   .pd-alerta-divergencia b{display:block;margin-bottom:4px}
+  .mov-vinculo{margin-top:14px;background:#fff;border:1px dashed #8fb99a;border-radius:10px;padding:10px 14px;
+    font-size:12.5px;color:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .mov-vinculo label{display:flex;align-items:center;gap:6px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .mov-vinculo input[type="checkbox"]{width:15px;height:15px}
+  .mov-setas{display:flex;align-items:center;justify-content:center;gap:18px;margin:20px 0;max-width:700px}
+  .mov-loc-card{flex:1;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;text-align:center}
+  .mov-loc-lbl{font-size:10px;font-weight:800;color:var(--cinza);letter-spacing:.5px;margin-bottom:8px}
+  .mov-loc-val{font-size:14px;font-weight:800;color:var(--tinta)}
+  .mov-loc-val.destino{color:var(--navy)}
+  .mov-arrow{font-size:24px;color:var(--navy);font-weight:800}
   .campo label{display:block;font-size:10px;letter-spacing:1px;color:var(--cinza);text-transform:uppercase;margin-bottom:4px}
   .campo input,.campo select{
     width:100%;background:#fff;border:1.5px solid #d8dee3;color:var(--tinta);
@@ -857,6 +868,9 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sidebar-item" data-view="historico-pd" data-secao="partediaria"><i>🕒</i> Histórico</div>
       <div class="sidebar-item" data-view="dashboard-pd" data-secao="partediaria"><i>📊</i> Dashboard</div>
       <div class="sidebar-item" data-view="indicadores-pd" data-secao="partediaria"><i>📈</i> Indicadores</div>
+      <div class="sidebar-item" data-view="rastreamento" data-secao="rastreamento"><i>📦</i> Mover Equipamento</div>
+      <div class="sidebar-item" data-view="localizacao-atual" data-secao="rastreamento"><i>📍</i> Localização Atual</div>
+      <div class="sidebar-item" data-view="historico-mov" data-secao="rastreamento"><i>🕒</i> Histórico de Movimentações</div>
 
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
     </nav>
@@ -873,6 +887,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="topo-toggle" id="topo-toggle">
         <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
         <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
+        <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Rastreamento</button>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -1312,6 +1327,114 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </div>
 </div>
 
+<div class="view" id="view-rastreamento">
+  <div class="cab">
+    <div class="grid">
+      <div class="campo">
+        <label>Equipamento principal <span class="obrig">*</span></label>
+        <div class="busca-wrap">
+          <span class="busca-icone">🔍</span>
+          <input type="text" id="mov-equipamento" placeholder="Buscar equipamento…" autocomplete="off">
+          <button type="button" class="busca-limpar" style="display:none">✕</button>
+          <span class="busca-seta">⌄</span>
+          <div class="busca-lista"></div>
+        </div>
+      </div>
+      <div class="campo">
+        <label>Local atual</label>
+        <input type="text" id="mov-local-atual" disabled placeholder="Selecione um equipamento" style="background:#eef1ee;color:var(--cinza)">
+      </div>
+      <div class="campo">
+        <label>Novo local <span class="obrig">*</span></label>
+        <div class="busca-wrap">
+          <span class="busca-icone">🔍</span>
+          <input type="text" id="mov-novo-local" placeholder="Buscar local…" autocomplete="off">
+          <button type="button" class="busca-limpar" style="display:none">✕</button>
+          <span class="busca-seta">⌄</span>
+          <div class="busca-lista"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mov-vinculo" id="mov-vinculo" style="display:none">
+      <span>🔗 Vinculado a: <b id="mov-vinculo-nome">—</b></span>
+      <label><input type="checkbox" id="mov-vinculo-mover" checked> Mover junto</label>
+    </div>
+  </div>
+
+  <div class="mov-setas" id="mov-setas" style="display:none">
+    <div class="mov-loc-card">
+      <div class="mov-loc-lbl">DE</div>
+      <div class="mov-loc-val" id="mov-de-val">—</div>
+    </div>
+    <span class="mov-arrow">→</span>
+    <div class="mov-loc-card">
+      <div class="mov-loc-lbl">PARA</div>
+      <div class="mov-loc-val destino" id="mov-para-val">—</div>
+    </div>
+  </div>
+
+  <div class="campo" style="margin-top:16px;max-width:520px">
+    <label>Observação (opcional)</label>
+    <textarea id="mov-observacao" rows="2" placeholder="Algum detalhe sobre essa movimentação…" style="width:100%;padding:10px;border:1px solid var(--linha);border-radius:9px;font-family:inherit;font-size:13px;resize:vertical;background:var(--card);color:var(--tinta)"></textarea>
+  </div>
+
+  <button type="button" class="rel-btn-primario" id="mov-salvar" style="margin-top:16px">📦 Mover equipamento</button>
+  <div class="erro-msg" id="mov-erro-msg"></div>
+  <div class="ok-msg" id="mov-ok-msg">✔ Equipamento movido com sucesso!</div>
+</div>
+
+<div class="view" id="view-localizacao-atual">
+  <div class="hist-info" id="loc-atual-info">Carregando localização atual…</div>
+  <div class="hist-filtros">
+    <div class="hist-filtro-campo">
+      <label>Equipamento</label>
+      <input type="text" id="loc-atual-busca" placeholder="Buscar por código ou nome…">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Local</label>
+      <select id="loc-atual-filtro-local"><option value="">Todos</option></select>
+    </div>
+  </div>
+  <div class="hist-wrap">
+    <table class="hist-tabela" id="loc-atual-tabela">
+      <thead><tr><th>Equipamento</th><th>Vinculado a</th><th>Local atual</th></tr></thead>
+      <tbody id="loc-atual-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="view" id="view-historico-mov">
+  <div class="hist-info" id="hist-mov-info">Carregando histórico de movimentações…</div>
+  <div class="hist-filtros">
+    <div class="hist-filtro-campo">
+      <label>De</label>
+      <input type="date" id="hist-mov-filtro-de">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Até</label>
+      <input type="date" id="hist-mov-filtro-ate">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Equipamento</label>
+      <select id="hist-mov-filtro-equip"><option value="">Todos</option></select>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="hist-mov-limpar-filtros">Limpar filtros</button>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="hist-mov-exportar-excel">📊 Exportar Excel</button>
+    </div>
+  </div>
+  <div class="hist-wrap">
+    <table class="hist-tabela" id="hist-mov-tabela">
+      <thead><tr><th>Data</th><th>Equipamento</th><th>Vinculado</th><th>De</th><th>Para</th><th>Usuário</th></tr></thead>
+      <tbody id="hist-mov-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <div class="view" id="view-historico">
   <div class="hist-info" id="hist-info">Carregando histórico…</div>
   <div class="hist-filtros">
@@ -1698,6 +1821,8 @@ const LISTA_FROTA_ID      = 'cfee676a-8fc0-4605-b90f-d9976bb2e820';
 const LISTA_LOCAIS_ID     = '4551e8ac-2403-4ae4-950b-aee1908471ae';
 const LISTA_OPERADORES_ID    = 'e9a31405-b56e-436e-800d-2e677d31169d';
 const LISTA_PARTE_DIARIA_ID  = '41e6bd19-ccb0-41de-98fc-b6463a9b39a0';
+const LISTA_CONFIGURACOES_ID = ''; // preencher com o ID da lista "Configuracoes" quando criada
+const LISTA_MOVIMENTACOES_ID = 'a74f4dcf-c9ab-42c2-81eb-889d5f48dffa';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 /**
@@ -1758,10 +1883,63 @@ const msalInstance = new msal.PublicClientApplication(msalConfig);
 /* =====================================================================
    CONTROLE DE ACESSO — só estes e-mails têm o menu "Cadastrar equip./local"
    ===================================================================== */
-const EMAILS_ADMIN = ['vagner.nicanor@comprex.com.br', 'lucas.maciel@comprex.com.br'];
+/* =====================================================================
+   CONFIG — painel de controle (lista "Configuracoes" no SharePoint).
+   Os valores abaixo são o "modo de segurança": usados até a lista carregar
+   e sempre que uma chave não existir nela — o app nunca fica sem funcionar.
+   ===================================================================== */
+const CONFIG = {
+  emailsAdmin: ['vagner.nicanor@comprex.com.br', 'lucas.maciel@comprex.com.br'],
+  tiposParada: ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'],
+  diasReincidencia: 30,
+  observacaoObrigatoriaChecklist: false,
+  observacaoObrigatoriaParteDiaria: false
+};
+
+async function carregarConfiguracoes(){
+  if (!LISTA_CONFIGURACOES_ID) return;
+  try {
+    const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CONFIGURACOES_ID + '/items?$expand=fields&$top=999');
+    const linhas = (d.value || []).map(function(item){ return item.fields; });
+    const porChave = {};
+    linhas.forEach(function(f){
+      const chave = String(f.Title || '').trim().toUpperCase();
+      if (chave) porChave[chave] = String(f.Valor || '').trim();
+    });
+
+    if (porChave['EMAILS_ADMIN']) {
+      CONFIG.emailsAdmin = porChave['EMAILS_ADMIN'].split(',').map(function(e){ return e.trim().toLowerCase(); }).filter(Boolean);
+    }
+    if (porChave['TIPOS_PARADA']) {
+      CONFIG.tiposParada = porChave['TIPOS_PARADA'].split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+    }
+    if (porChave['DIAS_REINCIDENCIA']) {
+      const n = parseInt(porChave['DIAS_REINCIDENCIA'], 10);
+      if (!isNaN(n) && n > 0) CONFIG.diasReincidencia = n;
+    }
+    if (porChave['OBSERVACAO_OBRIGATORIA_CHECKLIST']) {
+      CONFIG.observacaoObrigatoriaChecklist = /^sim$/i.test(porChave['OBSERVACAO_OBRIGATORIA_CHECKLIST']);
+    }
+    if (porChave['OBSERVACAO_OBRIGATORIA_PARTE_DIARIA']) {
+      CONFIG.observacaoObrigatoriaParteDiaria = /^sim$/i.test(porChave['OBSERVACAO_OBRIGATORIA_PARTE_DIARIA']);
+    }
+  } catch(err) {
+    console.warn('Não foi possível carregar a lista Configuracoes — usando valores padrão. Detalhe: ' + err.message);
+  }
+}
+
 function usuarioEhAdmin(conta){
   const email = (conta && conta.username || '').trim().toLowerCase();
-  return EMAILS_ADMIN.indexOf(email) !== -1;
+  return CONFIG.emailsAdmin.indexOf(email) !== -1;
+}
+
+/** Atualiza os títulos fixos no HTML que mencionam "30 dias" pra refletir
+ *  o valor configurado em CONFIG.diasReincidencia (se for diferente de 30). */
+function atualizarTextosJanelaReincidencia(){
+  if (CONFIG.diasReincidencia === 30) return; // já é o texto padrão do HTML
+  document.querySelectorAll('h3, .equip-disp-lbl').forEach(function(el){
+    el.textContent = el.textContent.replace('(30 dias)', '(' + CONFIG.diasReincidencia + ' dias)');
+  });
 }
 
 /* =====================================================================
@@ -1878,11 +2056,16 @@ async function lerListaSimples(listaId, mapaIds){
 
 /** Renomeia (PATCH) o valor de um item numa lista simples (Frota/Locais). */
 async function editarItemSimples(listaId, itemId, novoValor){
+  return atualizarCamposItem(listaId, itemId, { Title: novoValor });
+}
+
+/** PATCH genérico de campos de um item (usado pra atualizar LocalAtual/ItemVinculado na Frota). */
+async function atualizarCamposItem(listaId, itemId, campos){
   const token = await graphToken();
   const r = await fetch(GRAPH + '/sites/' + SITE_ID + '/lists/' + listaId + '/items/' + itemId + '/fields', {
     method: 'PATCH',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Title: novoValor })
+    body: JSON.stringify(campos)
   });
   if (!r.ok) { const texto = await r.text(); throw new Error('Erro ' + r.status + ': ' + texto); }
   return r.json();
@@ -2015,11 +2198,17 @@ async function iniciarAplicacao(){
     const [equipamentos, locais, listaOperadores] = await Promise.all([
       lerListaSimples(LISTA_FROTA_ID, frotasIds),
       lerListaSimples(LISTA_LOCAIS_ID, locaisIds),
-      lerListaOperadores()
+      lerListaOperadores(),
+      carregarConfiguracoes()
     ]);
     inicializarListas(equipamentos, locais);
     operadores = listaOperadores.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
     renderizarListaModal('operador');
+    // Reavalia o acesso admin e os tipos de parada agora que a lista Configuracoes
+    // (se existir) já carregou — pode ter mudado o padrão fixo do código.
+    document.getElementById('btn-abrir-cadastro').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
+    pdRenderizarParadas();
+    atualizarTextosJanelaReincidencia();
   } catch(err) {
     document.getElementById('aviso-colunas-area').innerHTML =
       '<div class="aviso-coluna"><b>⚠️ Erro ao carregar as listas de equipamento/local</b>' + err.message + '</div>';
@@ -2462,7 +2651,7 @@ function atualizarCardEquipamento(){
     document.getElementById('equip-card-preventiva-sub').textContent = '';
   }
 
- const limite30 = new Date(Date.now() - 30*86400000);
+ const limite30 = new Date(Date.now() - CONFIG.diasReincidencia*86400000);
   const ultimos30 = registros.filter(function(h){ return new Date(h.criado) >= limite30; });
   const dispEl = document.getElementById('equip-card-disponibilidade');
   if (!ultimos30.length) {
@@ -2563,13 +2752,15 @@ function validar(){
   const idxExtintor = ITENS.findIndex(function(it){ return it[0] === ITEM_EXTRA_DATA.label; });
   const extintorNaoPossui = idxExtintor >= 0 && respostas[idxExtintor] && respostas[idxExtintor].valor === ITEM_EXTRA_DATA.opcionalSe;
   const dataExtintorOk = extintorNaoPossui || document.getElementById('validade-extintor').value !== '';
-  const completo = eqOk && opOk && horOk && itsOk && dataExtintorOk;
+  const obsOk = !CONFIG.observacaoObrigatoriaChecklist || document.getElementById('observacao').value.trim() !== '';
+  const completo = eqOk && opOk && horOk && itsOk && dataExtintorOk && obsOk;
   btn.className = 'finalizar' + (completo ? ' pronto' : '');
   if (!eqOk || !opOk) aviso.textContent = 'Preencha equipamento e operador';
   else if (!horOk && inpHor.value !== '') aviso.textContent = 'Verifique o horímetro';
   else if (!horOk) aviso.textContent = 'Informe o horímetro';
   else if (!itsOk) aviso.textContent = 'Avalie todos os itens para finalizar';
   else if (!dataExtintorOk) aviso.textContent = 'Informe a validade do extintor';
+  else if (!obsOk) aviso.textContent = 'Informe uma observação antes de enviar';
   else aviso.textContent = 'Tudo pronto — clique para enviar';
   return completo;
 }
@@ -2893,8 +3084,262 @@ document.getElementById('btn-salvar-operador').onclick = async function(){
 };
 
 /* =====================================================================
-   PARTE DIÁRIA — registro de atividades e paradas do dia
+   RASTREAMENTO — mover equipamentos entre locais, com histórico
    ===================================================================== */
+let frotaExtraCarregada = false;
+let frotaLocalAtual = {};    // equipamento -> local atual
+let frotaItemVinculado = {}; // equipamento principal -> código do subitem
+let frotaIdsExtra = {};      // equipamento -> id do item na lista Frota
+
+async function garantirDadosFrotaExtra(forcar){
+  if (frotaExtraCarregada && !forcar) return;
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_FROTA_ID + '/items?$expand=fields&$top=999');
+  (d.value || []).forEach(function(item){
+    const f = item.fields;
+    const nome = (f.Title || '').trim();
+    if (!nome) return;
+    frotaLocalAtual[nome] = f.LocalAtual || '';
+    frotaItemVinculado[nome] = f.ItemVinculado || '';
+    frotaIdsExtra[nome] = item.id;
+  });
+  frotaExtraCarregada = true;
+}
+
+let movInicializado = false;
+async function inicializarTelaRastreamentoSeNecessario(){
+  await garantirDadosFrotaExtra();
+  if (movInicializado) return;
+  movInicializado = true;
+}
+
+function movAtualizarPreviaDeParaEVinculo(){
+  const eq = document.getElementById('mov-equipamento').value.trim().toUpperCase();
+  const novoLocal = document.getElementById('mov-novo-local').value.trim();
+  const localAtual = frotaLocalAtual[eq] || '';
+  document.getElementById('mov-local-atual').value = eq ? (localAtual || 'Sem local registrado') : '';
+
+  const vinculado = frotaItemVinculado[eq] || '';
+  const boxVinculo = document.getElementById('mov-vinculo');
+  if (vinculado) {
+    document.getElementById('mov-vinculo-nome').textContent = vinculado;
+    boxVinculo.style.display = 'flex';
+  } else {
+    boxVinculo.style.display = 'none';
+  }
+
+  const setas = document.getElementById('mov-setas');
+  if (eq && novoLocal) {
+    setas.style.display = 'flex';
+    document.getElementById('mov-de-val').textContent = localAtual || 'Sem local registrado';
+    document.getElementById('mov-para-val').textContent = novoLocal;
+  } else {
+    setas.style.display = 'none';
+  }
+}
+
+document.getElementById('mov-equipamento').addEventListener('change', movAtualizarPreviaDeParaEVinculo);
+document.getElementById('mov-novo-local').addEventListener('change', movAtualizarPreviaDeParaEVinculo);
+
+function movMostrarErro(msg){
+  const el = document.getElementById('mov-erro-msg');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 6000);
+}
+
+document.getElementById('mov-salvar').onclick = async function(){
+  const eq = document.getElementById('mov-equipamento').value.trim().toUpperCase();
+  const novoLocal = document.getElementById('mov-novo-local').value.trim();
+  const observacao = document.getElementById('mov-observacao').value.trim();
+  const localAtual = frotaLocalAtual[eq] || '';
+  const vinculado = frotaItemVinculado[eq] || '';
+  const moverJunto = vinculado && document.getElementById('mov-vinculo-mover').checked;
+
+  if (!eq || !novoLocal) { movMostrarErro('Selecione o equipamento e o novo local.'); return; }
+  if (novoLocal === localAtual) { movMostrarErro('O novo local é igual ao local atual.'); return; }
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Movendo…';
+  try {
+    const idPrincipal = frotaIdsExtra[eq] || frotasIds[eq];
+    await atualizarCamposItem(LISTA_FROTA_ID, idPrincipal, { LocalAtual: novoLocal });
+    frotaLocalAtual[eq] = novoLocal;
+
+    if (moverJunto) {
+      const idVinculado = frotaIdsExtra[vinculado] || frotasIds[vinculado];
+      if (idVinculado) {
+        await atualizarCamposItem(LISTA_FROTA_ID, idVinculado, { LocalAtual: novoLocal });
+        frotaLocalAtual[vinculado] = novoLocal;
+      }
+    }
+
+    await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
+      fields: {
+        Equipamento: eq,
+        ItemVinculado: moverJunto ? vinculado : '',
+        LocalOrigem: localAtual || '—',
+        LocalDestino: novoLocal,
+        Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
+        Observacao: observacao
+      }
+    });
+
+    movimentacoesCarregadas = false; // força reconsulta na próxima vez que abrir o histórico
+    const ok = document.getElementById('mov-ok-msg');
+    ok.style.display = 'block';
+    setTimeout(function(){ ok.style.display = 'none'; }, 5000);
+
+    document.getElementById('mov-equipamento').value = '';
+    document.getElementById('mov-novo-local').value = '';
+    document.getElementById('mov-observacao').value = '';
+    movAtualizarPreviaDeParaEVinculo();
+  } catch(err) {
+    movMostrarErro('Falha ao mover. Tente novamente. ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '📦 Mover equipamento';
+  }
+};
+
+/* ---- Localização Atual ---- */
+async function carregarLocalizacaoAtual(){
+  const info = document.getElementById('loc-atual-info');
+  try {
+    await garantirDadosFrotaExtra();
+    info.style.display = 'none';
+    const selLocal = document.getElementById('loc-atual-filtro-local');
+    const locaisUsados = Array.from(new Set(Object.values(frotaLocalAtual).filter(Boolean))).sort();
+    selLocal.innerHTML = '<option value="">Todos</option>' + locaisUsados.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+    locRenderizarTabela();
+  } catch(err) {
+    info.textContent = '⚠️ Erro ao carregar: ' + err.message;
+  }
+}
+
+function locRenderizarTabela(){
+  const busca = document.getElementById('loc-atual-busca').value.trim().toUpperCase();
+  const filtroLocal = document.getElementById('loc-atual-filtro-local').value;
+  const linhas = frotas.filter(function(eq){
+    if (busca && eq.toUpperCase().indexOf(busca) === -1) return false;
+    if (filtroLocal && frotaLocalAtual[eq] !== filtroLocal) return false;
+    return true;
+  });
+  const tbody = document.getElementById('loc-atual-tbody');
+  if (!linhas.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--cinza);padding:24px">Nenhum equipamento encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = linhas.map(function(eq){
+    return '<tr><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
+      '<td>' + (frotaLocalAtual[eq] ? '<span class="hist-st ok">' + frotaLocalAtual[eq] + '</span>' : '<span style="color:var(--cinza)">Sem registro</span>') + '</td></tr>';
+  }).join('');
+}
+document.getElementById('loc-atual-busca').addEventListener('input', locRenderizarTabela);
+document.getElementById('loc-atual-filtro-local').addEventListener('change', locRenderizarTabela);
+
+/* ---- Histórico de Movimentações ---- */
+let movimentacoesCarregadas = false;
+let movimentacoesItens = [];
+
+async function garantirDadosMovimentacoes(forcar){
+  if (movimentacoesCarregadas && !forcar) return movimentacoesItens;
+  const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items?$expand=fields&$top=999');
+  movimentacoesItens = (d.value || []).map(function(item){
+    const f = item.fields;
+    return {
+      id: item.id,
+      criado: item.createdDateTime,
+      equipamento: f.Equipamento || '',
+      itemVinculado: f.ItemVinculado || '',
+      localOrigem: f.LocalOrigem || '',
+      localDestino: f.LocalDestino || '',
+      usuario: f.Usuario || '',
+      observacao: f.Observacao || ''
+    };
+  }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  movimentacoesCarregadas = true;
+  return movimentacoesItens;
+}
+
+async function carregarHistoricoMovimentacoes(){
+  const info = document.getElementById('hist-mov-info');
+  try {
+    const itens = await garantirDadosMovimentacoes();
+    info.style.display = 'none';
+    const selEquip = document.getElementById('hist-mov-filtro-equip');
+    const equips = Array.from(new Set(itens.map(function(i){ return i.equipamento; }).filter(Boolean))).sort();
+    selEquip.innerHTML = '<option value="">Todos</option>' + equips.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+    movRenderizarTabelaHistorico(itens);
+  } catch(err) {
+    info.textContent = '⚠️ Erro ao carregar: ' + err.message;
+  }
+}
+
+function movFiltrarHistorico(itens){
+  const de = document.getElementById('hist-mov-filtro-de').value;
+  const ate = document.getElementById('hist-mov-filtro-ate').value;
+  const equip = document.getElementById('hist-mov-filtro-equip').value;
+  return itens.filter(function(i){
+    const d = new Date(i.criado);
+    if (de && d < new Date(de + 'T00:00:00')) return false;
+    if (ate && d > new Date(ate + 'T23:59:59')) return false;
+    if (equip && i.equipamento !== equip) return false;
+    return true;
+  });
+}
+
+function movRenderizarTabelaHistorico(itensCompletos){
+  const filtrados = movFiltrarHistorico(itensCompletos);
+  const tbody = document.getElementById('hist-mov-tbody');
+  if (!filtrados.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--cinza);padding:24px">Nenhuma movimentação encontrada.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtrados.map(function(m){
+    return '<tr>' +
+      '<td>' + formatarDataHist(m.criado) + '</td>' +
+      '<td>' + m.equipamento + '</td>' +
+      '<td>' + (m.itemVinculado || '—') + '</td>' +
+      '<td>' + m.localOrigem + '</td>' +
+      '<td><b>' + m.localDestino + '</b></td>' +
+      '<td>' + m.usuario + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+['hist-mov-filtro-de','hist-mov-filtro-ate','hist-mov-filtro-equip'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', function(){
+    garantirDadosMovimentacoes().then(movRenderizarTabelaHistorico);
+  });
+});
+document.getElementById('hist-mov-limpar-filtros').onclick = function(){
+  document.getElementById('hist-mov-filtro-de').value = '';
+  document.getElementById('hist-mov-filtro-ate').value = '';
+  document.getElementById('hist-mov-filtro-equip').value = '';
+  garantirDadosMovimentacoes().then(movRenderizarTabelaHistorico);
+};
+document.getElementById('hist-mov-exportar-excel').onclick = async function(){
+  const todos = await garantirDadosMovimentacoes();
+  const filtrados = movFiltrarHistorico(todos);
+  if (!filtrados.length) { alert('Nenhuma movimentação encontrada para exportar com esses filtros.'); return; }
+  const linhas = filtrados.map(function(m){
+    return {
+      'Data': formatarDataHist(m.criado),
+      'Equipamento': m.equipamento,
+      'Vinculado': m.itemVinculado || '',
+      'Local origem': m.localOrigem,
+      'Local destino': m.localDestino,
+      'Usuário': m.usuario,
+      'Observação': m.observacao || ''
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = [{wch:16},{wch:14},{wch:14},{wch:24},{wch:24},{wch:22},{wch:30}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Movimentações');
+  XLSX.writeFile(wb, 'Historico_Movimentacoes_' + new Date().toISOString().slice(0,10) + '.xlsx');
+};
+
+
 let pdInicializada = false;
 
 /** Deixa o horário flexível: aceita digitar só números (ex.: "0930" vira "09:30")
@@ -2909,7 +3354,6 @@ function pdAplicarMascaraHorario(campo){
 }
 let pdAtividades = [];
 let pdParadas = [];
-const PD_TIPOS_PARADA = ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'];
 
 function inicializarTelaParteDiariaSeNecessario(){
   if (pdInicializada) return;
@@ -2986,7 +3430,7 @@ function pdRenderizarParadas(){
   }
   cont.innerHTML = pdParadas.map(function(p, i){
     const horas = pdCalcularHoras(p.ini, p.fim);
-    const opcoes = PD_TIPOS_PARADA.map(function(t){
+    const opcoes = CONFIG.tiposParada.map(function(t){
       return '<option value="'+t+'" '+(p.tipo===t?'selected':'')+'>'+t+'</option>';
     }).join('');
     return '<div class="pd-linha par" data-idx="'+i+'">' +
@@ -3372,7 +3816,7 @@ async function carregarDashboardPD(){
   const totalHoje = trabHoje + parHoje;
   document.getElementById('kpi-pd-eficiencia').textContent = totalHoje > 0 ? Math.round(trabHoje/totalHoje*100) + '%' : '—';
 
-  const limite30 = new Date(Date.now() - 30*86400000);
+  const limite30 = new Date(Date.now() - CONFIG.diasReincidencia*86400000);
   const ultimos30 = itens.filter(function(p){ return new Date(p.criado) >= limite30; });
 
   const porEquipParadas = {};
@@ -3483,6 +3927,10 @@ document.getElementById('pd-salvar').onclick = async function(){
     pdMostrarErro('Preencha equipamento, data, operador e local.');
     return;
   }
+  if (CONFIG.observacaoObrigatoriaParteDiaria && !observacoes) {
+    pdMostrarErro('Informe uma observação antes de salvar.');
+    return;
+  }
   if (!pdAtividades.length && !pdParadas.length) {
     pdMostrarErro('Adicione ao menos uma atividade ou uma parada antes de salvar.');
     return;
@@ -3539,16 +3987,25 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores' };
+const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
 
-  const ehSecaoParteDiaria = nome === 'partediaria' || nome === 'historico-pd' || nome === 'dashboard-pd' || nome === 'indicadores-pd';
-  document.querySelectorAll('.sidebar-item[data-secao="checklist"]').forEach(function(el){ el.style.display = ehSecaoParteDiaria ? 'none' : 'flex'; });
-  document.querySelectorAll('.sidebar-item[data-secao="partediaria"]').forEach(function(el){ el.style.display = ehSecaoParteDiaria ? 'flex' : 'none'; });
+  const VIEWS_POR_SECAO = {
+    partediaria: ['partediaria', 'historico-pd', 'dashboard-pd', 'indicadores-pd'],
+    rastreamento: ['rastreamento', 'localizacao-atual', 'historico-mov']
+  };
+  const secaoAtiva = VIEWS_POR_SECAO.partediaria.indexOf(nome) !== -1 ? 'partediaria'
+    : VIEWS_POR_SECAO.rastreamento.indexOf(nome) !== -1 ? 'rastreamento'
+    : 'checklist';
+
+  ['checklist', 'partediaria', 'rastreamento'].forEach(function(secao){
+    document.querySelectorAll('.sidebar-item[data-secao="' + secao + '"]').forEach(function(el){
+      el.style.display = (secao === secaoAtiva) ? 'flex' : 'none';
+    });
+  });
   const toggle = document.getElementById('topo-toggle');
   toggle.querySelectorAll('.topo-toggle-opt').forEach(function(b){
-    const ehBotaoParteDiaria = b.dataset.ir === 'partediaria';
-    b.classList.toggle('ativo', ehBotaoParteDiaria === ehSecaoParteDiaria);
+    b.classList.toggle('ativo', b.dataset.ir === secaoAtiva || (b.dataset.ir === 'novo' && secaoAtiva === 'checklist'));
   });
 
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
@@ -3561,6 +4018,9 @@ const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: '
   if (nome === 'historico-pd') carregarHistoricoPD();
   if (nome === 'dashboard-pd') carregarDashboardPD();
   if (nome === 'indicadores-pd') carregarIndicadoresPD();
+  if (nome === 'rastreamento') inicializarTelaRastreamentoSeNecessario();
+  if (nome === 'localizacao-atual') carregarLocalizacaoAtual();
+  if (nome === 'historico-mov') carregarHistoricoMovimentacoes();
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -3824,7 +4284,7 @@ async function carregarDashboard(){
   const hojeChave = hojeChaveISO();
   const checklistsHoje = historicoItens.filter(function(h){ return dataChaveISO(h.criado) === hojeChave; });
 
-  const limite30 = new Date(Date.now() - 30*86400000);
+  const limite30 = new Date(Date.now() - CONFIG.diasReincidencia*86400000);
   const ultimos30 = historicoItens.filter(function(h){ return new Date(h.criado) >= limite30; });
   const ocorrencias30 = ultimos30.filter(function(h){ return h.status.classe === 'parar'; });
 
@@ -4158,7 +4618,7 @@ async function carregarFrota(){
   }
 
   const hoje = new Date();
-  const limite30 = new Date(hoje.getTime() - 30*86400000);
+  const limite30 = new Date(hoje.getTime() - CONFIG.diasReincidencia*86400000);
 
   const porEquip = {};
   historicoItens.forEach(function(h){
@@ -4582,6 +5042,8 @@ configurarComboBusca('operador', function(){ return operadores; });
 configurarComboBusca('pd-equipamento', function(){ return frotas; });
 configurarComboBusca('pd-operador', function(){ return operadores; });
 configurarComboBusca('pd-local', function(){ return locais; });
+configurarComboBusca('mov-equipamento', function(){ return frotas; });
+configurarComboBusca('mov-novo-local', function(){ return locais; });
  /* =====================================================================
    INDICADORES V2 — filtros de período + KPIs com sparkline (Fase 1)
    ===================================================================== */
@@ -4856,7 +5318,7 @@ function nivelCriticidade(pontos){
 }
 
 function calcularReincidencias30d(){
-  const limite30 = new Date(Date.now() - 30*86400000);
+  const limite30 = new Date(Date.now() - CONFIG.diasReincidencia*86400000);
   const doPeriodo = historicoItens.filter(function(h){ return new Date(h.criado) >= limite30; });
   const contagem = {};
   doPeriodo.forEach(function(h){
@@ -4897,7 +5359,7 @@ function calcularCriticidadePor(campo, itensFiltrados){
 
 function renderRankReincidencias(lista){
   const cont = document.getElementById('ind2-reincidencias');
-  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Nenhuma reincidência nos últimos 30 dias. ✔</div>'; return; }
+  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Nenhuma reincidência nos últimos ' + CONFIG.diasReincidencia + ' dias. ✔</div>'; return; }
   const top = lista.slice(0, 6);
   const max = top[0].ocorrencias || 1;
   cont.innerHTML = top.map(function(x){
