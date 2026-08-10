@@ -200,7 +200,7 @@
   .pd-tabela-cab{display:grid;gap:10px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;
     padding:0 4px 6px;border-bottom:1px solid var(--linha)}
   .pd-tabela-cab.ativ, .pd-linha.ativ{grid-template-columns:110px 1fr 100px 100px 90px 34px}
-  .pd-tabela-cab.par, .pd-linha.par{grid-template-columns:220px 110px 110px 90px 34px}
+  .pd-tabela-cab.par, .pd-linha.par{grid-template-columns:170px 95px 95px 90px 90px 80px 34px}
   .pd-linha{display:grid;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--linha)}
   .pd-linha input, .pd-linha select{width:100%;padding:8px 9px;border:1px solid var(--linha);border-radius:8px;
     font-size:12px;font-family:inherit;background:var(--card);color:var(--tinta)}
@@ -219,6 +219,9 @@
   .pd-resumo-bloco-val{font-size:19px;font-weight:800}
   .pd-resumo-op{font-size:20px;color:var(--cinza);font-weight:300}
   .pd-resumo-nota{font-size:10.5px;color:var(--cinza);margin-top:8px;width:100%}
+  .pd-alerta-divergencia{background:#fdf3e3;border:1px solid #f2ddb3;border-radius:10px;padding:12px 16px;
+    font-size:12.5px;color:#a06800;line-height:1.5}
+  .pd-alerta-divergencia b{display:block;margin-bottom:4px}
   .campo label{display:block;font-size:10px;letter-spacing:1px;color:var(--cinza);text-transform:uppercase;margin-bottom:4px}
   .campo input,.campo select{
     width:100%;background:#fff;border:1.5px solid #d8dee3;color:var(--tinta);
@@ -1102,6 +1105,8 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
 
+    <div class="pd-alerta-divergencia" id="pd-alerta-horimetro" style="display:none;margin-top:16px"></div>
+
     <!-- ===================== 1. REGISTRO DE ATIVIDADES ===================== -->
     <div class="pd-secao">
       <div class="pd-secao-cab">
@@ -1128,7 +1133,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
       <div class="pd-tabela-cab par">
-        <span>TIPO DE PARADA</span><span>INÍCIO</span><span>FIM</span><span>TOTAL</span><span></span>
+        <span>TIPO DE PARADA</span><span>HORÍM. INICIAL</span><span>HORÍM. FINAL</span><span>INÍCIO</span><span>FIM</span><span>TOTAL</span><span></span>
       </div>
       <div id="pd-lista-paradas"></div>
       <button type="button" class="pd-add-btn" id="pd-add-parada">+ Adicionar parada</button>
@@ -2964,6 +2969,8 @@ function pdRenderizarParadas(){
     }).join('');
     return '<div class="pd-linha par" data-idx="'+i+'">' +
       '<select class="pd-campo" data-campo="tipo" data-idx="'+i+'"><option value="">Selecione…</option>'+opcoes+'</select>' +
+      '<input type="text" class="pd-campo" data-campo="horIni" data-idx="'+i+'" value="'+(p.horIni||'').replace(/"/g,'&quot;')+'" placeholder="0,0">' +
+      '<input type="text" class="pd-campo" data-campo="horFim" data-idx="'+i+'" value="'+(p.horFim||'').replace(/"/g,'&quot;')+'" placeholder="0,0">' +
       '<input type="text" inputmode="numeric" class="pd-campo" data-campo="ini" data-idx="'+i+'" value="'+(p.ini||'')+'" placeholder="HH:MM">' +
       '<input type="text" inputmode="numeric" class="pd-campo" data-campo="fim" data-idx="'+i+'" value="'+(p.fim||'')+'" placeholder="HH:MM">' +
       '<span class="pd-linha-total">'+pdFormatarHoras(horas)+'</span>' +
@@ -2974,6 +2981,7 @@ function pdRenderizarParadas(){
   cont.querySelectorAll('.pd-campo').forEach(function(campo){
     campo.addEventListener(campo.tagName === 'SELECT' ? 'change' : 'input', function(){
       const idx = parseInt(campo.dataset.idx, 10);
+      if (campo.dataset.campo === 'horIni' || campo.dataset.campo === 'horFim') aplicarMascaraHorimetro(campo);
       if (campo.dataset.campo === 'ini' || campo.dataset.campo === 'fim') pdAplicarMascaraHorario(campo);
       pdParadas[idx][campo.dataset.campo] = campo.value;
       if (campo.dataset.campo === 'ini' || campo.dataset.campo === 'fim') {
@@ -2999,7 +3007,7 @@ document.getElementById('pd-add-atividade').onclick = function(){
   pdAtualizarTotais();
 };
 document.getElementById('pd-add-parada').onclick = function(){
-  pdParadas.push({ tipo: '', ini: '', fim: '' });
+  pdParadas.push({ tipo: '', horIni: '', horFim: '', ini: '', fim: '' });
   pdRenderizarParadas();
   pdAtualizarTotais();
 };
@@ -3010,7 +3018,45 @@ function pdCalcularTotais(){
   return { trabalhadas: trabalhadas, paradas: paradas, liquidas: trabalhadas - paradas };
 }
 
+/** Confere se os horímetros informados (atividades + paradas) fazem sentido em
+ *  sequência (o horímetro nunca deveria diminuir ao longo do dia). Não bloqueia
+ *  o salvamento — só avisa, porque pode ser um erro de digitação legítimo que
+ *  o operador quer corrigir depois. */
+function pdVerificarDivergenciaHorimetro(){
+  const alerta = document.getElementById('pd-alerta-horimetro');
+  const avisos = [];
+  const sequencia = []; // { label, valor }
+
+  pdAtividades.forEach(function(a, i){
+    const v = horimetroFloat(a.horIni);
+    if (!isNaN(v)) sequencia.push({ label: 'Atividade ' + (i+1), valor: v });
+  });
+  pdParadas.forEach(function(p, i){
+    const vIni = horimetroFloat(p.horIni);
+    const vFim = horimetroFloat(p.horFim);
+    if (!isNaN(vIni)) sequencia.push({ label: 'Parada ' + (i+1) + ' (início)', valor: vIni });
+    if (!isNaN(vFim)) sequencia.push({ label: 'Parada ' + (i+1) + ' (fim)', valor: vFim });
+    if (!isNaN(vIni) && !isNaN(vFim) && vFim < vIni) {
+      avisos.push('Na <b>Parada ' + (i+1) + '</b>, o horímetro final (' + p.horFim + ') é menor que o inicial (' + p.horIni + ').');
+    }
+  });
+
+  for (let i = 1; i < sequencia.length; i++) {
+    if (sequencia[i].valor < sequencia[i-1].valor) {
+      avisos.push('O horímetro de <b>' + sequencia[i].label + '</b> (' + sequencia[i].valor.toString().replace('.', ',') + ') é menor que o de <b>' + sequencia[i-1].label + '</b> (' + sequencia[i-1].valor.toString().replace('.', ',') + ') — confira se não houve erro de digitação.');
+    }
+  }
+
+  if (avisos.length) {
+    alerta.innerHTML = '<b>⚠️ Possível divergência no horímetro</b>' + avisos.map(function(a){ return '• ' + a; }).join('<br>');
+    alerta.style.display = 'block';
+  } else {
+    alerta.style.display = 'none';
+  }
+}
+
 function pdAtualizarTotais(){
+  pdVerificarDivergenciaHorimetro();
   const t = pdCalcularTotais();
   document.getElementById('pd-total-trabalhadas').textContent = pdFormatarHoras(t.trabalhadas);
   document.getElementById('pd-total-paradas').textContent = pdFormatarHoras(t.paradas);
