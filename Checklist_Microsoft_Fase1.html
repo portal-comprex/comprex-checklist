@@ -25,31 +25,27 @@
 
   /* ===================== SHELL: SIDEBAR + MAIN ===================== */
   .shell{display:flex;min-height:100vh}
-  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:#ffffff;color:var(--tinta);
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:linear-gradient(180deg,var(--navy) 0%,#0f3d1e 100%);color:#e5f2e8;
     display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
-    border-right:1px solid var(--linha)}
-  .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--linha)}
-  .sidebar-logo-img{display:block;height:72px;width:auto;max-width:100%;border-radius:14px}
+    border-right:1px solid rgba(255,255,255,.08)}
+  .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .sidebar-logo-img{display:block;height:56px;width:auto;max-width:100%;border-radius:10px;background:#fff;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
   body.tema-escuro .sidebar-logo-img{background:#fff;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
-  .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:var(--navy)}
-  .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:var(--cinza);margin-top:3px}
+  .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:#fff}
+  .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:#9fd3ae;margin-top:3px}
 
   .sidebar-nav{flex:1;padding:14px 10px}
-  .sidebar-secao{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--cinza);
+  .sidebar-secao{font-size:10px;font-weight:700;letter-spacing:1.5px;color:#7fae8c;
     text-transform:uppercase;padding:14px 12px 6px}
   .sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
-    font-size:13px;font-weight:600;color:#4b5563;cursor:pointer;transition:all .15s;margin-bottom:2px;
+    font-size:13px;font-weight:600;color:#c3d9c9;cursor:pointer;transition:all .15s;margin-bottom:2px;
     border-left:3px solid transparent}
   .sidebar-item[data-secao="partediaria"]{display:none}
   .sidebar-item[data-secao="rastreamento"]{display:none}
   .sidebar-item i{font-style:normal;font-size:16px;width:18px;text-align:center}
-  .sidebar-item:hover{background:var(--cream);color:var(--navy)}
-  .sidebar-item.ativo{background:var(--cream);color:var(--navy);font-weight:700;border-left:3px solid var(--navy)}
-  .sidebar-item.acao{color:#a06800}
-  .sidebar-item.acao:hover{background:#fdf3e3;color:#a06800}
-
-  .sidebar-sair{padding:14px 20px 20px;border-top:1px solid var(--linha)}
-  .sidebar-sair .sidebar-item{color:#4b5563}
+  .sidebar-item:hover{background:rgba(255,255,255,.08);color:#fff}
+  .sidebar-item.ativo{background:rgba(255,255,255,.12);color:#fff;font-weight:700;border-left:3px solid #6ee7a0}
+  .sidebar-item.acao{color:#ffd48a}
   .sidebar-item.acao:hover{background:rgba(199,154,58,.18);color:#f0c99a}
 
   .sidebar-sair{padding:14px 20px 20px;border-top:1px solid rgba(255,255,255,.08)}
@@ -184,11 +180,24 @@
   .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
 
   /* ---- Toggle Checklists / Parte Diária (topbar) ---- */
-  .topo-toggle{display:flex;align-items:center;gap:4px;background:var(--card);border-radius:24px;padding:4px;
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-  .topo-toggle-opt{border:none;background:transparent;padding:8px 18px;border-radius:20px;font-size:13px;
-    font-weight:700;color:var(--cinza);cursor:pointer;font-family:inherit}
-  .topo-toggle-opt.ativo{background:var(--navy);color:#fff}
+  .topbar-tabs{background:#fff;border-bottom:1px solid var(--linha);padding:0 24px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  .tabs-esq{display:flex;align-items:stretch}
+  .topo-toggle-opt{border:none;background:transparent;padding:16px 20px;font-size:13px;
+    font-weight:700;color:var(--cinza);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;
+    display:flex;align-items:center;gap:8px}
+  .topo-toggle-opt .tab-ic{font-size:15px}
+  .topo-toggle-opt:hover{color:var(--navy)}
+  .topo-toggle-opt.ativo{color:var(--navy);border-bottom-color:var(--navy)}
+
+  .topbar-pagina{background:var(--cream);border-bottom:1px solid var(--linha);padding:16px 28px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .pagina-esq{display:flex;align-items:center;gap:14px}
+  .pagina-icone{font-size:26px;background:#fff;border-radius:10px;width:44px;height:44px;
+    display:flex;align-items:center;justify-content:center;border:1px solid var(--linha);flex-shrink:0}
+  .pagina-titulo{font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--tinta)}
+  .pagina-subtitulo{font-size:12px;color:var(--cinza);margin-top:2px}
+  .pagina-breadcrumb{font-size:12px;color:var(--cinza)}
 
   /* ---- Parte Diária: seções dinâmicas ---- */
   .pd-secao{margin-top:20px}
@@ -484,6 +493,23 @@
   .arv-resumo-pct{font-weight:700}
   .arv-resumo-total{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:2px}
 
+  .arv-no{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;align-items:center;
+    padding:8px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
+  .arv-no:hover{background:var(--cream)}
+  .arv-no .arv-seta{display:inline-block;width:16px;transition:transform .12s;color:var(--cinza)}
+  .arv-no.colapsado .arv-seta{transform:rotate(-90deg)}
+  .arv-no-nome{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--tinta)}
+  .arv-nivel-0{font-weight:800;color:var(--navy);background:var(--cream);border-radius:6px}
+  .arv-nivel-1 .arv-no-nome{padding-left:18px}
+  .arv-nivel-2 .arv-no-nome{padding-left:36px}
+  .arv-filhos{overflow:hidden}
+  .arv-filhos.colapsado{display:none}
+  .arv-folha{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;align-items:center;
+    padding:8px 10px 8px 54px;border-bottom:1px solid var(--linha);font-size:12.5px}
+  .arv-folha:last-child{border-bottom:none}
+  .arv-cab-tabela{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;
+    padding:0 10px 8px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;border-bottom:2px solid var(--linha);margin-bottom:6px}
+
   .btn-salvar{
     width:100%;margin-top:16px;padding:13px;border:none;border-radius:9px;
     background:var(--navy);color:#fff;font-size:14px;font-weight:700;
@@ -753,17 +779,7 @@
     --tinta:#e5e7eb; --cinza:#9ca3af; --linha:#2c3a4a; --card:#1a2430; --cream:#16261c;
   }
   body.tema-escuro .content{background:#0f1720}
-  body.tema-escuro .sidebar{background:#111827;border-right-color:#1f2937}
-  body.tema-escuro .sidebar-logo{border-bottom-color:#1f2937}
-  body.tema-escuro .sidebar-logo .logo-sub{color:#6b7280}
-  body.tema-escuro .sidebar-secao{color:#6b7280}
-  body.tema-escuro .sidebar-item{color:#9ca3af}
-  body.tema-escuro .sidebar-item:hover{background:#1f2937;color:#fff}
-  body.tema-escuro .sidebar-item.ativo{background:#16261c;color:#4ade80;border-left-color:#4ade80}
-  body.tema-escuro .sidebar-item.acao{color:#fbbf24}
-  body.tema-escuro .sidebar-item.acao:hover{background:#2a2410;color:#fbbf24}
-  body.tema-escuro .sidebar-sair{border-top-color:#1f2937}
-  body.tema-escuro .sidebar-sair .sidebar-item{color:#9ca3af}
+  body.tema-escuro .sidebar-logo .logo-sub{color:#9fd3ae}
   body.tema-escuro .topbar{background:#111827;border-bottom-color:#1f2937}
   body.tema-escuro .topbar-titulo{color:#e5e7eb}
   body.tema-escuro .user-nome{color:#e5e7eb}
@@ -898,14 +914,11 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </aside>
 
   <div class="main">
-    <div class="topbar">
-      <div class="topbar-left">
-        <span class="topbar-titulo" id="topbar-titulo">Checklists</span>
-      </div>
-      <div class="topo-toggle" id="topo-toggle">
-        <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
-        <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
-        <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Movimentações</button>
+    <div class="topbar-tabs">
+      <div class="tabs-esq">
+        <button type="button" class="topo-toggle-opt" data-ir="novo"><span class="tab-ic">📋</span> Checklists</button>
+        <button type="button" class="topo-toggle-opt" data-ir="partediaria"><span class="tab-ic">🕐</span> Parte Diária</button>
+        <button type="button" class="topo-toggle-opt" data-ir="rastreamento"><span class="tab-ic">🔁</span> Movimentações</button>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -917,6 +930,16 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           </div>
         </div>
       </div>
+    </div>
+    <div class="topbar-pagina">
+      <div class="pagina-esq">
+        <span class="pagina-icone" id="pagina-icone">🖥️</span>
+        <div>
+          <div class="pagina-titulo" id="topbar-titulo">Checklists</div>
+          <div class="pagina-subtitulo" id="pagina-subtitulo">Preenchimento diário de inspeção</div>
+        </div>
+      </div>
+      <div class="pagina-breadcrumb" id="pagina-breadcrumb">Home</div>
     </div>
 
     <div class="content">
@@ -3952,6 +3975,14 @@ document.getElementById('dash-mov-limpar').onclick = function(){
    ===================================================================== */
 let statusEqInicializado = false;
 let statusEqLocalSelecionado = null;
+let statusEqColapsados = new Set(); // guarda quais nós da árvore estão fechados
+
+/** Extrai o "grupo" (prefixo) de um local, ex: "AMT - Sucata/Bobina - 500010" -> "AMT".
+ *  Não depende de nenhum cadastro novo — é só o primeiro pedaço do nome do local. */
+function statusEqGrupoDoLocal(local){
+  const partes = String(local).split(/\s*-\s*/);
+  return (partes[0] || local).trim();
+}
 
 async function carregarStatusEquipamentos(){
   await garantirDadosFrotaExtra();
@@ -4027,7 +4058,7 @@ function statusEqRenderizar(){
       '<div style="font-size:11px;color:var(--cinza);margin-top:4px">'+k[3]+'</div></div>';
   }).join('');
 
-  // ---- Árvore agrupada por Local ----
+  // ---- Árvore: COMPREX > Grupo (prefixo do local) > Local > Equipamento ----
   const porLocal = {};
   equipsFiltrados.forEach(function(eq){
     const local = frotaLocalAtual[eq] || 'Sem local registrado';
@@ -4041,35 +4072,71 @@ function statusEqRenderizar(){
     document.getElementById('status-eq-resumo').innerHTML = '<div class="lista-vazia-dash">Nenhum local com dados no momento.</div>';
     return;
   }
-  arv.innerHTML = locaisOrdenados.map(function(local){
-    const eqs = porLocal[local];
-    const linhasEquip = eqs.map(function(eq){
-      const vinc = frotaItemVinculado[eq];
-      const nome = eq + (vinc ? (' + ' + vinc) : '');
-      const dias = frotaDiasNoLocal[eq];
-      const diasTxt = (typeof dias === 'number') ? (dias + 'd') : '—';
-      const chegada = statusEqDataChegada(eq);
-      const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
-      const totais = statusEqTotaisPorStatus(eq);
-      const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut.';
-      return '<div class="arv-linha-equip">' +
-        '<div><span class="arv-nome">'+nome+'</span><br><span class="arv-sub">'+local+'</span></div>' +
-        '<div>'+diasTxt+'</div>' +
-        '<div class="arv-sub">'+chegadaTxt+'</div>' +
-        '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
-        '<div class="arv-sub">'+subTxt+'</div>' +
-      '</div>';
-    }).join('');
-    return '<div class="arv-grupo" data-local="'+local.replace(/"/g,'&quot;')+'">' +
-      '<div class="arv-linha-local"><span>📍 '+local+'</span><span>'+eqs.length+' equipamento(s)</span><span></span></div>' +
-      linhasEquip +
-    '</div>';
-  }).join('');
 
-  arv.querySelectorAll('.arv-linha-local').forEach(function(el){
+  // Agrupa os locais pelo "prefixo" (AMT, AMB, VALE, SIMEC...) — extraído
+  // automaticamente do próprio nome do local, sem precisar cadastrar nada novo.
+  const porGrupo = {};
+  locaisOrdenados.forEach(function(local){
+    const grupo = statusEqGrupoDoLocal(local);
+    (porGrupo[grupo] = porGrupo[grupo] || []).push(local);
+  });
+  const gruposOrdenados = Object.keys(porGrupo).sort();
+
+  function linhaFolha(eq, local){
+    const vinc = frotaItemVinculado[eq];
+    const nome = eq + (vinc ? (' + ' + vinc) : '');
+    const dias = frotaDiasNoLocal[eq];
+    const diasTxt = (typeof dias === 'number') ? (dias + 'd') : '—';
+    const chegada = statusEqDataChegada(eq);
+    const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
+    const totais = statusEqTotaisPorStatus(eq);
+    const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut.';
+    return '<div class="arv-folha" data-equip="'+eq+'" title="Clique em Localização Atual para mover este equipamento">' +
+      '<div class="arv-no-nome">🚜 '+nome+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
+      '<div>'+diasTxt+'</div>' +
+      '<div class="arv-sub">'+chegadaTxt+'</div>' +
+      '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
+      '<div class="arv-sub">'+subTxt+'</div>' +
+    '</div>';
+  }
+
+  function noExpansor(id, nivel, icone, nome, col2, extraClasse){
+    const colapsado = statusEqColapsados.has(id);
+    return '<div class="arv-no arv-nivel-'+nivel+' '+(extraClasse||'')+(colapsado?' colapsado':'')+'" data-no="'+id+'">' +
+      '<div class="arv-no-nome"><span class="arv-seta">▾</span>'+icone+' '+nome+'</div>' +
+      '<div>'+(col2||'—')+'</div><div>—</div><div>—</div><div>—</div>' +
+    '</div>';
+  }
+
+  let html = '<div class="arv-cab-tabela"><span>EQUIPAMENTO / ACESSÓRIO</span><span>DIAS NO LOCAL</span><span></span><span>DATA DE CHEGADA</span><span>STATUS</span></div>';
+  html += noExpansor('root', 0, '🏢', 'COMPREX', null, 'arv-nivel-0');
+  html += '<div class="arv-filhos'+(statusEqColapsados.has('root')?' colapsado':'')+'" data-filhos-de="root">';
+  gruposOrdenados.forEach(function(grupo){
+    const idGrupo = 'g:' + grupo;
+    const totalEquipGrupo = porGrupo[grupo].reduce(function(s,l){ return s + porLocal[l].length; }, 0);
+    html += noExpansor(idGrupo, 1, '🏭', grupo, totalEquipGrupo + ' equipamento(s)');
+    html += '<div class="arv-filhos'+(statusEqColapsados.has(idGrupo)?' colapsado':'')+'" data-filhos-de="'+idGrupo+'">';
+    porGrupo[grupo].forEach(function(local){
+      const idLocal = 'l:' + local;
+      const eqs = porLocal[local];
+      html += noExpansor(idLocal, 2, '📍', local, eqs.length + ' equipamento(s)');
+      html += '<div class="arv-filhos'+(statusEqColapsados.has(idLocal)?' colapsado':'')+'" data-filhos-de="'+idLocal+'">';
+      eqs.forEach(function(eq){ html += linhaFolha(eq, local); });
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  arv.innerHTML = html;
+
+  arv.querySelectorAll('.arv-no').forEach(function(el){
     el.onclick = function(){
-      const alvo = document.getElementById('resumo-local-' + el.parentElement.dataset.local.replace(/[^a-zA-Z0-9]/g,''));
-      if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const id = el.dataset.no;
+      const filhos = arv.querySelector('[data-filhos-de="'+id+'"]');
+      const vaiColapsar = !el.classList.contains('colapsado');
+      el.classList.toggle('colapsado', vaiColapsar);
+      if (filhos) filhos.classList.toggle('colapsado', vaiColapsar);
+      if (vaiColapsar) statusEqColapsados.add(id); else statusEqColapsados.delete(id);
     };
   });
 
@@ -4772,7 +4839,30 @@ function mostrarView(nome){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
 const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos' };
+
+const INFO_PAGINA = {
+  novo: { icone: '📋', sub: 'Preenchimento diário de inspeção', secao: 'Checklists' },
+  historico: { icone: '🕒', sub: 'Todas as inspeções já registradas', secao: 'Checklists' },
+  dashboard: { icone: '📊', sub: 'Visão geral do dia', secao: 'Checklists' },
+  ocorrencias: { icone: '⚠️', sub: 'Apontamentos críticos', secao: 'Checklists' },
+  frota: { icone: '🚚', sub: 'Equipamentos cadastrados', secao: 'Checklists' },
+  operadores: { icone: '👷', sub: 'Ranking de operadores', secao: 'Checklists' },
+  indicadores: { icone: '📈', sub: 'Indicadores de conformidade', secao: 'Checklists' },
+  partediaria: { icone: '🕐', sub: 'Registro de atividades e paradas do dia', secao: 'Parte Diária' },
+  'historico-pd': { icone: '🕒', sub: 'Todas as partes diárias já registradas', secao: 'Parte Diária' },
+  'dashboard-pd': { icone: '📊', sub: 'Visão geral do dia', secao: 'Parte Diária' },
+  'indicadores-pd': { icone: '📈', sub: 'Indicadores de horas trabalhadas e paradas', secao: 'Parte Diária' },
+  rastreamento: { icone: '📦', sub: 'Mover um equipamento entre locais', secao: 'Movimentações' },
+  'localizacao-atual': { icone: '📍', sub: 'Onde cada equipamento está agora', secao: 'Movimentações' },
+  'historico-mov': { icone: '🕒', sub: 'Todas as movimentações já registradas', secao: 'Movimentações' },
+  'dashboard-mov': { icone: '📊', sub: 'Visão geral das movimentações', secao: 'Movimentações' },
+  'status-equipamentos': { icone: '🖥️', sub: 'Acompanhamento em tempo real da localização e situação dos equipamentos', secao: 'Movimentações' }
+};
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
+  const info = INFO_PAGINA[nome] || { icone: '📋', sub: '', secao: 'Checklists' };
+  document.getElementById('pagina-icone').textContent = info.icone;
+  document.getElementById('pagina-subtitulo').textContent = info.sub;
+  document.getElementById('pagina-breadcrumb').textContent = 'Home  ›  ' + info.secao + '  ›  ' + (titulos[nome] || 'Checklists');
 
   const VIEWS_POR_SECAO = {
     partediaria: ['partediaria', 'historico-pd', 'dashboard-pd', 'indicadores-pd'],
@@ -4787,8 +4877,7 @@ const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: '
       el.style.display = (secao === secaoAtiva) ? 'flex' : 'none';
     });
   });
-  const toggle = document.getElementById('topo-toggle');
-  toggle.querySelectorAll('.topo-toggle-opt').forEach(function(b){
+  document.querySelectorAll('.topo-toggle-opt').forEach(function(b){
     b.classList.toggle('ativo', b.dataset.ir === secaoAtiva || (b.dataset.ir === 'novo' && secaoAtiva === 'checklist'));
   });
 
