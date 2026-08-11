@@ -200,7 +200,7 @@
   .pd-total-badge-val{font-size:16px;font-weight:800;color:var(--tinta)}
   .pd-tabela-cab{display:grid;gap:10px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;
     padding:0 4px 6px;border-bottom:1px solid var(--linha)}
-  .pd-tabela-cab.ativ, .pd-linha.ativ{grid-template-columns:110px 1fr 100px 100px 90px 34px}
+  .pd-tabela-cab.ativ, .pd-linha.ativ{grid-template-columns:85px 85px 1fr 90px 90px 80px 34px}
   .pd-tabela-cab.par, .pd-linha.par{grid-template-columns:170px 95px 95px 90px 90px 80px 34px}
   .pd-linha{display:grid;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--linha)}
   .pd-linha input, .pd-linha select{width:100%;padding:8px 9px;border:1px solid var(--linha);border-radius:8px;
@@ -467,6 +467,22 @@
   .mli-foto:hover{background:var(--cream)}
   .modal-lista-item.mli-editando{gap:6px}
   .mli-input{flex:1;border:1.5px solid var(--navy);border-radius:6px;padding:5px 8px;font-size:12px;min-width:0}
+  .mli-editando-extra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--linha)}
+  .mli-editando-extra label{font-size:10.5px;font-weight:700;color:var(--cinza)}
+  .mli-select-extra{border:1px solid var(--linha);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--card);color:var(--tinta)}
+
+  /* ---- Status dos Equipamentos: árvore + resumo ---- */
+  .arv-linha-local{display:grid;grid-template-columns:1fr 140px 120px;gap:10px;align-items:center;
+    padding:10px 12px;background:var(--cream);border-radius:8px;margin-top:10px;cursor:pointer;font-weight:700;font-size:12.5px}
+  .arv-linha-local:hover{background:#dcebdc}
+  .arv-linha-equip{display:grid;grid-template-columns:1fr 60px 100px 130px 140px;gap:10px;align-items:center;
+    padding:9px 12px 9px 30px;border-bottom:1px solid var(--linha);font-size:12.5px}
+  .arv-linha-equip:last-child{border-bottom:none}
+  .arv-nome{font-weight:700;color:var(--tinta)}
+  .arv-sub{color:var(--cinza);font-size:10.5px}
+  .arv-resumo-linha{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px}
+  .arv-resumo-pct{font-weight:700}
+  .arv-resumo-total{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:2px}
 
   .btn-salvar{
     width:100%;margin-top:16px;padding:13px;border:none;border-radius:9px;
@@ -872,6 +888,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sidebar-item" data-view="localizacao-atual" data-secao="rastreamento"><i>📍</i> Localização Atual</div>
       <div class="sidebar-item" data-view="historico-mov" data-secao="rastreamento"><i>🕒</i> Histórico de Movimentações</div>
       <div class="sidebar-item" data-view="dashboard-mov" data-secao="rastreamento"><i>📊</i> Dashboard</div>
+      <div class="sidebar-item" data-view="status-equipamentos" data-secao="rastreamento"><i>🖥️</i> Status dos Equipamentos</div>
 
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
     </nav>
@@ -888,7 +905,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="topo-toggle" id="topo-toggle">
         <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
         <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
-        <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Rastreamento</button>
+        <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Movimentações</button>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -1134,7 +1151,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
       <div class="pd-tabela-cab ativ">
-        <span>HORÍMETRO INICIAL</span><span>DESCRIÇÃO DA ATIVIDADE</span><span>DE</span><span>ATÉ</span><span>TOTAL</span><span></span>
+        <span>HORÍM. INICIAL</span><span>HORÍM. FINAL</span><span>DESCRIÇÃO DA ATIVIDADE</span><span>DE</span><span>ATÉ</span><span>TOTAL</span><span></span>
       </div>
       <div id="pd-lista-atividades"></div>
       <button type="button" class="pd-add-btn" id="pd-add-atividade">+ Adicionar atividade</button>
@@ -1356,6 +1373,21 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
     </div>
+    <div class="grid" style="margin-top:14px">
+      <div class="campo">
+        <label>Novo status</label>
+        <select id="mov-novo-status">
+          <option value="OPERACIONAL">OPERACIONAL</option>
+          <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+          <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Data da movimentação</label>
+        <input type="date" id="mov-data">
+        <div class="modal-dica" style="margin-top:4px">Pode informar uma data retroativa, se for o caso.</div>
+      </div>
+    </div>
     <div class="mov-vinculo" id="mov-vinculo" style="display:none">
       <span>🔧 Implemento: <b id="mov-vinculo-nome">—</b></span>
       <label><input type="checkbox" id="mov-vinculo-mover" checked> Mover junto</label>
@@ -1404,10 +1436,18 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <label>Local</label>
       <select id="loc-atual-filtro-local"><option value="">Todos</option></select>
     </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-primario" id="loc-atual-imprimir">🖨️ Imprimir / Exportar PDF</button>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="loc-atual-exportar-excel">📊 Exportar Excel</button>
+    </div>
   </div>
   <div class="hist-wrap">
     <table class="hist-tabela" id="loc-atual-tabela">
-      <thead><tr><th>Equipamento</th><th>Implemento</th><th>Local atual</th><th>Há quantos dias</th></tr></thead>
+      <thead><tr><th>Equipamento</th><th>Implemento</th><th>Local atual</th><th>Status</th><th>Há quantos dias</th></tr></thead>
       <tbody id="loc-atual-tbody"></tbody>
     </table>
   </div>
@@ -1426,7 +1466,13 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
     <div class="hist-filtro-campo">
       <label>Equipamento</label>
-      <select id="hist-mov-filtro-equip"><option value="">Todos</option></select>
+      <div class="busca-wrap">
+        <span class="busca-icone">🔍</span>
+        <input type="text" id="hist-mov-filtro-equip" placeholder="Buscar equipamento…" autocomplete="off">
+        <button type="button" class="busca-limpar" style="display:none">✕</button>
+        <span class="busca-seta">⌄</span>
+        <div class="busca-lista"></div>
+      </div>
     </div>
     <div class="hist-filtro-campo" style="justify-content:flex-end">
       <label>&nbsp;</label>
@@ -1441,9 +1487,19 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <button type="button" class="rel-btn-secundario" id="hist-mov-exportar-excel">📊 Exportar Excel</button>
     </div>
   </div>
+  <div class="dash-row" id="hist-mov-extrato" style="display:none">
+    <div class="dash-card">
+      <h3>📍 Extrato de locais — <span id="hist-mov-extrato-nome"></span></h3>
+      <div id="hist-mov-extrato-locais"></div>
+    </div>
+    <div class="dash-card">
+      <h3>⚙️ Extrato de status — <span id="hist-mov-extrato-nome2"></span></h3>
+      <div id="hist-mov-extrato-status"></div>
+    </div>
+  </div>
   <div class="hist-wrap">
     <table class="hist-tabela" id="hist-mov-tabela">
-      <thead><tr><th>Data</th><th>Equipamento</th><th>Implemento</th><th>De</th><th>Para</th><th>Dias no local</th><th>Usuário</th></tr></thead>
+      <thead><tr><th>Data</th><th>Equipamento</th><th>Implemento</th><th>De</th><th>Para</th><th>Status</th><th>Dias no local</th><th>Usuário</th></tr></thead>
       <tbody id="hist-mov-tbody"></tbody>
     </table>
   </div>
@@ -1506,6 +1562,67 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="dash-card">
       <h3>Locais com mais chegadas</h3>
       <div id="dash-mov-rank-local"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+  <div class="dash-row">
+    <div class="dash-card">
+      <h3>⚙️ Tempo total por status (dias, somando todos os equipamentos)</h3>
+      <div id="dash-mov-status-donut" style="display:flex;align-items:center;gap:24px">
+        <div id="dash-mov-status-visual" style="width:90px;height:90px;border-radius:50%;flex-shrink:0"></div>
+        <div id="dash-mov-status-legenda" style="flex:1"></div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <h3>🚜 Equipamentos com mais dias em manutenção</h3>
+      <div id="dash-mov-rank-manutencao"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-status-equipamentos">
+  <div class="cab">
+    <div class="grid">
+      <div class="campo">
+        <label>Local</label>
+        <select id="status-eq-filtro-local"><option value="">Todos os locais</option></select>
+      </div>
+      <div class="campo">
+        <label>Equipamento / Implemento</label>
+        <input type="text" id="status-eq-filtro-busca" placeholder="Buscar equipamento…">
+      </div>
+      <div class="campo">
+        <label>Status</label>
+        <select id="status-eq-filtro-status">
+          <option value="">Todos</option>
+          <option value="OPERACIONAL">OPERACIONAL</option>
+          <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+          <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Chegada de</label>
+        <input type="date" id="status-eq-filtro-chegada-de">
+      </div>
+      <div class="campo">
+        <label>Chegada até</label>
+        <input type="date" id="status-eq-filtro-chegada-ate">
+      </div>
+      <div class="campo" style="justify-content:flex-end;display:flex;align-items:flex-end">
+        <button type="button" class="rel-btn-secundario" id="status-eq-limpar-filtros" style="width:100%">Limpar filtros</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-kpis" id="status-eq-kpis"></div>
+
+  <div class="dash-row" style="align-items:flex-start">
+    <div class="dash-card" style="flex:2">
+      <h3>🌳 Árvore de Equipamentos</h3>
+      <div id="status-eq-arvore"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card" style="flex:1;position:sticky;top:16px">
+      <h3>📍 Resumo da localização</h3>
+      <div id="status-eq-resumo"><div class="lista-vazia-dash">Selecione um local na árvore para ver o resumo.</div></div>
     </div>
   </div>
 </div>
@@ -1832,7 +1949,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="modal-tabs">
       <div class="tab ativo" data-tab="equip">🚜 Equipamento</div>
       <div class="tab" data-tab="local">📍 Local / Obra</div>
-      <div class="tab" data-tab="operador">👷 Operador</div>
     </div>
 
     <!-- Painel Equipamento -->
@@ -1844,24 +1960,24 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
       <div class="modal-campo">
         <label>Implemento vinculado (opcional)</label>
-        <div class="busca-wrap">
-          <span class="busca-icone">🔍</span>
-          <input type="text" id="input-equip-implemento" placeholder="Ex: THS0004 — deixe em branco se não houver" autocomplete="off">
-          <button type="button" class="busca-limpar" style="display:none">✕</button>
-          <span class="busca-seta">⌄</span>
-          <div class="busca-lista"></div>
-        </div>
-        <div class="modal-dica">Se o equipamento já sai de fábrica com um implemento acoplado (ex: uma tesoura), informe aqui.</div>
+        <select id="input-equip-implemento">
+          <option value="">Nenhum</option>
+        </select>
+        <div class="modal-dica">Se o equipamento já sai de fábrica com um implemento acoplado (ex: uma tesoura), selecione aqui.</div>
       </div>
       <div class="modal-campo">
         <label>Local inicial (opcional)</label>
-        <div class="busca-wrap">
-          <span class="busca-icone">🔍</span>
-          <input type="text" id="input-equip-local" placeholder="Onde o equipamento está agora" autocomplete="off">
-          <button type="button" class="busca-limpar" style="display:none">✕</button>
-          <span class="busca-seta">⌄</span>
-          <div class="busca-lista"></div>
-        </div>
+        <select id="input-equip-local">
+          <option value="">Nenhum</option>
+        </select>
+      </div>
+      <div class="modal-campo">
+        <label>Status inicial</label>
+        <select id="input-equip-status">
+          <option value="OPERACIONAL">OPERACIONAL</option>
+          <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+          <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
       </div>
       <div class="modal-campo">
         <label>Data (opcional)</label>
@@ -1883,18 +1999,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="modal-lista" id="lista-local"></div>
       <button class="btn-salvar" id="btn-salvar-local">Salvar local</button>
       <div class="feedback-cadastro" id="fb-local"></div>
-    </div>
-
-    <!-- Painel Operador -->
-    <div class="modal-body" id="painel-operador" style="display:none">
-      <div class="modal-campo">
-        <label>Nome do operador</label>
-        <input type="text" id="input-operador" placeholder="Ex: João da Silva" autocomplete="off">
-        <div class="modal-dica">Será adicionado na lista de operadores do checklist e da parte diária.</div>
-      </div>
-      <div class="modal-lista" id="lista-operador"></div>
-      <button class="btn-salvar" id="btn-salvar-operador">Salvar operador</button>
-      <div class="feedback-cadastro" id="fb-operador"></div>
     </div>
   </div>
 </div>
@@ -2304,7 +2408,6 @@ async function iniciarAplicacao(){
     ]);
     inicializarListas(equipamentos, locais);
     operadores = listaOperadores.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
-    renderizarListaModal('operador');
     // Reavalia o acesso admin e os tipos de parada agora que a lista Configuracoes
     // (se existir) já carregou — pode ter mudado o padrão fixo do código.
     document.getElementById('btn-abrir-cadastro').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
@@ -2986,9 +3089,20 @@ const overlay = document.getElementById('modal-overlay');
 const modalFechar = document.getElementById('modal-fechar');
 let tabAtiva = 'equip';
 
+function preencherSelectsCadastroEquip(){
+  const selImp = document.getElementById('input-equip-implemento');
+  const selLoc = document.getElementById('input-equip-local');
+  const valorImpAtual = selImp.value, valorLocAtual = selLoc.value;
+  selImp.innerHTML = '<option value="">Nenhum</option>' + frotas.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  selLoc.innerHTML = '<option value="">Nenhum</option>' + locais.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+  selImp.value = valorImpAtual; selLoc.value = valorLocAtual;
+}
+
 document.getElementById('btn-abrir-cadastro').onclick = function(){
   if (!usuarioEhAdmin(contaAtual)) { alert('Você não tem permissão para acessar esta área.'); return; }
   overlay.classList.add('aberto'); renderizarListaModal(tabAtiva);
+  preencherSelectsCadastroEquip();
+  garantirDadosFrotaExtra().then(function(){ renderizarListaModal(tabAtiva); });
 };
 modalFechar.onclick = function(){ overlay.classList.remove('aberto'); };
 overlay.onclick = function(e){ if (e.target === overlay) overlay.classList.remove('aberto'); };
@@ -3000,7 +3114,6 @@ document.querySelectorAll('.tab').forEach(function(tab){
     tabAtiva = tab.dataset.tab;
     document.getElementById('painel-equip').style.display = tabAtiva === 'equip' ? 'block' : 'none';
     document.getElementById('painel-local').style.display = tabAtiva === 'local' ? 'block' : 'none';
-    document.getElementById('painel-operador').style.display = tabAtiva === 'operador' ? 'block' : 'none';
     renderizarListaModal(tabAtiva);
   };
 });
@@ -3025,10 +3138,33 @@ function renderizarListaModal(tipo) {
 
   el.innerHTML = lista.map(function(v){
     if (v === editando) {
-      return '<div class="modal-lista-item mli-editando">' +
-        '<input type="text" class="mli-input" id="mli-input-'+tipo+'" value="'+v+'">' +
+      const extrasEquip = tipo === 'equip' ? (
+        '<div class="mli-editando-extra">' +
+          '<label>Implemento vinculado</label>' +
+          '<select class="mli-select-extra" id="mli-edit-implemento">' +
+            '<option value="">Nenhum</option>' +
+            frotas.filter(function(f){ return f !== v; }).map(function(f){ return '<option value="'+f+'" '+(frotaItemVinculado[v]===f?'selected':'')+'>'+f+'</option>'; }).join('') +
+          '</select>' +
+          '<label>Local atual</label>' +
+          '<select class="mli-select-extra" id="mli-edit-local">' +
+            '<option value="">Nenhum</option>' +
+            locais.map(function(l){ return '<option value="'+l+'" '+(frotaLocalAtual[v]===l?'selected':'')+'>'+l+'</option>'; }).join('') +
+          '</select>' +
+          '<label>Status</label>' +
+          '<select class="mli-select-extra" id="mli-edit-status">' +
+            STATUS_EQUIPAMENTO.map(function(s){ return '<option value="'+s+'" '+((frotaStatusAtual[v]||'OPERACIONAL')===s?'selected':'')+'>'+s+'</option>'; }).join('') +
+          '</select>' +
+          '<label>Data dessa mudança</label>' +
+          '<input type="date" class="mli-select-extra" id="mli-edit-data" value="'+new Date().toISOString().slice(0,10)+'">' +
+        '</div>'
+      ) : '';
+      return '<div class="modal-lista-item mli-editando" style="flex-direction:column;align-items:stretch;gap:8px">' +
+        '<div style="display:flex;gap:8px">' +
+        '<input type="text" class="mli-input" id="mli-input-'+tipo+'" value="'+v+'" style="flex:1">' +
         '<button class="mli-btn mli-salvar" data-tipo="'+tipo+'" data-antigo="'+v+'">Salvar</button>' +
         '<button class="mli-btn mli-cancelar" data-tipo="'+tipo+'">Cancelar</button>' +
+        '</div>' +
+        extrasEquip +
       '</div>';
     }
     const btnFoto = tipo === 'equip'
@@ -3082,22 +3218,76 @@ function renderizarListaModal(tipo) {
   });
   el.querySelectorAll('.mli-salvar').forEach(function(btn){
     btn.onclick = function(){
-      const novoValor = document.getElementById('mli-input-'+tipo).value.trim();
+      const novoValor = document.getElementById('mli-input-'+tipo).value.trim().toUpperCase();
       const antigoValor = btn.dataset.antigo;
       if (!novoValor) return;
-      if (novoValor === antigoValor) {
+
+      const novoImplemento = tipo === 'equip' ? document.getElementById('mli-edit-implemento').value : null;
+      const novoLocal = tipo === 'equip' ? document.getElementById('mli-edit-local').value : null;
+      const novoStatus = tipo === 'equip' ? document.getElementById('mli-edit-status').value : null;
+      const dataEdicao = tipo === 'equip' ? document.getElementById('mli-edit-data').value : null;
+      const nomeMudou = novoValor !== antigoValor;
+      const implementoMudou = tipo === 'equip' && novoImplemento !== (frotaItemVinculado[antigoValor] || '');
+      const localAntigo = frotaLocalAtual[antigoValor] || '';
+      const localMudou = tipo === 'equip' && novoLocal !== localAntigo;
+      const statusMudou = tipo === 'equip' && novoStatus !== (frotaStatusAtual[antigoValor] || 'OPERACIONAL');
+
+      if (!nomeMudou && !implementoMudou && !localMudou && !statusMudou) {
         editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         return;
       }
+
       const itemId = mapaIds[antigoValor];
       btn.disabled = true; btn.textContent = 'Salvando…';
-      editarItemSimples(cfg.listaId, itemId, novoValor).then(function(){
-        const i = lista.indexOf(antigoValor);
-        if (i >= 0) lista[i] = novoValor;
-        delete mapaIds[antigoValor];
-        mapaIds[novoValor] = itemId;
-        ordenarListas();
+
+      const promessa = nomeMudou ? editarItemSimples(cfg.listaId, itemId, novoValor) : Promise.resolve();
+      promessa.then(function(){
+        if (tipo === 'equip' && (implementoMudou || localMudou || statusMudou)) {
+          const campos = {};
+          if (implementoMudou) campos.ItemVinculado = novoImplemento;
+          if (localMudou) campos.LocalAtual = novoLocal;
+          if (statusMudou) campos.StatusAtual = novoStatus;
+          return atualizarCamposItem(LISTA_FROTA_ID, itemId, campos);
+        }
+      }).then(function(){
+        // Se o local (ou o status) mudou pela edição, registra no Histórico de
+        // Movimentações também, com a data que o usuário informou.
+        if (tipo === 'equip' && (localMudou || statusMudou)) {
+          return graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
+            fields: {
+              Equipamento: nomeMudou ? novoValor : antigoValor,
+              ItemVinculado: novoImplemento || '',
+              LocalOrigem: localAntigo || '—',
+              LocalDestino: novoLocal || localAntigo || '—',
+              Status: novoStatus || frotaStatusAtual[antigoValor] || 'OPERACIONAL',
+              Data: (dataEdicao || new Date().toISOString().slice(0,10)) + 'T12:00:00',
+              Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
+              Observacao: 'Editado via Cadastrar equip./local'
+            }
+          }).then(function(){ movimentacoesCarregadas = false; });
+        }
+      }).then(function(){
+        if (nomeMudou) {
+          const i = lista.indexOf(antigoValor);
+          if (i >= 0) lista[i] = novoValor;
+          delete mapaIds[antigoValor];
+          mapaIds[novoValor] = itemId;
+          if (tipo === 'equip') {
+            frotaItemVinculado[novoValor] = novoImplemento || '';
+            frotaLocalAtual[novoValor] = novoLocal || '';
+            frotaStatusAtual[novoValor] = novoStatus || 'OPERACIONAL';
+            delete frotaItemVinculado[antigoValor];
+            delete frotaLocalAtual[antigoValor];
+            delete frotaStatusAtual[antigoValor];
+            frotaIdsExtra[novoValor] = itemId;
+          }
+          ordenarListas();
+        } else if (tipo === 'equip') {
+          frotaItemVinculado[antigoValor] = novoImplemento || '';
+          frotaLocalAtual[antigoValor] = novoLocal || '';
+          frotaStatusAtual[antigoValor] = novoStatus || 'OPERACIONAL';
+        }
         editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         mostrarFeedback(tipo, true, '✔ Atualizado com sucesso!');
@@ -3123,6 +3313,7 @@ document.getElementById('btn-salvar-equip').onclick = async function(){
 
   const implemento = document.getElementById('input-equip-implemento').value.trim().toUpperCase();
   const localInicial = document.getElementById('input-equip-local').value.trim();
+  const statusInicial = document.getElementById('input-equip-status').value;
   const dataInformada = document.getElementById('input-equip-data').value;
 
   const botao = document.getElementById('btn-salvar-equip');
@@ -3134,38 +3325,39 @@ try {
     ordenarListas();
     preencherSelect('equipamento', frotas);
 
-    // Se veio com implemento e/ou local inicial, já grava isso e registra
-    // a primeira movimentação (com a data informada, ou hoje).
-    if (implemento || localInicial) {
-      const camposExtras = {};
-      if (localInicial) camposExtras.LocalAtual = localInicial;
-      if (implemento) camposExtras.ItemVinculado = implemento;
-      await atualizarCamposItem(LISTA_FROTA_ID, resultado.id, camposExtras);
-      if (localInicial) frotaLocalAtual[val] = localInicial;
-      if (implemento) frotaItemVinculado[val] = implemento;
-      frotaIdsExtra[val] = resultado.id;
+    // Grava local/implemento/status inicial e registra a primeira
+    // movimentação (com a data informada, ou hoje).
+    const camposExtras = { StatusAtual: statusInicial };
+    if (localInicial) camposExtras.LocalAtual = localInicial;
+    if (implemento) camposExtras.ItemVinculado = implemento;
+    await atualizarCamposItem(LISTA_FROTA_ID, resultado.id, camposExtras);
+    if (localInicial) frotaLocalAtual[val] = localInicial;
+    if (implemento) frotaItemVinculado[val] = implemento;
+    frotaStatusAtual[val] = statusInicial;
+    frotaIdsExtra[val] = resultado.id;
 
-      if (localInicial) {
-        const dataEvento = dataInformada ? (dataInformada + 'T12:00:00') : new Date().toISOString();
-        await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
-          fields: {
-            Equipamento: val,
-            ItemVinculado: implemento,
-            LocalOrigem: 'Cadastro inicial',
-            LocalDestino: localInicial,
-            Data: dataEvento,
-            Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
-            Observacao: 'Cadastro do equipamento'
-          }
-        });
-        movimentacoesCarregadas = false;
-      }
+    if (localInicial) {
+      const dataEvento = dataInformada ? (dataInformada + 'T12:00:00') : new Date().toISOString();
+      await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
+        fields: {
+          Equipamento: val,
+          ItemVinculado: implemento,
+          LocalOrigem: 'Cadastro inicial',
+          LocalDestino: localInicial,
+          Status: statusInicial,
+          Data: dataEvento,
+          Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
+          Observacao: 'Cadastro do equipamento'
+        }
+      });
+      movimentacoesCarregadas = false;
     }
 
     document.getElementById('input-equip').value = '';
     document.getElementById('input-equip-implemento').value = '';
     document.getElementById('input-equip-local').value = '';
     document.getElementById('input-equip-data').value = '';
+    document.getElementById('input-equip-status').value = 'OPERACIONAL';
     renderizarListaModal('equip');
     mostrarFeedback('equip', true, '✔ ' + val + ' adicionado com sucesso!' + (localInicial ? ' Local e histórico registrados.' : ''));
   } catch(err) {
@@ -3198,27 +3390,7 @@ document.getElementById('btn-salvar-local').onclick = async function(){
   }
 };
 
-document.getElementById('btn-salvar-operador').onclick = async function(){
-  const val = document.getElementById('input-operador').value.trim();
-  if (!val) { mostrarFeedback('operador', false, 'Digite o nome do operador.'); return; }
-  if (operadores.indexOf(val) >= 0) { mostrarFeedback('operador', false, 'Operador já existe na lista.'); return; }
 
-  const botao = document.getElementById('btn-salvar-operador');
-  botao.disabled = true; botao.textContent = 'Salvando…';
-  try {
-    const resultado = await adicionarItemSimples(LISTA_OPERADORES_ID, val);
-    operadores.push(val);
-    operadoresIds[val] = resultado.id;
-    ordenarListas();
-    document.getElementById('input-operador').value = '';
-    renderizarListaModal('operador');
-    mostrarFeedback('operador', true, '✔ Operador adicionado com sucesso!');
-  } catch(err) {
-    mostrarFeedback('operador', false, 'Erro: ' + err.message);
-  } finally {
-    botao.disabled = false; botao.textContent = 'Salvar operador';
-  }
-};
 
 /* =====================================================================
    RASTREAMENTO — mover equipamentos entre locais, com histórico
@@ -3226,7 +3398,9 @@ document.getElementById('btn-salvar-operador').onclick = async function(){
 let frotaExtraCarregada = false;
 let frotaLocalAtual = {};    // equipamento -> local atual
 let frotaItemVinculado = {}; // equipamento principal -> código do subitem
+let frotaStatusAtual = {};   // equipamento -> OPERACIONAL / EM MANUTENÇÃO / EM DISPONIBILIDADE
 let frotaIdsExtra = {};      // equipamento -> id do item na lista Frota
+const STATUS_EQUIPAMENTO = ['OPERACIONAL', 'EM MANUTENÇÃO', 'EM DISPONIBILIDADE'];
 
 async function garantirDadosFrotaExtra(forcar){
   if (frotaExtraCarregada && !forcar) return;
@@ -3237,6 +3411,7 @@ async function garantirDadosFrotaExtra(forcar){
     if (!nome) return;
     frotaLocalAtual[nome] = f.LocalAtual || '';
     frotaItemVinculado[nome] = f.ItemVinculado || '';
+    frotaStatusAtual[nome] = f.StatusAtual || 'OPERACIONAL';
     frotaIdsExtra[nome] = item.id;
   });
   frotaExtraCarregada = true;
@@ -3247,6 +3422,8 @@ async function inicializarTelaRastreamentoSeNecessario(){
   await garantirDadosFrotaExtra();
   if (movInicializado) return;
   movInicializado = true;
+  const hoje = new Date();
+  document.getElementById('mov-data').value = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
 }
 
 function movAtualizarPreviaDeParaEVinculo(){
@@ -3267,6 +3444,7 @@ function movAtualizarPreviaDeParaEVinculo(){
         ? '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px">'
         : '🚜';
     });
+    document.getElementById('mov-novo-status').value = frotaStatusAtual[eq] || 'OPERACIONAL';
   } else {
     cardFoto.style.display = 'none';
   }
@@ -3302,21 +3480,30 @@ function movMostrarErro(msg){
 
 document.getElementById('mov-salvar').onclick = async function(){
   const eq = document.getElementById('mov-equipamento').value.trim().toUpperCase();
-  const novoLocal = document.getElementById('mov-novo-local').value.trim();
+  const novoLocalInformado = document.getElementById('mov-novo-local').value.trim();
+  const novoStatus = document.getElementById('mov-novo-status').value;
+  const dataInformada = document.getElementById('mov-data').value;
   const observacao = document.getElementById('mov-observacao').value.trim();
   const localAtual = frotaLocalAtual[eq] || '';
+  const statusAtual = frotaStatusAtual[eq] || 'OPERACIONAL';
   const vinculado = frotaItemVinculado[eq] || '';
   const moverJunto = vinculado && document.getElementById('mov-vinculo-mover').checked;
+  const novoLocal = novoLocalInformado || localAtual; // se não trocar de local, mantém o mesmo (só muda o status)
 
-  if (!eq || !novoLocal) { movMostrarErro('Selecione o equipamento e o novo local.'); return; }
-  if (novoLocal === localAtual) { movMostrarErro('O novo local é igual ao local atual.'); return; }
+  if (!eq) { movMostrarErro('Selecione o equipamento.'); return; }
+  if (!dataInformada) { movMostrarErro('Informe a data da movimentação.'); return; }
+  if (novoLocal === localAtual && novoStatus === statusAtual) {
+    movMostrarErro('Nada mudou — troque o local e/ou o status antes de salvar.');
+    return;
+  }
 
   const btn = this;
-  btn.disabled = true; btn.textContent = 'Movendo…';
+  btn.disabled = true; btn.textContent = 'Salvando…';
   try {
     const idPrincipal = frotaIdsExtra[eq] || frotasIds[eq];
-    await atualizarCamposItem(LISTA_FROTA_ID, idPrincipal, { LocalAtual: novoLocal });
+    await atualizarCamposItem(LISTA_FROTA_ID, idPrincipal, { LocalAtual: novoLocal, StatusAtual: novoStatus });
     frotaLocalAtual[eq] = novoLocal;
+    frotaStatusAtual[eq] = novoStatus;
 
     if (moverJunto) {
       const idVinculado = frotaIdsExtra[vinculado] || frotasIds[vinculado];
@@ -3332,7 +3519,8 @@ document.getElementById('mov-salvar').onclick = async function(){
         ItemVinculado: moverJunto ? vinculado : '',
         LocalOrigem: localAtual || '—',
         LocalDestino: novoLocal,
-        Data: new Date().toISOString(),
+        Status: novoStatus,
+        Data: dataInformada + 'T12:00:00',
         Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
         Observacao: observacao
       }
@@ -3346,6 +3534,8 @@ document.getElementById('mov-salvar').onclick = async function(){
     document.getElementById('mov-equipamento').value = '';
     document.getElementById('mov-novo-local').value = '';
     document.getElementById('mov-observacao').value = '';
+    const hoje2 = new Date();
+    document.getElementById('mov-data').value = hoje2.getFullYear() + '-' + String(hoje2.getMonth()+1).padStart(2,'0') + '-' + String(hoje2.getDate()).padStart(2,'0');
     movAtualizarPreviaDeParaEVinculo();
   } catch(err) {
     movMostrarErro('Falha ao mover. Tente novamente. ' + err.message);
@@ -3376,6 +3566,12 @@ async function carregarLocalizacaoAtual(){
   }
 }
 
+function locBadgeStatus(status){
+  const s = status || 'OPERACIONAL';
+  const classe = s === 'OPERACIONAL' ? 'ok' : (s === 'EM MANUTENÇÃO' ? 'parar' : 'at');
+  return '<span class="hist-st ' + classe + '">' + s + '</span>';
+}
+
 function locRenderizarTabela(){
   const busca = document.getElementById('loc-atual-busca').value.trim().toUpperCase();
   const filtroLocal = document.getElementById('loc-atual-filtro-local').value;
@@ -3386,7 +3582,7 @@ function locRenderizarTabela(){
   });
   const tbody = document.getElementById('loc-atual-tbody');
   if (!linhas.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--cinza);padding:24px">Nenhum equipamento encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--cinza);padding:24px">Nenhum equipamento encontrado.</td></tr>';
     return;
   }
   tbody.innerHTML = linhas.map(function(eq){
@@ -3394,11 +3590,58 @@ function locRenderizarTabela(){
     const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
     return '<tr><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
       '<td>' + (frotaLocalAtual[eq] ? '<span class="hist-st ok">' + frotaLocalAtual[eq] + '</span>' : '<span style="color:var(--cinza)">Sem registro</span>') + '</td>' +
+      '<td>' + locBadgeStatus(frotaStatusAtual[eq]) + '</td>' +
       '<td>' + diasTxt + '</td></tr>';
   }).join('');
 }
 document.getElementById('loc-atual-busca').addEventListener('input', locRenderizarTabela);
 document.getElementById('loc-atual-filtro-local').addEventListener('change', locRenderizarTabela);
+
+function locObterLinhasAtuais(){
+  const busca = document.getElementById('loc-atual-busca').value.trim().toUpperCase();
+  const filtroLocal = document.getElementById('loc-atual-filtro-local').value;
+  return frotas.filter(function(eq){
+    if (busca && eq.toUpperCase().indexOf(busca) === -1) return false;
+    if (filtroLocal && frotaLocalAtual[eq] !== filtroLocal) return false;
+    return true;
+  });
+}
+
+document.getElementById('loc-atual-imprimir').onclick = function(){
+  const linhas = locObterLinhasAtuais();
+  if (!linhas.length) { alert('Nenhum equipamento encontrado para imprimir com esses filtros.'); return; }
+  const corpo = linhas.map(function(eq){
+    const dias = frotaDiasNoLocal[eq];
+    const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
+    return '<tr><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
+      '<td>' + (frotaLocalAtual[eq] || 'Sem registro') + '</td>' +
+      '<td>' + (frotaStatusAtual[eq] || 'OPERACIONAL') + '</td><td>' + diasTxt + '</td></tr>';
+  }).join('');
+  document.getElementById('hist-print-area').innerHTML =
+    '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Localização Atual dos Equipamentos<small>' + linhas.length + ' equipamento(s) — Comprex Máquinas e Serviços</small></div></div>' +
+    '<table class="hist-tabela"><thead><tr><th>Equipamento</th><th>Implemento</th><th>Local atual</th><th>Status</th><th>Há quantos dias</th></tr></thead><tbody>' + corpo + '</tbody></table>';
+  window.print();
+};
+
+document.getElementById('loc-atual-exportar-excel').onclick = function(){
+  const linhas = locObterLinhasAtuais();
+  if (!linhas.length) { alert('Nenhum equipamento encontrado para exportar com esses filtros.'); return; }
+  const dados = linhas.map(function(eq){
+    const dias = frotaDiasNoLocal[eq];
+    return {
+      'Equipamento': eq,
+      'Implemento': frotaItemVinculado[eq] || '',
+      'Local atual': frotaLocalAtual[eq] || '',
+      'Status': frotaStatusAtual[eq] || 'OPERACIONAL',
+      'Há quantos dias': (typeof dias === 'number') ? dias : ''
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(dados);
+  ws['!cols'] = [{wch:16},{wch:14},{wch:26},{wch:18},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Localização Atual');
+  XLSX.writeFile(wb, 'Localizacao_Atual_' + new Date().toISOString().slice(0,10) + '.xlsx');
+};
 
 /* ---- Histórico de Movimentações ---- */
 let movimentacoesCarregadas = false;
@@ -3416,14 +3659,16 @@ async function garantirDadosMovimentacoes(forcar){
       itemVinculado: f.ItemVinculado || '',
       localOrigem: f.LocalOrigem || '',
       localDestino: f.LocalDestino || '',
+      status: f.Status || '',
       usuario: f.Usuario || '',
       observacao: f.Observacao || ''
     };
   }).sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
 
-  // Calcula quantos dias o equipamento ficou (ou está) no LOCAL DE DESTINO
-  // de cada movimentação — até a próxima movimentação daquele mesmo
-  // equipamento, ou até hoje, se ele ainda estiver lá.
+  // Calcula quantos dias cada registro "durou" — do momento dessa movimentação
+  // até a próxima movimentação DAQUELE MESMO equipamento (ou até hoje, se for
+  // a mais recente). Esse número serve tanto para "dias no local" quanto para
+  // "dias no status", já que os dois são calculados sobre a mesma linha do tempo.
   const porEquip = {};
   movimentacoesItens.forEach(function(m){
     (porEquip[m.equipamento] = porEquip[m.equipamento] || []).push(m);
@@ -3442,14 +3687,31 @@ async function garantirDadosMovimentacoes(forcar){
   return movimentacoesItens;
 }
 
+/** Agrupa o histórico (já ordenado) de UM equipamento em "períodos" contínuos
+ *  por um campo (ex: 'localDestino' ou 'status'), somando os dias de cada
+ *  sequência de registros com o mesmo valor. Usado no Extrato e nos Dashboards. */
+function agruparPeriodos(registrosDoEquip, campo){
+  const ordenado = registrosDoEquip.slice().sort(function(a,b){ return new Date(a.criado) - new Date(b.criado); });
+  const periodos = [];
+  ordenado.forEach(function(m){
+    const valor = m[campo] || '—';
+    const ultimo = periodos[periodos.length - 1];
+    if (ultimo && ultimo.valor === valor) {
+      ultimo.dias += m.diasNoLocal;
+      ultimo.fimData = m.criado;
+      ultimo.atual = m.aindaNoLocal;
+    } else {
+      periodos.push({ valor: valor, inicioData: m.criado, fimData: m.criado, dias: m.diasNoLocal, atual: m.aindaNoLocal });
+    }
+  });
+  return periodos;
+}
+
 async function carregarHistoricoMovimentacoes(){
   const info = document.getElementById('hist-mov-info');
   try {
     const itens = await garantirDadosMovimentacoes();
     info.style.display = 'none';
-    const selEquip = document.getElementById('hist-mov-filtro-equip');
-    const equips = Array.from(new Set(itens.map(function(i){ return i.equipamento; }).filter(Boolean))).sort();
-    selEquip.innerHTML = '<option value="">Todos</option>' + equips.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
     movRenderizarTabelaHistorico(itens);
   } catch(err) {
     info.textContent = '⚠️ Erro ao carregar: ' + err.message;
@@ -3473,26 +3735,59 @@ function movRenderizarTabelaHistorico(itensCompletos){
   const filtrados = movFiltrarHistorico(itensCompletos);
   const tbody = document.getElementById('hist-mov-tbody');
   if (!filtrados.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--cinza);padding:24px">Nenhuma movimentação encontrada.</td></tr>';
-    return;
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--cinza);padding:24px">Nenhuma movimentação encontrada.</td></tr>';
+  } else {
+    tbody.innerHTML = filtrados.map(function(m){
+      const dias = (typeof m.diasNoLocal !== 'number') ? '—' : (m.diasNoLocal + (m.diasNoLocal === 1 ? ' dia' : ' dias') + (m.aindaNoLocal ? ' (até hoje)' : ''));
+      return '<tr>' +
+        '<td>' + formatarDataHist(m.criado) + '</td>' +
+        '<td>' + m.equipamento + '</td>' +
+        '<td>' + (m.itemVinculado || '—') + '</td>' +
+        '<td>' + m.localOrigem + '</td>' +
+        '<td><b>' + m.localDestino + '</b></td>' +
+        '<td>' + (m.status ? locBadgeStatus(m.status) : '—') + '</td>' +
+        '<td>' + dias + '</td>' +
+        '<td>' + m.usuario + '</td>' +
+      '</tr>';
+    }).join('');
   }
-  tbody.innerHTML = filtrados.map(function(m){
-    const dias = (typeof m.diasNoLocal !== 'number') ? '—' : (m.diasNoLocal + (m.diasNoLocal === 1 ? ' dia' : ' dias') + (m.aindaNoLocal ? ' (até hoje)' : ''));
-    return '<tr>' +
-      '<td>' + formatarDataHist(m.criado) + '</td>' +
-      '<td>' + m.equipamento + '</td>' +
-      '<td>' + (m.itemVinculado || '—') + '</td>' +
-      '<td>' + m.localOrigem + '</td>' +
-      '<td><b>' + m.localDestino + '</b></td>' +
-      '<td>' + dias + '</td>' +
-      '<td>' + m.usuario + '</td>' +
-    '</tr>';
-  }).join('');
+  movAtualizarExtratoEquipamento(itensCompletos);
+}
+
+/** Mostra o extrato (locais + status, com dias em cada um) quando um único
+ *  equipamento está selecionado no filtro. */
+function movAtualizarExtratoEquipamento(todosItens){
+  const eq = document.getElementById('hist-mov-filtro-equip').value.trim().toUpperCase();
+  const bloco = document.getElementById('hist-mov-extrato');
+  if (!eq) { bloco.style.display = 'none'; return; }
+
+  const doEquip = todosItens.filter(function(m){ return m.equipamento === eq; });
+  if (!doEquip.length) { bloco.style.display = 'none'; return; }
+  bloco.style.display = 'flex';
+  document.getElementById('hist-mov-extrato-nome').textContent = eq;
+  document.getElementById('hist-mov-extrato-nome2').textContent = eq;
+
+  function montarLista(periodos){
+    return periodos.slice().reverse().map(function(p){
+      const periodoTxt = p.atual ? ('desde ' + formatarDataHist(p.inicioData).split(' ')[0]) :
+        (formatarDataHist(p.inicioData).split(' ')[0] + ' — ' + formatarDataHist(p.fimData).split(' ')[0]);
+      return '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + p.valor + '<br><small style="color:var(--cinza)">' + periodoTxt + (p.atual ? ' (atual)' : '') + '</small></span>' +
+        '<span class="hist-detalhe-resposta">' + p.dias + (p.dias === 1 ? ' dia' : ' dias') + '</span></div>';
+    }).join('');
+  }
+
+  const periodosLocal = agruparPeriodos(doEquip, 'localDestino');
+  const periodosStatus = agruparPeriodos(doEquip.filter(function(m){ return m.status; }), 'status');
+
+  document.getElementById('hist-mov-extrato-locais').innerHTML = periodosLocal.length ? montarLista(periodosLocal) : '<div class="lista-vazia-dash">Sem dados.</div>';
+  document.getElementById('hist-mov-extrato-status').innerHTML = periodosStatus.length ? montarLista(periodosStatus) : '<div class="lista-vazia-dash">Sem dados de status registrados.</div>';
 }
 
 ['hist-mov-filtro-de','hist-mov-filtro-ate','hist-mov-filtro-equip'].forEach(function(id){
-  document.getElementById(id).addEventListener('input', function(){
-    garantirDadosMovimentacoes().then(movRenderizarTabelaHistorico);
+  ['input','change'].forEach(function(evento){
+    document.getElementById(id).addEventListener(evento, function(){
+      garantirDadosMovimentacoes().then(movRenderizarTabelaHistorico);
+    });
   });
 });
 document.getElementById('hist-mov-limpar-filtros').onclick = function(){
@@ -3512,13 +3807,14 @@ document.getElementById('hist-mov-imprimir').onclick = function(){
       '<td>' + (m.itemVinculado || '—') + '</td>' +
       '<td>' + m.localOrigem + '</td>' +
       '<td>' + m.localDestino + '</td>' +
+      '<td>' + (m.status || '—') + '</td>' +
       '<td>' + dias + '</td>' +
       '<td>' + m.usuario + '</td>' +
     '</tr>';
   }).join('');
   document.getElementById('hist-print-area').innerHTML =
     '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Histórico de Movimentações<small>' + filtrados.length + ' registro(s) — Comprex Máquinas e Serviços</small></div></div>' +
-    '<table class="hist-tabela"><thead><tr><th>Data</th><th>Equipamento</th><th>Implemento</th><th>De</th><th>Para</th><th>Dias no local</th><th>Usuário</th></tr></thead><tbody>' + linhas + '</tbody></table>';
+    '<table class="hist-tabela"><thead><tr><th>Data</th><th>Equipamento</th><th>Implemento</th><th>De</th><th>Para</th><th>Status</th><th>Dias no local</th><th>Usuário</th></tr></thead><tbody>' + linhas + '</tbody></table>';
   window.print();
 };
 
@@ -3534,13 +3830,14 @@ document.getElementById('hist-mov-exportar-excel').onclick = async function(){
       'Implemento': m.itemVinculado || '',
       'Local origem': m.localOrigem,
       'Local destino': m.localDestino,
+      'Status': m.status || '',
       'Dias no local': dias,
       'Usuário': m.usuario,
       'Observação': m.observacao || ''
     };
   });
   const ws = XLSX.utils.json_to_sheet(linhas);
-  ws['!cols'] = [{wch:16},{wch:14},{wch:14},{wch:24},{wch:24},{wch:12},{wch:22},{wch:30}];
+  ws['!cols'] = [{wch:16},{wch:14},{wch:14},{wch:24},{wch:24},{wch:16},{wch:12},{wch:22},{wch:30}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Movimentações');
   XLSX.writeFile(wb, 'Historico_Movimentacoes_' + new Date().toISOString().slice(0,10) + '.xlsx');
@@ -3596,6 +3893,47 @@ async function carregarDashboardMov(){
   const rankLocal = Object.keys(porLocal).map(function(k){ return {label:k, valor:porLocal[k], valorFmt:String(porLocal[k])}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
   pdRenderizarRanking('dash-mov-rank-local', rankLocal, '#c79a3a');
+
+  // ---- Tempo total por status (soma de dias, todos os equipamentos) ----
+  const CORES_STATUS = { 'OPERACIONAL': 'var(--ok)', 'EM MANUTENÇÃO': 'var(--ru)', 'EM DISPONIBILIDADE': '#c79a3a' };
+  const porStatus = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+  itens.forEach(function(i){
+    if (i.status && porStatus.hasOwnProperty(i.status)) porStatus[i.status] += i.diasNoLocal;
+  });
+  const totalStatusDias = porStatus['OPERACIONAL'] + porStatus['EM MANUTENÇÃO'] + porStatus['EM DISPONIBILIDADE'];
+  const donutStatus = document.getElementById('dash-mov-status-visual');
+  const legendaStatus = document.getElementById('dash-mov-status-legenda');
+  if (totalStatusDias <= 0) {
+    donutStatus.style.background = '#eef1ee';
+    legendaStatus.innerHTML = '<div class="lista-vazia-dash">Sem dados de status no período (verifique se a coluna Status já existe na lista Movimentacoes).</div>';
+  } else {
+    let acumulado = 0;
+    const fatias = [];
+    ['OPERACIONAL','EM MANUTENÇÃO','EM DISPONIBILIDADE'].forEach(function(s){
+      const pct = porStatus[s] / totalStatusDias * 100;
+      const cor = s === 'OPERACIONAL' ? '#1b7a43' : (s === 'EM MANUTENÇÃO' ? '#b3453a' : '#c79a3a');
+      fatias.push(cor + ' ' + acumulado.toFixed(1) + '%, ' + cor + ' ' + (acumulado+pct).toFixed(1) + '%');
+      acumulado += pct;
+    });
+    donutStatus.style.background = 'conic-gradient(' + fatias.join(', ') + ')';
+    legendaStatus.innerHTML = ['OPERACIONAL','EM MANUTENÇÃO','EM DISPONIBILIDADE'].map(function(s){
+      const cor = s === 'OPERACIONAL' ? '#1b7a43' : (s === 'EM MANUTENÇÃO' ? '#b3453a' : '#c79a3a');
+      return '<div class="resumo-linha"><span class="resumo-dot" style="background:'+cor+'"></span>' +
+        '<span class="resumo-lbl">'+s+'</span><b>'+porStatus[s]+' '+(porStatus[s]===1?'dia':'dias')+'</b></div>';
+    }).join('');
+  }
+
+  // ---- Equipamentos com mais dias em manutenção ----
+  const porEquipManutencao = {};
+  itens.forEach(function(i){
+    if (i.status === 'EM MANUTENÇÃO' && i.equipamento) {
+      porEquipManutencao[i.equipamento] = (porEquipManutencao[i.equipamento] || 0) + i.diasNoLocal;
+    }
+  });
+  const rankManutencao = Object.keys(porEquipManutencao)
+    .map(function(k){ return {label:k, valor:porEquipManutencao[k], valorFmt: porEquipManutencao[k] + (porEquipManutencao[k]===1?' dia':' dias')}; })
+    .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
+  pdRenderizarRanking('dash-mov-rank-manutencao', rankManutencao, 'var(--ru)');
 }
 
 ['dash-mov-de','dash-mov-ate','dash-mov-filtro-equip','dash-mov-filtro-local'].forEach(function(id){
@@ -3608,6 +3946,176 @@ document.getElementById('dash-mov-limpar').onclick = function(){
   document.getElementById('dash-mov-filtro-local').value = '';
   carregarDashboardMov();
 };
+
+/* =====================================================================
+   STATUS DOS EQUIPAMENTOS — árvore por local + resumo (design "Painel Operacional")
+   ===================================================================== */
+let statusEqInicializado = false;
+let statusEqLocalSelecionado = null;
+
+async function carregarStatusEquipamentos(){
+  await garantirDadosFrotaExtra();
+  await garantirDadosMovimentacoes();
+
+  if (!statusEqInicializado) {
+    statusEqInicializado = true;
+    const selLocal = document.getElementById('status-eq-filtro-local');
+    selLocal.innerHTML = '<option value="">Todos os locais</option>' + locais.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+  }
+  statusEqRenderizar();
+}
+
+/** Soma, para UM equipamento, quantos dias (no total do histórico) ele já
+ *  passou em cada status — usado no "(Xd op / Yd manut)" da árvore. */
+function statusEqTotaisPorStatus(eq){
+  const registros = movimentacoesItens.filter(function(m){ return m.equipamento === eq; });
+  const totais = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+  registros.forEach(function(m){
+    if (m.status && totais.hasOwnProperty(m.status)) totais[m.status] += m.diasNoLocal;
+  });
+  return totais;
+}
+
+function statusEqBadge(status){
+  const s = status || 'OPERACIONAL';
+  const classe = s === 'OPERACIONAL' ? 'ok' : (s === 'EM MANUTENÇÃO' ? 'parar' : 'at');
+  return '<span class="hist-st ' + classe + '">' + s + '</span>';
+}
+
+/** Data em que o equipamento chegou no local atual (data da movimentação
+ *  mais recente daquele equipamento que ainda está em vigor). */
+function statusEqDataChegada(eq){
+  const registros = movimentacoesItens.filter(function(m){ return m.equipamento === eq && m.aindaNoLocal; });
+  if (!registros.length) return null;
+  return registros[0].criado;
+}
+
+function statusEqRenderizar(){
+  const filtroLocal = document.getElementById('status-eq-filtro-local').value;
+  const filtroBusca = document.getElementById('status-eq-filtro-busca').value.trim().toUpperCase();
+  const filtroStatus = document.getElementById('status-eq-filtro-status').value;
+  const filtroChegadaDe = document.getElementById('status-eq-filtro-chegada-de').value;
+  const filtroChegadaAte = document.getElementById('status-eq-filtro-chegada-ate').value;
+
+  const equipsFiltrados = frotas.filter(function(eq){
+    if (filtroLocal && frotaLocalAtual[eq] !== filtroLocal) return false;
+    if (filtroStatus && (frotaStatusAtual[eq] || 'OPERACIONAL') !== filtroStatus) return false;
+    if (filtroBusca && eq.toUpperCase().indexOf(filtroBusca) === -1 && (frotaItemVinculado[eq]||'').toUpperCase().indexOf(filtroBusca) === -1) return false;
+    if (filtroChegadaDe || filtroChegadaAte) {
+      const chegada = statusEqDataChegada(eq);
+      if (!chegada) return false;
+      const dc = new Date(chegada);
+      if (filtroChegadaDe && dc < new Date(filtroChegadaDe + 'T00:00:00')) return false;
+      if (filtroChegadaAte && dc > new Date(filtroChegadaAte + 'T23:59:59')) return false;
+    }
+    return true;
+  });
+
+  // ---- KPIs ----
+  const total = equipsFiltrados.length;
+  const cont = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+  equipsFiltrados.forEach(function(eq){ const s = frotaStatusAtual[eq] || 'OPERACIONAL'; if (cont.hasOwnProperty(s)) cont[s]++; });
+  const pct = function(n){ return total > 0 ? Math.round(n/total*100) : 0; };
+  document.getElementById('status-eq-kpis').innerHTML = [
+    ['📦', 'TOTAL DE EQUIPAMENTOS', total, '100% do total', 'azul'],
+    ['✅', 'OPERACIONAIS', cont['OPERACIONAL'], pct(cont['OPERACIONAL'])+'% do total', null],
+    ['🔧', 'EM MANUTENÇÃO', cont['EM MANUTENÇÃO'], pct(cont['EM MANUTENÇÃO'])+'% do total', 'tan'],
+    ['🅿️', 'EM DISPONIBILIDADE', cont['EM DISPONIBILIDADE'], pct(cont['EM DISPONIBILIDADE'])+'% do total', null]
+  ].map(function(k){
+    return '<div class="kpi-card"><div class="kpi-top"><div class="kpi-icone '+(k[4]||'')+'" '+(k[4]?'':'style="background:#e9f4ee;color:var(--ok)"')+'>'+k[0]+'</div>' +
+      '<div><div class="kpi-num">'+k[2]+'</div><div class="kpi-lbl">'+k[1]+'</div></div></div>' +
+      '<div style="font-size:11px;color:var(--cinza);margin-top:4px">'+k[3]+'</div></div>';
+  }).join('');
+
+  // ---- Árvore agrupada por Local ----
+  const porLocal = {};
+  equipsFiltrados.forEach(function(eq){
+    const local = frotaLocalAtual[eq] || 'Sem local registrado';
+    (porLocal[local] = porLocal[local] || []).push(eq);
+  });
+
+  const locaisOrdenados = Object.keys(porLocal).sort();
+  const arv = document.getElementById('status-eq-arvore');
+  if (!locaisOrdenados.length) {
+    arv.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento encontrado com esses filtros.</div>';
+    document.getElementById('status-eq-resumo').innerHTML = '<div class="lista-vazia-dash">Nenhum local com dados no momento.</div>';
+    return;
+  }
+  arv.innerHTML = locaisOrdenados.map(function(local){
+    const eqs = porLocal[local];
+    const linhasEquip = eqs.map(function(eq){
+      const vinc = frotaItemVinculado[eq];
+      const nome = eq + (vinc ? (' + ' + vinc) : '');
+      const dias = frotaDiasNoLocal[eq];
+      const diasTxt = (typeof dias === 'number') ? (dias + 'd') : '—';
+      const chegada = statusEqDataChegada(eq);
+      const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
+      const totais = statusEqTotaisPorStatus(eq);
+      const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut.';
+      return '<div class="arv-linha-equip">' +
+        '<div><span class="arv-nome">'+nome+'</span><br><span class="arv-sub">'+local+'</span></div>' +
+        '<div>'+diasTxt+'</div>' +
+        '<div class="arv-sub">'+chegadaTxt+'</div>' +
+        '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
+        '<div class="arv-sub">'+subTxt+'</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="arv-grupo" data-local="'+local.replace(/"/g,'&quot;')+'">' +
+      '<div class="arv-linha-local"><span>📍 '+local+'</span><span>'+eqs.length+' equipamento(s)</span><span></span></div>' +
+      linhasEquip +
+    '</div>';
+  }).join('');
+
+  arv.querySelectorAll('.arv-linha-local').forEach(function(el){
+    el.onclick = function(){
+      const alvo = document.getElementById('resumo-local-' + el.parentElement.dataset.local.replace(/[^a-zA-Z0-9]/g,''));
+      if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+  });
+
+  statusEqRenderizarResumoTodos(locaisOrdenados);
+}
+
+/** Mostra, no painel da direita, um cartão de resumo PARA CADA LOCAL visível
+ *  na árvore — sem precisar clicar, igual ao modelo de referência. */
+function statusEqRenderizarResumoTodos(locaisOrdenados){
+  const cores = { 'OPERACIONAL': 'var(--ok)', 'EM MANUTENÇÃO': 'var(--ru)', 'EM DISPONIBILIDADE': '#c79a3a' };
+  document.getElementById('status-eq-resumo').innerHTML = locaisOrdenados.map(function(local){
+    const registrosDoLocal = movimentacoesItens.filter(function(m){ return m.localDestino === local && m.status; });
+    const totais = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+    registrosDoLocal.forEach(function(m){ if (totais.hasOwnProperty(m.status)) totais[m.status] += m.diasNoLocal; });
+    const totalDias = totais['OPERACIONAL'] + totais['EM MANUTENÇÃO'] + totais['EM DISPONIBILIDADE'];
+    const ultimaMov = movimentacoesItens.filter(function(m){ return m.localDestino === local; })
+      .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); })[0];
+
+    const linhas = ['OPERACIONAL','EM MANUTENÇÃO','EM DISPONIBILIDADE'].map(function(s){
+      const p = totalDias > 0 ? Math.round(totais[s]/totalDias*100) : 0;
+      return '<div class="arv-resumo-linha"><span><span class="resumo-dot" style="background:'+cores[s]+';display:inline-block;margin-right:6px"></span>'+s+'</span>' +
+        '<span class="arv-resumo-pct" style="color:'+cores[s]+'">'+totais[s]+'d ('+p+'%)</span></div>';
+    }).join('');
+
+    return '<div class="dash-card" id="resumo-local-'+local.replace(/[^a-zA-Z0-9]/g,'')+'" style="margin-bottom:14px">' +
+      '<div class="arv-resumo-total">'+local+'</div>' +
+      '<div style="font-size:11px;color:var(--cinza);margin-bottom:10px">'+totalDias+' dias registrados</div>' +
+      linhas +
+      (ultimaMov ? '<div style="font-size:11px;color:var(--cinza);margin-top:10px;border-top:1px solid var(--linha);padding-top:8px">Última movimentação: '+formatarDataHist(ultimaMov.criado)+'</div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+document.getElementById('status-eq-limpar-filtros').onclick = function(){
+  document.getElementById('status-eq-filtro-local').value = '';
+  document.getElementById('status-eq-filtro-busca').value = '';
+  document.getElementById('status-eq-filtro-status').value = '';
+  document.getElementById('status-eq-filtro-chegada-de').value = '';
+  document.getElementById('status-eq-filtro-chegada-ate').value = '';
+  statusEqRenderizar();
+};
+
+
+['status-eq-filtro-local','status-eq-filtro-busca','status-eq-filtro-status','status-eq-filtro-chegada-de','status-eq-filtro-chegada-ate'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', statusEqRenderizar);
+});
 
 
 let pdInicializada = false;
@@ -3661,6 +4169,7 @@ function pdRenderizarAtividades(){
     const horas = pdCalcularHoras(a.de, a.ate);
     return '<div class="pd-linha ativ" data-idx="'+i+'">' +
       '<input type="text" class="pd-campo" data-campo="horIni" data-idx="'+i+'" value="'+(a.horIni||'').replace(/"/g,'&quot;')+'" placeholder="0,0">' +
+      '<input type="text" class="pd-campo" data-campo="horFim" data-idx="'+i+'" value="'+(a.horFim||'').replace(/"/g,'&quot;')+'" placeholder="0,0">' +
       '<input type="text" class="pd-campo" data-campo="desc" data-idx="'+i+'" value="'+(a.desc||'').replace(/"/g,'&quot;')+'" placeholder="Descrição da atividade">' +
       '<input type="text" inputmode="numeric" class="pd-campo" data-campo="de" data-idx="'+i+'" value="'+(a.de||'')+'" placeholder="HH:MM">' +
       '<input type="text" inputmode="numeric" class="pd-campo" data-campo="ate" data-idx="'+i+'" value="'+(a.ate||'')+'" placeholder="HH:MM">' +
@@ -3672,7 +4181,7 @@ function pdRenderizarAtividades(){
   cont.querySelectorAll('.pd-campo').forEach(function(input){
     input.addEventListener('input', function(){
       const idx = parseInt(input.dataset.idx, 10);
-      if (input.dataset.campo === 'horIni') aplicarMascaraHorimetro(input);
+      if (input.dataset.campo === 'horIni' || input.dataset.campo === 'horFim') aplicarMascaraHorimetro(input);
       if (input.dataset.campo === 'de' || input.dataset.campo === 'ate') pdAplicarMascaraHorario(input);
       pdAtividades[idx][input.dataset.campo] = input.value;
       if (input.dataset.campo === 'de' || input.dataset.campo === 'ate') {
@@ -3738,7 +4247,7 @@ function pdRenderizarParadas(){
 }
 
 document.getElementById('pd-add-atividade').onclick = function(){
-  pdAtividades.push({ horIni: '', desc: 'OPERAÇÃO', de: '', ate: '' });
+  pdAtividades.push({ horIni: '', horFim: '', desc: 'OPERAÇÃO', de: '', ate: '' });
   pdRenderizarAtividades();
   pdAtualizarTotais();
 };
@@ -3764,8 +4273,13 @@ function pdVerificarDivergenciaHorimetro(){
   const sequencia = []; // { label, valor }
 
   pdAtividades.forEach(function(a, i){
-    const v = horimetroFloat(a.horIni);
-    if (!isNaN(v)) sequencia.push({ label: 'Atividade ' + (i+1), valor: v });
+    const vIni = horimetroFloat(a.horIni);
+    const vFim = horimetroFloat(a.horFim);
+    if (!isNaN(vIni)) sequencia.push({ label: 'Atividade ' + (i+1) + ' (início)', valor: vIni });
+    if (!isNaN(vFim)) sequencia.push({ label: 'Atividade ' + (i+1) + ' (fim)', valor: vFim });
+    if (!isNaN(vIni) && !isNaN(vFim) && vFim < vIni) {
+      avisos.push('Na <b>Atividade ' + (i+1) + '</b>, o horímetro final (' + a.horFim + ') é menor que o inicial (' + a.horIni + ').');
+    }
   });
   pdParadas.forEach(function(p, i){
     const vIni = horimetroFloat(p.horIni);
@@ -3982,7 +4496,7 @@ function pdMontarConteudoDetalhe(p){
   if (p.atividadesDetalhe && p.atividadesDetalhe.length) {
     p.atividadesDetalhe.forEach(function(a, i){
       const horas = pdCalcularHoras(a.de, a.ate);
-      html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + (i+1) + '. ' + (a.desc||'Atividade') + ' — horímetro ' + (a.horIni||'—') + ' (' + (a.de||'—') + ' às ' + (a.ate||'—') + ')</span>' +
+      html += '<div class="hist-detalhe-linha"><span class="hist-detalhe-pergunta">' + (i+1) + '. ' + (a.desc||'Atividade') + ' — horímetro ' + (a.horIni||'—') + (a.horFim ? (' a ' + a.horFim) : '') + ' (' + (a.de||'—') + ' às ' + (a.ate||'—') + ')</span>' +
         '<span class="hist-detalhe-resposta">' + pdFormatarHoras(horas) + '</span></div>';
     });
   } else {
@@ -4257,12 +4771,12 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard' };
+const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos' };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
 
   const VIEWS_POR_SECAO = {
     partediaria: ['partediaria', 'historico-pd', 'dashboard-pd', 'indicadores-pd'],
-    rastreamento: ['rastreamento', 'localizacao-atual', 'historico-mov', 'dashboard-mov']
+    rastreamento: ['rastreamento', 'localizacao-atual', 'historico-mov', 'dashboard-mov', 'status-equipamentos']
   };
   const secaoAtiva = VIEWS_POR_SECAO.partediaria.indexOf(nome) !== -1 ? 'partediaria'
     : VIEWS_POR_SECAO.rastreamento.indexOf(nome) !== -1 ? 'rastreamento'
@@ -4292,6 +4806,7 @@ const titulos = { novo: 'Checklists', partediaria: 'Parte Diária', historico: '
   if (nome === 'localizacao-atual') carregarLocalizacaoAtual();
   if (nome === 'historico-mov') carregarHistoricoMovimentacoes();
   if (nome === 'dashboard-mov') carregarDashboardMov();
+  if (nome === 'status-equipamentos') carregarStatusEquipamentos();
 }
 
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
@@ -5313,10 +5828,10 @@ configurarComboBusca('operador', function(){ return operadores; });
 configurarComboBusca('pd-equipamento', function(){ return frotas; });
 configurarComboBusca('pd-operador', function(){ return operadores; });
 configurarComboBusca('pd-local', function(){ return locais; });
+configurarComboBusca('hist-mov-filtro-equip', function(){ return frotas; });
 configurarComboBusca('mov-equipamento', function(){ return frotas; });
 configurarComboBusca('mov-novo-local', function(){ return locais; });
-configurarComboBusca('input-equip-implemento', function(){ return frotas; });
-configurarComboBusca('input-equip-local', function(){ return locais; });
+
  /* =====================================================================
    INDICADORES V2 — filtros de período + KPIs com sparkline (Fase 1)
    ===================================================================== */
