@@ -493,6 +493,18 @@
   .qtd-sub-barra-wrap{background:#eef1ee;border-radius:4px;height:12px;overflow:hidden}
   .qtd-sub-barra{height:100%;background:#8fc4cc}
 
+  .qtd-arv-no{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+  .qtd-arv-no:hover{background:var(--cream)}
+  .qtd-arv-no .arv-seta{display:inline-block;width:16px;transition:transform .12s;color:var(--cinza)}
+  .qtd-arv-no.colapsado .arv-seta{transform:rotate(-90deg)}
+  .qtd-arv-nivel-0{font-weight:800;color:var(--navy);background:var(--cream)}
+  .qtd-arv-nivel-1 .qtd-arv-nome{padding-left:18px;font-weight:700}
+  .qtd-arv-nivel-2 .qtd-arv-nome{padding-left:36px;font-weight:400;color:var(--tinta)}
+  .qtd-arv-filhos.colapsado{display:none}
+  .qtd-arv-barra-mini{width:120px;height:8px;border-radius:4px;background:var(--cream);overflow:hidden;flex-shrink:0}
+  .qtd-arv-barra-mini > div{height:100%;background:var(--navy)}
+
   .arv-no{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;align-items:center;
     padding:8px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
   .arv-no:hover{background:var(--cream)}
@@ -1582,7 +1594,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </div>
   <div class="dash-row">
     <div class="dash-card">
-      <h3>⚙️ Tempo total por status (dias, somando todos os equipamentos)</h3>
+      <h3>⚙️ Equipamentos por status</h3>
       <div id="dash-mov-status-donut" style="display:flex;align-items:center;gap:24px">
         <div id="dash-mov-status-visual" style="width:90px;height:90px;border-radius:50%;flex-shrink:0"></div>
         <div id="dash-mov-status-legenda" style="flex:1"></div>
@@ -2037,6 +2049,14 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           <option value="OPERACIONAL">OPERACIONAL</option>
           <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
           <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
+      </div>
+      <div class="modal-campo">
+        <label>Regime de trabalho</label>
+        <select id="input-equip-regime">
+          <option value="8h">8 horas</option>
+          <option value="12h">12 horas</option>
+          <option value="24h">24 horas</option>
         </select>
       </div>
       <div class="modal-campo">
@@ -3214,6 +3234,10 @@ function renderizarListaModal(tipo) {
           '<select class="mli-select-extra" id="mli-edit-status">' +
             STATUS_EQUIPAMENTO.map(function(s){ return '<option value="'+s+'" '+((frotaStatusAtual[v]||'OPERACIONAL')===s?'selected':'')+'>'+s+'</option>'; }).join('') +
           '</select>' +
+          '<label>Regime de trabalho</label>' +
+          '<select class="mli-select-extra" id="mli-edit-regime">' +
+            REGIMES_TRABALHO.map(function(r){ return '<option value="'+r+'" '+((frotaRegimeTrabalho[v]||'8h')===r?'selected':'')+'>'+r+'</option>'; }).join('') +
+          '</select>' +
           '<label>Data dessa mudança</label>' +
           '<input type="date" class="mli-select-extra" id="mli-edit-data" value="'+new Date().toISOString().slice(0,10)+'">' +
         '</div>'
@@ -3285,14 +3309,16 @@ function renderizarListaModal(tipo) {
       const novoImplemento = tipo === 'equip' ? document.getElementById('mli-edit-implemento').value : null;
       const novoLocal = tipo === 'equip' ? document.getElementById('mli-edit-local').value : null;
       const novoStatus = tipo === 'equip' ? document.getElementById('mli-edit-status').value : null;
+      const novoRegime = tipo === 'equip' ? document.getElementById('mli-edit-regime').value : null;
       const dataEdicao = tipo === 'equip' ? document.getElementById('mli-edit-data').value : null;
       const nomeMudou = novoValor !== antigoValor;
       const implementoMudou = tipo === 'equip' && novoImplemento !== (frotaItemVinculado[antigoValor] || '');
       const localAntigo = frotaLocalAtual[antigoValor] || '';
       const localMudou = tipo === 'equip' && novoLocal !== localAntigo;
       const statusMudou = tipo === 'equip' && novoStatus !== (frotaStatusAtual[antigoValor] || 'OPERACIONAL');
+      const regimeMudou = tipo === 'equip' && novoRegime !== (frotaRegimeTrabalho[antigoValor] || '8h');
 
-      if (!nomeMudou && !implementoMudou && !localMudou && !statusMudou) {
+      if (!nomeMudou && !implementoMudou && !localMudou && !statusMudou && !regimeMudou) {
         editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         return;
@@ -3303,11 +3329,12 @@ function renderizarListaModal(tipo) {
 
       const promessa = nomeMudou ? editarItemSimples(cfg.listaId, itemId, novoValor) : Promise.resolve();
       promessa.then(function(){
-        if (tipo === 'equip' && (implementoMudou || localMudou || statusMudou)) {
+        if (tipo === 'equip' && (implementoMudou || localMudou || statusMudou || regimeMudou)) {
           const campos = {};
           if (implementoMudou) campos.ItemVinculado = novoImplemento;
           if (localMudou) campos.LocalAtual = novoLocal;
           if (statusMudou) campos.StatusAtual = novoStatus;
+          if (regimeMudou) campos.RegimeTrabalho = novoRegime;
           return atualizarCamposItem(LISTA_FROTA_ID, itemId, campos);
         }
       }).then(function(){
@@ -3337,9 +3364,11 @@ function renderizarListaModal(tipo) {
             frotaItemVinculado[novoValor] = novoImplemento || '';
             frotaLocalAtual[novoValor] = novoLocal || '';
             frotaStatusAtual[novoValor] = novoStatus || 'OPERACIONAL';
+            frotaRegimeTrabalho[novoValor] = novoRegime || '8h';
             delete frotaItemVinculado[antigoValor];
             delete frotaLocalAtual[antigoValor];
             delete frotaStatusAtual[antigoValor];
+            delete frotaRegimeTrabalho[antigoValor];
             frotaIdsExtra[novoValor] = itemId;
           }
           ordenarListas();
@@ -3347,6 +3376,7 @@ function renderizarListaModal(tipo) {
           frotaItemVinculado[antigoValor] = novoImplemento || '';
           frotaLocalAtual[antigoValor] = novoLocal || '';
           frotaStatusAtual[antigoValor] = novoStatus || 'OPERACIONAL';
+          frotaRegimeTrabalho[antigoValor] = novoRegime || '8h';
         }
         editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
@@ -3374,6 +3404,7 @@ document.getElementById('btn-salvar-equip').onclick = async function(){
   const implemento = document.getElementById('input-equip-implemento').value.trim().toUpperCase();
   const localInicial = document.getElementById('input-equip-local').value.trim();
   const statusInicial = document.getElementById('input-equip-status').value;
+  const regimeInicial = document.getElementById('input-equip-regime').value;
   const dataInformada = document.getElementById('input-equip-data').value;
 
   const botao = document.getElementById('btn-salvar-equip');
@@ -3387,13 +3418,14 @@ try {
 
     // Grava local/implemento/status inicial e registra a primeira
     // movimentação (com a data informada, ou hoje).
-    const camposExtras = { StatusAtual: statusInicial };
+    const camposExtras = { StatusAtual: statusInicial, RegimeTrabalho: regimeInicial };
     if (localInicial) camposExtras.LocalAtual = localInicial;
     if (implemento) camposExtras.ItemVinculado = implemento;
     await atualizarCamposItem(LISTA_FROTA_ID, resultado.id, camposExtras);
     if (localInicial) frotaLocalAtual[val] = localInicial;
     if (implemento) frotaItemVinculado[val] = implemento;
     frotaStatusAtual[val] = statusInicial;
+    frotaRegimeTrabalho[val] = regimeInicial;
     frotaIdsExtra[val] = resultado.id;
 
     if (localInicial) {
@@ -3418,6 +3450,7 @@ try {
     document.getElementById('input-equip-local').value = '';
     document.getElementById('input-equip-data').value = '';
     document.getElementById('input-equip-status').value = 'OPERACIONAL';
+    document.getElementById('input-equip-regime').value = '8h';
     renderizarListaModal('equip');
     mostrarFeedback('equip', true, '✔ ' + val + ' adicionado com sucesso!' + (localInicial ? ' Local e histórico registrados.' : ''));
   } catch(err) {
@@ -3459,8 +3492,10 @@ let frotaExtraCarregada = false;
 let frotaLocalAtual = {};    // equipamento -> local atual
 let frotaItemVinculado = {}; // equipamento principal -> código do subitem
 let frotaStatusAtual = {};   // equipamento -> OPERACIONAL / EM MANUTENÇÃO / EM DISPONIBILIDADE
+let frotaRegimeTrabalho = {}; // equipamento -> 8h / 12h / 24h
 let frotaIdsExtra = {};      // equipamento -> id do item na lista Frota
 const STATUS_EQUIPAMENTO = ['OPERACIONAL', 'EM MANUTENÇÃO', 'EM DISPONIBILIDADE'];
+const REGIMES_TRABALHO = ['8h', '12h', '24h'];
 
 async function garantirDadosFrotaExtra(forcar){
   if (frotaExtraCarregada && !forcar) return;
@@ -3472,6 +3507,7 @@ async function garantirDadosFrotaExtra(forcar){
     frotaLocalAtual[nome] = f.LocalAtual || '';
     frotaItemVinculado[nome] = f.ItemVinculado || '';
     frotaStatusAtual[nome] = f.StatusAtual || 'OPERACIONAL';
+    frotaRegimeTrabalho[nome] = f.RegimeTrabalho || '8h';
     frotaIdsExtra[nome] = item.id;
   });
   frotaExtraCarregada = true;
@@ -4000,8 +4036,8 @@ async function carregarDashboardMov(){
   const selEquip = document.getElementById('dash-mov-filtro-equip');
   const selLocal = document.getElementById('dash-mov-filtro-local');
   if (!selEquip.dataset.preenchido) {
-    const equips = Array.from(new Set(todos.map(function(i){ return i.equipamento; }).filter(Boolean))).sort();
-    const locaisList = Array.from(new Set(todos.map(function(i){ return i.localDestino; }).concat(todos.map(function(i){ return i.localOrigem; })).filter(Boolean))).sort();
+    const equips = frotas.slice().sort();
+    const locaisList = locais.slice().sort();
     selEquip.innerHTML = '<option value="">Todos</option>' + equips.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
     selLocal.innerHTML = '<option value="">Todos</option>' + locaisList.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
     selEquip.dataset.preenchido = '1';
@@ -4029,23 +4065,30 @@ async function carregarDashboardMov(){
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
   pdRenderizarRanking('dash-mov-rank-local', rankLocal, '#c79a3a');
 
-  // ---- Tempo total por status (soma de dias, todos os equipamentos) ----
-  const CORES_STATUS = { 'OPERACIONAL': 'var(--ok)', 'EM MANUTENÇÃO': 'var(--ru)', 'EM DISPONIBILIDADE': '#c79a3a' };
-  const porStatus = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
-  itens.forEach(function(i){
-    if (i.status && porStatus.hasOwnProperty(i.status)) porStatus[i.status] += i.diasNoLocal;
+  // ---- Quantidade de equipamentos por status (respeita o filtro de local/equipamento) ----
+  const filtroLocalAtual = document.getElementById('dash-mov-filtro-local').value;
+  const filtroEquipAtual = document.getElementById('dash-mov-filtro-equip').value;
+  const equipsParaStatus = frotas.filter(function(eq){
+    if (filtroLocalAtual && frotaLocalAtual[eq] !== filtroLocalAtual) return false;
+    if (filtroEquipAtual && eq !== filtroEquipAtual) return false;
+    return true;
   });
-  const totalStatusDias = porStatus['OPERACIONAL'] + porStatus['EM MANUTENÇÃO'] + porStatus['EM DISPONIBILIDADE'];
+  const porStatus = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+  equipsParaStatus.forEach(function(eq){
+    const s = frotaStatusAtual[eq] || 'OPERACIONAL';
+    if (porStatus.hasOwnProperty(s)) porStatus[s]++;
+  });
+  const totalStatusQtd = porStatus['OPERACIONAL'] + porStatus['EM MANUTENÇÃO'] + porStatus['EM DISPONIBILIDADE'];
   const donutStatus = document.getElementById('dash-mov-status-visual');
   const legendaStatus = document.getElementById('dash-mov-status-legenda');
-  if (totalStatusDias <= 0) {
+  if (totalStatusQtd <= 0) {
     donutStatus.style.background = '#eef1ee';
-    legendaStatus.innerHTML = '<div class="lista-vazia-dash">Sem dados de status no período (verifique se a coluna Status já existe na lista Movimentacoes).</div>';
+    legendaStatus.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento encontrado com esse filtro.</div>';
   } else {
     let acumulado = 0;
     const fatias = [];
     ['OPERACIONAL','EM MANUTENÇÃO','EM DISPONIBILIDADE'].forEach(function(s){
-      const pct = porStatus[s] / totalStatusDias * 100;
+      const pct = porStatus[s] / totalStatusQtd * 100;
       const cor = s === 'OPERACIONAL' ? '#1b7a43' : (s === 'EM MANUTENÇÃO' ? '#b3453a' : '#c79a3a');
       fatias.push(cor + ' ' + acumulado.toFixed(1) + '%, ' + cor + ' ' + (acumulado+pct).toFixed(1) + '%');
       acumulado += pct;
@@ -4054,7 +4097,7 @@ async function carregarDashboardMov(){
     legendaStatus.innerHTML = ['OPERACIONAL','EM MANUTENÇÃO','EM DISPONIBILIDADE'].map(function(s){
       const cor = s === 'OPERACIONAL' ? '#1b7a43' : (s === 'EM MANUTENÇÃO' ? '#b3453a' : '#c79a3a');
       return '<div class="resumo-linha"><span class="resumo-dot" style="background:'+cor+'"></span>' +
-        '<span class="resumo-lbl">'+s+'</span><b>'+porStatus[s]+' '+(porStatus[s]===1?'dia':'dias')+'</b></div>';
+        '<span class="resumo-lbl">'+s+'</span><b>'+porStatus[s]+' '+(porStatus[s]===1?'equipamento':'equipamentos')+'</b></div>';
     }).join('');
   }
 
@@ -4077,6 +4120,8 @@ async function carregarDashboardMov(){
  *  local — agrupado pelo prefixo (AMT, AMB, VALE...), com o detalhe de cada
  *  local dentro do grupo. Usa frotaLocalAtual (situação atual, não filtrado
  *  pelo período do dashboard, já que é uma contagem "agora"). */
+let dashQtdColapsados = new Set();
+
 function dashMovRenderizarQtdPorLocal(){
   const porLocal = {};
   frotas.forEach(function(eq){
@@ -4099,30 +4144,42 @@ function dashMovRenderizarQtdPorLocal(){
   }
 
   const totalGeral = Object.values(porLocal).reduce(function(s,n){ return s+n; }, 0);
-  const maiorGrupo = Math.max.apply(null, gruposOrdenados.map(function(g){
-    return porGrupo[g].reduce(function(s,x){ return s+x.qtd; }, 0);
-  }));
 
-  cont.innerHTML = gruposOrdenados.map(function(grupo){
+  function noQtd(id, nivel, nome, qtd, pctBarra, extraClasse){
+    const colapsado = dashQtdColapsados.has(id);
+    return '<div class="qtd-arv-no qtd-arv-nivel-'+nivel+' '+(extraClasse||'')+(colapsado?' colapsado':'')+'" data-no="'+id+'">' +
+      '<span class="qtd-arv-nome"><span class="arv-seta">▾</span> '+nome+'</span>' +
+      '<span style="display:flex;align-items:center;gap:10px"><b>'+qtd+' equip.</b>' +
+      '<span class="qtd-arv-barra-mini"><div style="width:'+pctBarra+'%"></div></span></span>' +
+    '</div>';
+  }
+
+  let html = noQtd('root', 0, '🏢 COMPREX', totalGeral, 100, 'qtd-arv-nivel-0');
+  html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has('root')?' colapsado':'')+'" data-filhos-de="root">';
+  gruposOrdenados.forEach(function(grupo){
+    const idGrupo = 'qg:' + grupo;
     const itens = porGrupo[grupo].sort(function(a,b){ return b.qtd - a.qtd; });
     const totalGrupo = itens.reduce(function(s,x){ return s+x.qtd; }, 0);
-    const pctBarraTotal = Math.max(4, Math.round(totalGrupo / maiorGrupo * 100));
-    const maiorSub = Math.max.apply(null, itens.map(function(x){ return x.qtd; }));
+    html += noQtd(idGrupo, 1, '🏭 ' + grupo, totalGrupo, Math.max(4, Math.round(totalGrupo/totalGeral*100)));
+    html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has(idGrupo)?' colapsado':'')+'" data-filhos-de="'+idGrupo+'">';
+    itens.forEach(function(x){
+      html += noQtd('ql:' + x.local, 2, '📍 ' + x.local, x.qtd, Math.max(4, Math.round(x.qtd/totalGrupo*100)));
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  cont.innerHTML = html;
 
-    const subHtml = itens.map(function(x){
-      const pctSub = Math.max(4, Math.round(x.qtd / maiorSub * 100));
-      return '<div class="qtd-sub-item">' +
-        '<div class="qtd-sub-linha"><span class="qtd-sub-nome">'+x.local+'</span><span class="qtd-sub-num">'+x.qtd+' equip.</span></div>' +
-        '<div class="qtd-sub-barra-wrap"><div class="qtd-sub-barra" style="width:'+pctSub+'%"></div></div>' +
-      '</div>';
-    }).join('');
-
-    return '<div class="qtd-grupo">' +
-      '<div class="qtd-grupo-cab"><span class="qtd-grupo-nome">🏢 '+grupo+'</span><span class="qtd-grupo-total">'+totalGrupo+' equipamento(s) — '+Math.round(totalGrupo/totalGeral*100)+'% do total</span></div>' +
-      '<div class="qtd-grupo-barra-total"><div style="width:'+pctBarraTotal+'%"></div></div>' +
-      subHtml +
-    '</div>';
-  }).join('');
+  cont.querySelectorAll('.qtd-arv-no').forEach(function(el){
+    el.onclick = function(){
+      const id = el.dataset.no;
+      const filhos = cont.querySelector('[data-filhos-de="'+id+'"]');
+      const vaiColapsar = !el.classList.contains('colapsado');
+      el.classList.toggle('colapsado', vaiColapsar);
+      if (filhos) filhos.classList.toggle('colapsado', vaiColapsar);
+      if (vaiColapsar) dashQtdColapsados.add(id); else dashQtdColapsados.delete(id);
+    };
+  });
 }
 
 ['dash-mov-de','dash-mov-ate','dash-mov-filtro-equip','dash-mov-filtro-local'].forEach(function(id){
