@@ -30,8 +30,8 @@
     border-right:1px solid rgba(255,255,255,.08)}
   .sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
   .sidebar-logo-img{display:block;height:auto;width:100%;max-width:190px;margin:0 auto;
-    background:#fff;border-radius:10px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-  body.tema-escuro .sidebar-logo-img{background:#fff}
+    filter:invert(1) brightness(1.6)}
+  body.tema-escuro .sidebar-logo-img{filter:invert(1) brightness(1.6)}
   .sidebar-logo .logo-nome{font-weight:800;font-size:20px;letter-spacing:1px;color:#fff}
   .sidebar-logo .logo-sub{display:block;font-size:8px;font-weight:600;letter-spacing:2px;color:#8fc4cc;margin-top:3px}
 
@@ -480,6 +480,18 @@
   .arv-resumo-linha{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px}
   .arv-resumo-pct{font-weight:700}
   .arv-resumo-total{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:2px}
+  .qtd-grupo{margin-bottom:20px}
+  .qtd-grupo-cab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .qtd-grupo-nome{font-size:15px;font-weight:800;color:var(--navy)}
+  .qtd-grupo-total{font-size:13px;font-weight:700;color:var(--tinta)}
+  .qtd-grupo-barra-total{height:10px;border-radius:5px;background:var(--cream);overflow:hidden;margin-bottom:12px}
+  .qtd-grupo-barra-total > div{height:100%;background:var(--navy)}
+  .qtd-sub-item{padding-left:16px;margin-bottom:8px}
+  .qtd-sub-linha{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px}
+  .qtd-sub-nome{color:var(--tinta)}
+  .qtd-sub-num{font-weight:700;color:var(--cinza)}
+  .qtd-sub-barra-wrap{background:#eef1ee;border-radius:4px;height:12px;overflow:hidden}
+  .qtd-sub-barra{height:100%;background:#8fc4cc}
 
   .arv-no{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;align-items:center;
     padding:8px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
@@ -1581,6 +1593,12 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div id="dash-mov-rank-manutencao"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
   </div>
+  <div class="dash-row">
+    <div class="dash-card" style="flex:1 1 100%">
+      <h3>🏭 Quantidade de equipamentos por local (agrupado)</h3>
+      <div id="dash-mov-qtd-por-local"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
 </div>
 
 <div class="view" id="view-status-equipamentos">
@@ -1930,6 +1948,44 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
     <div class="hist-detalhe-corpo" id="pd-detalhe-corpo"></div>
+  </div>
+</div>
+
+<div class="hist-detalhe-overlay" id="loc-mover-overlay">
+  <div class="hist-detalhe-modal" style="max-width:480px">
+    <div class="hist-detalhe-header">
+      <h3>Mover equipamento</h3>
+      <button class="modal-fechar" id="loc-mover-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo">
+      <div class="campo">
+        <label>Equipamento</label>
+        <input type="text" id="loc-mover-equip" disabled style="background:#eef1ee;color:var(--cinza)">
+      </div>
+      <div class="campo" style="margin-top:12px">
+        <label>Local atual</label>
+        <input type="text" id="loc-mover-local-atual" disabled style="background:#eef1ee;color:var(--cinza)">
+      </div>
+      <div class="campo" style="margin-top:12px">
+        <label>Novo local <span class="obrig">*</span></label>
+        <select id="loc-mover-novo-local"></select>
+      </div>
+      <div class="campo" style="margin-top:12px">
+        <label>Status</label>
+        <select id="loc-mover-status">
+          <option value="OPERACIONAL">OPERACIONAL</option>
+          <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+          <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
+      </div>
+      <div class="campo" style="margin-top:12px">
+        <label>Data da movimentação</label>
+        <input type="date" id="loc-mover-data">
+        <div class="modal-dica">Pode informar uma data retroativa, se for o caso.</div>
+      </div>
+      <button type="button" class="rel-btn-primario" id="loc-mover-confirmar" style="margin-top:18px;width:100%">📦 Mover equipamento</button>
+      <div class="erro-msg" id="loc-mover-erro"></div>
+    </div>
   </div>
 </div>
 
@@ -3592,11 +3648,14 @@ function locRenderizarTabela(){
   tbody.innerHTML = linhas.map(function(eq){
     const dias = frotaDiasNoLocal[eq];
     const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
-    return '<tr><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
+    return '<tr class="hist-linha-clicavel" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mover este equipamento"><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
       '<td>' + (frotaLocalAtual[eq] ? '<span class="hist-st ok">' + frotaLocalAtual[eq] + '</span>' : '<span style="color:var(--cinza)">Sem registro</span>') + '</td>' +
       '<td>' + locBadgeStatus(frotaStatusAtual[eq]) + '</td>' +
       '<td>' + diasTxt + '</td></tr>';
   }).join('');
+  tbody.querySelectorAll('.hist-linha-clicavel').forEach(function(tr){
+    tr.onclick = function(){ locAbrirModalMover(tr.dataset.equip); };
+  });
 }
 document.getElementById('loc-atual-busca').addEventListener('input', locRenderizarTabela);
 document.getElementById('loc-atual-filtro-local').addEventListener('change', locRenderizarTabela);
@@ -3645,6 +3704,77 @@ document.getElementById('loc-atual-exportar-excel').onclick = function(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Localização Atual');
   XLSX.writeFile(wb, 'Localizacao_Atual_' + new Date().toISOString().slice(0,10) + '.xlsx');
+};
+
+/* ---- Modal "Mover equipamento" a partir da Localização Atual ---- */
+let locMoverEquipAlvo = null;
+
+function locAbrirModalMover(eq){
+  locMoverEquipAlvo = eq;
+  document.getElementById('loc-mover-equip').value = eq;
+  document.getElementById('loc-mover-local-atual').value = frotaLocalAtual[eq] || 'Sem local registrado';
+  const sel = document.getElementById('loc-mover-novo-local');
+  sel.innerHTML = locais.map(function(l){ return '<option value="'+l+'" '+(frotaLocalAtual[eq]===l?'selected':'')+'>'+l+'</option>'; }).join('');
+  document.getElementById('loc-mover-status').value = frotaStatusAtual[eq] || 'OPERACIONAL';
+  const hoje = new Date();
+  document.getElementById('loc-mover-data').value = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+  document.getElementById('loc-mover-erro').style.display = 'none';
+  document.getElementById('loc-mover-overlay').classList.add('aberto');
+}
+
+document.getElementById('loc-mover-fechar').onclick = function(){
+  document.getElementById('loc-mover-overlay').classList.remove('aberto');
+};
+document.getElementById('loc-mover-overlay').onclick = function(e){
+  if (e.target === document.getElementById('loc-mover-overlay')) document.getElementById('loc-mover-overlay').classList.remove('aberto');
+};
+
+document.getElementById('loc-mover-confirmar').onclick = async function(){
+  const eq = locMoverEquipAlvo;
+  const localAtual = frotaLocalAtual[eq] || '';
+  const novoLocal = document.getElementById('loc-mover-novo-local').value;
+  const novoStatus = document.getElementById('loc-mover-status').value;
+  const dataInformada = document.getElementById('loc-mover-data').value;
+  const statusAtual = frotaStatusAtual[eq] || 'OPERACIONAL';
+  const erroEl = document.getElementById('loc-mover-erro');
+
+  if (!dataInformada) { erroEl.textContent = '⚠️ Informe a data.'; erroEl.style.display = 'block'; return; }
+  if (novoLocal === localAtual && novoStatus === statusAtual) {
+    erroEl.textContent = '⚠️ Nada mudou — troque o local e/ou o status antes de confirmar.';
+    erroEl.style.display = 'block';
+    return;
+  }
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Movendo…';
+  try {
+    const idEquip = frotaIdsExtra[eq] || frotasIds[eq];
+    await atualizarCamposItem(LISTA_FROTA_ID, idEquip, { LocalAtual: novoLocal, StatusAtual: novoStatus });
+    frotaLocalAtual[eq] = novoLocal;
+    frotaStatusAtual[eq] = novoStatus;
+
+    await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
+      fields: {
+        Equipamento: eq,
+        ItemVinculado: frotaItemVinculado[eq] || '',
+        LocalOrigem: localAtual || '—',
+        LocalDestino: novoLocal,
+        Status: novoStatus,
+        Data: dataInformada + 'T12:00:00',
+        Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
+        Observacao: 'Movido via Localização Atual'
+      }
+    });
+    movimentacoesCarregadas = false;
+
+    document.getElementById('loc-mover-overlay').classList.remove('aberto');
+    locRenderizarTabela();
+  } catch(err) {
+    erroEl.textContent = '⚠️ Falha ao mover: ' + err.message;
+    erroEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = '📦 Mover equipamento';
+  }
 };
 
 /* ---- Histórico de Movimentações ---- */
@@ -3864,6 +3994,7 @@ function movFiltrarPorPeriodoELocal(itens){
 }
 
 async function carregarDashboardMov(){
+  await garantirDadosFrotaExtra();
   const todos = await garantirDadosMovimentacoes();
 
   const selEquip = document.getElementById('dash-mov-filtro-equip');
@@ -3938,6 +4069,60 @@ async function carregarDashboardMov(){
     .map(function(k){ return {label:k, valor:porEquipManutencao[k], valorFmt: porEquipManutencao[k] + (porEquipManutencao[k]===1?' dia':' dias')}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
   pdRenderizarRanking('dash-mov-rank-manutencao', rankManutencao, 'var(--ru)');
+
+  dashMovRenderizarQtdPorLocal();
+}
+
+/** Mostra, de forma grande e agrupada, quantos equipamentos existem em cada
+ *  local — agrupado pelo prefixo (AMT, AMB, VALE...), com o detalhe de cada
+ *  local dentro do grupo. Usa frotaLocalAtual (situação atual, não filtrado
+ *  pelo período do dashboard, já que é uma contagem "agora"). */
+function dashMovRenderizarQtdPorLocal(){
+  const porLocal = {};
+  frotas.forEach(function(eq){
+    const local = frotaLocalAtual[eq];
+    if (!local) return;
+    porLocal[local] = (porLocal[local] || 0) + 1;
+  });
+
+  const porGrupo = {};
+  Object.keys(porLocal).forEach(function(local){
+    const grupo = statusEqGrupoDoLocal(local);
+    (porGrupo[grupo] = porGrupo[grupo] || []).push({ local: local, qtd: porLocal[local] });
+  });
+
+  const gruposOrdenados = Object.keys(porGrupo).sort();
+  const cont = document.getElementById('dash-mov-qtd-por-local');
+  if (!gruposOrdenados.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento com local registrado ainda.</div>';
+    return;
+  }
+
+  const totalGeral = Object.values(porLocal).reduce(function(s,n){ return s+n; }, 0);
+  const maiorGrupo = Math.max.apply(null, gruposOrdenados.map(function(g){
+    return porGrupo[g].reduce(function(s,x){ return s+x.qtd; }, 0);
+  }));
+
+  cont.innerHTML = gruposOrdenados.map(function(grupo){
+    const itens = porGrupo[grupo].sort(function(a,b){ return b.qtd - a.qtd; });
+    const totalGrupo = itens.reduce(function(s,x){ return s+x.qtd; }, 0);
+    const pctBarraTotal = Math.max(4, Math.round(totalGrupo / maiorGrupo * 100));
+    const maiorSub = Math.max.apply(null, itens.map(function(x){ return x.qtd; }));
+
+    const subHtml = itens.map(function(x){
+      const pctSub = Math.max(4, Math.round(x.qtd / maiorSub * 100));
+      return '<div class="qtd-sub-item">' +
+        '<div class="qtd-sub-linha"><span class="qtd-sub-nome">'+x.local+'</span><span class="qtd-sub-num">'+x.qtd+' equip.</span></div>' +
+        '<div class="qtd-sub-barra-wrap"><div class="qtd-sub-barra" style="width:'+pctSub+'%"></div></div>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="qtd-grupo">' +
+      '<div class="qtd-grupo-cab"><span class="qtd-grupo-nome">🏢 '+grupo+'</span><span class="qtd-grupo-total">'+totalGrupo+' equipamento(s) — '+Math.round(totalGrupo/totalGeral*100)+'% do total</span></div>' +
+      '<div class="qtd-grupo-barra-total"><div style="width:'+pctBarraTotal+'%"></div></div>' +
+      subHtml +
+    '</div>';
+  }).join('');
 }
 
 ['dash-mov-de','dash-mov-ate','dash-mov-filtro-equip','dash-mov-filtro-local'].forEach(function(id){
