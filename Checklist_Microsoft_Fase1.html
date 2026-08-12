@@ -1621,7 +1621,9 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </div>
   <div class="dash-row">
     <div class="dash-card" style="flex:1 1 100%">
-      <h3>🏭 Quantidade de equipamentos por local (agrupado)</h3>
+      <h3 style="display:flex;justify-content:space-between;align-items:center">🏭 Quantidade de equipamentos por local (agrupado)
+        <button type="button" class="rel-btn-secundario" id="dash-mov-ver-detalhes" style="font-size:11.5px;padding:5px 10px">Ver detalhes completos →</button>
+      </h3>
       <div id="dash-mov-qtd-por-local"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
   </div>
@@ -3239,21 +3241,11 @@ function renderizarListaModal(tipo) {
             '<option value="">Nenhum</option>' +
             frotas.filter(function(f){ return f !== v; }).map(function(f){ return '<option value="'+f+'" '+(frotaItemVinculado[v]===f?'selected':'')+'>'+f+'</option>'; }).join('') +
           '</select>' +
-          '<label>Local atual</label>' +
-          '<select class="mli-select-extra" id="mli-edit-local">' +
-            '<option value="">Nenhum</option>' +
-            locais.map(function(l){ return '<option value="'+l+'" '+(frotaLocalAtual[v]===l?'selected':'')+'>'+l+'</option>'; }).join('') +
-          '</select>' +
-          '<label>Status</label>' +
-          '<select class="mli-select-extra" id="mli-edit-status">' +
-            STATUS_EQUIPAMENTO.map(function(s){ return '<option value="'+s+'" '+((frotaStatusAtual[v]||'OPERACIONAL')===s?'selected':'')+'>'+s+'</option>'; }).join('') +
-          '</select>' +
           '<label>Regime de trabalho</label>' +
           '<select class="mli-select-extra" id="mli-edit-regime">' +
             REGIMES_TRABALHO.map(function(r){ return '<option value="'+r+'" '+((frotaRegimeTrabalho[v]||'8h')===r?'selected':'')+'>'+r+'</option>'; }).join('') +
           '</select>' +
-          '<label>Data dessa mudança</label>' +
-          '<input type="date" class="mli-select-extra" id="mli-edit-data" value="'+new Date().toISOString().slice(0,10)+'">' +
+          '<div class="modal-dica" style="width:100%">Pra mudar local ou status, use "Mover Equip./Implemento" ou clique no equipamento em Localização Atual/Status dos Equipamentos.</div>' +
         '</div>'
       ) : '';
       return '<div class="modal-lista-item mli-editando" style="flex-direction:column;align-items:stretch;gap:8px">' +
@@ -3321,18 +3313,12 @@ function renderizarListaModal(tipo) {
       if (!novoValor) return;
 
       const novoImplemento = tipo === 'equip' ? document.getElementById('mli-edit-implemento').value : null;
-      const novoLocal = tipo === 'equip' ? document.getElementById('mli-edit-local').value : null;
-      const novoStatus = tipo === 'equip' ? document.getElementById('mli-edit-status').value : null;
       const novoRegime = tipo === 'equip' ? document.getElementById('mli-edit-regime').value : null;
-      const dataEdicao = tipo === 'equip' ? document.getElementById('mli-edit-data').value : null;
       const nomeMudou = novoValor !== antigoValor;
       const implementoMudou = tipo === 'equip' && novoImplemento !== (frotaItemVinculado[antigoValor] || '');
-      const localAntigo = frotaLocalAtual[antigoValor] || '';
-      const localMudou = tipo === 'equip' && novoLocal !== localAntigo;
-      const statusMudou = tipo === 'equip' && novoStatus !== (frotaStatusAtual[antigoValor] || 'OPERACIONAL');
       const regimeMudou = tipo === 'equip' && novoRegime !== (frotaRegimeTrabalho[antigoValor] || '8h');
 
-      if (!nomeMudou && !implementoMudou && !localMudou && !statusMudou && !regimeMudou) {
+      if (!nomeMudou && !implementoMudou && !regimeMudou) {
         editandoPorTipo[tipo] = null;
         renderizarListaModal(tipo);
         return;
@@ -3343,30 +3329,11 @@ function renderizarListaModal(tipo) {
 
       const promessa = nomeMudou ? editarItemSimples(cfg.listaId, itemId, novoValor) : Promise.resolve();
       promessa.then(function(){
-        if (tipo === 'equip' && (implementoMudou || localMudou || statusMudou || regimeMudou)) {
+        if (tipo === 'equip' && (implementoMudou || regimeMudou)) {
           const campos = {};
           if (implementoMudou) campos.ItemVinculado = novoImplemento;
-          if (localMudou) campos.LocalAtual = novoLocal;
-          if (statusMudou) campos.StatusAtual = novoStatus;
           if (regimeMudou) campos.RegimeTrabalho = novoRegime;
           return atualizarCamposItem(LISTA_FROTA_ID, itemId, campos);
-        }
-      }).then(function(){
-        // Se o local (ou o status) mudou pela edição, registra no Histórico de
-        // Movimentações também, com a data que o usuário informou.
-        if (tipo === 'equip' && (localMudou || statusMudou)) {
-          return graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
-            fields: {
-              Equipamento: nomeMudou ? novoValor : antigoValor,
-              ItemVinculado: novoImplemento || '',
-              LocalOrigem: localAntigo || '—',
-              LocalDestino: novoLocal || localAntigo || '—',
-              Status: novoStatus || frotaStatusAtual[antigoValor] || 'OPERACIONAL',
-              Data: (dataEdicao || new Date().toISOString().slice(0,10)) + 'T12:00:00',
-              Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
-              Observacao: 'Editado via Cadastrar equip./local'
-            }
-          }).then(function(){ movimentacoesCarregadas = false; });
         }
       }).then(function(){
         if (nomeMudou) {
@@ -3376,8 +3343,8 @@ function renderizarListaModal(tipo) {
           mapaIds[novoValor] = itemId;
           if (tipo === 'equip') {
             frotaItemVinculado[novoValor] = novoImplemento || '';
-            frotaLocalAtual[novoValor] = novoLocal || '';
-            frotaStatusAtual[novoValor] = novoStatus || 'OPERACIONAL';
+            frotaLocalAtual[novoValor] = frotaLocalAtual[antigoValor] || '';
+            frotaStatusAtual[novoValor] = frotaStatusAtual[antigoValor] || 'OPERACIONAL';
             frotaRegimeTrabalho[novoValor] = novoRegime || '8h';
             delete frotaItemVinculado[antigoValor];
             delete frotaLocalAtual[antigoValor];
@@ -3388,8 +3355,6 @@ function renderizarListaModal(tipo) {
           ordenarListas();
         } else if (tipo === 'equip') {
           frotaItemVinculado[antigoValor] = novoImplemento || '';
-          frotaLocalAtual[antigoValor] = novoLocal || '';
-          frotaStatusAtual[antigoValor] = novoStatus || 'OPERACIONAL';
           frotaRegimeTrabalho[antigoValor] = novoRegime || '8h';
         }
         editandoPorTipo[tipo] = null;
@@ -4157,6 +4122,7 @@ async function carregarDashboardMov(){
   pdRenderizarRanking('dash-mov-rank-manutencao', rankManutencao, 'var(--ru)');
 
   dashMovRenderizarQtdPorLocal();
+  document.getElementById('dash-mov-ver-detalhes').onclick = function(){ mostrarView('status-equipamentos'); };
 }
 
 /** Mostra, de forma grande e agrupada, quantos equipamentos existem em cada
@@ -4189,25 +4155,12 @@ function dashMovRenderizarQtdPorLocal(){
 
   const totalGeral = Object.keys(porLocal).reduce(function(s,l){ return s+porLocal[l].length; }, 0);
 
-  if (!dashQtdSeedFeito) {
-    Object.keys(porLocal).forEach(function(local){ dashQtdColapsados.add('ql:' + local); });
-    dashQtdSeedFeito = true;
-  }
-
-  function noQtd(id, nivel, nome, qtd, pctBarra, extraClasse){
+  function noQtd(id, nivel, nome, qtd, pctBarra, extraClasse, semSeta){
     const colapsado = dashQtdColapsados.has(id);
-    return '<div class="qtd-arv-no qtd-arv-nivel-'+nivel+' '+(extraClasse||'')+(colapsado?' colapsado':'')+'" data-no="'+id+'">' +
-      '<span class="qtd-arv-nome"><span class="arv-seta">▾</span> '+nome+'</span>' +
+    return '<div class="qtd-arv-no qtd-arv-nivel-'+nivel+' '+(extraClasse||'')+(colapsado?' colapsado':'')+'" data-no="'+id+'" style="'+(semSeta?'cursor:default':'')+'">' +
+      '<span class="qtd-arv-nome">'+(semSeta?'':'<span class="arv-seta">▾</span> ')+nome+'</span>' +
       '<span style="display:flex;align-items:center;gap:10px"><b>'+qtd+' equip.</b>' +
       '<span class="qtd-arv-barra-mini"><div style="width:'+pctBarra+'%"></div></span></span>' +
-    '</div>';
-  }
-  function folhaEquip(eq){
-    const vinc = frotaItemVinculado[eq];
-    const nome = eq + (vinc ? (' + ' + vinc) : '');
-    return '<div class="qtd-arv-no qtd-arv-nivel-3" style="cursor:default">' +
-      '<span class="qtd-arv-nome" style="padding-left:54px">🚜 '+nome+'</span>' +
-      '<span>'+statusEqBadge(frotaStatusAtual[eq])+'</span>' +
     '</div>';
   }
 
@@ -4220,18 +4173,14 @@ function dashMovRenderizarQtdPorLocal(){
     html += noQtd(idGrupo, 1, '🏭 ' + grupo, totalGrupo, Math.max(4, Math.round(totalGrupo/totalGeral*100)));
     html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has(idGrupo)?' colapsado':'')+'" data-filhos-de="'+idGrupo+'">';
     itens.forEach(function(x){
-      const idLocal = 'ql:' + x.local;
-      html += noQtd(idLocal, 2, '📍 ' + x.local, x.equips.length, Math.max(4, Math.round(x.equips.length/totalGrupo*100)));
-      html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has(idLocal)?' colapsado':'')+'" data-filhos-de="'+idLocal+'">';
-      x.equips.forEach(function(eq){ html += folhaEquip(eq); });
-      html += '</div>';
+      html += noQtd('ql:' + x.local, 2, '📍 ' + x.local, x.equips.length, Math.max(4, Math.round(x.equips.length/totalGrupo*100)), '', true);
     });
     html += '</div>';
   });
   html += '</div>';
   cont.innerHTML = html;
 
-  cont.querySelectorAll('.qtd-arv-no[data-no]').forEach(function(el){
+  cont.querySelectorAll('.qtd-arv-no[data-no^="qg:"], .qtd-arv-no[data-no="root"]').forEach(function(el){
     el.onclick = function(){
       const id = el.dataset.no;
       const filhos = cont.querySelector('[data-filhos-de="'+id+'"]');
@@ -4282,13 +4231,19 @@ async function carregarStatusEquipamentos(){
 
 /** Soma, para UM equipamento, quantos dias (no total do histórico) ele já
  *  passou em cada status — usado no "(Xd op / Yd manut)" da árvore. */
-function statusEqTotaisPorStatus(eq){
-  const registros = movimentacoesItens.filter(function(m){ return m.equipamento === eq; });
+/** Função única de "quantos dias em cada status" — usada tanto por equipamento
+ *  quanto por local, pra não ter essa conta implementada em mais de um lugar.
+ *  Recebe a lista de movimentações JÁ FILTRADA (por equipamento, por local, etc.). */
+function somarDiasPorStatus(registrosFiltrados){
   const totais = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
-  registros.forEach(function(m){
+  registrosFiltrados.forEach(function(m){
     if (m.status && totais.hasOwnProperty(m.status)) totais[m.status] += m.diasNoLocal;
   });
   return totais;
+}
+
+function statusEqTotaisPorStatus(eq){
+  return somarDiasPorStatus(movimentacoesItens.filter(function(m){ return m.equipamento === eq; }));
 }
 
 function statusEqBadge(status){
@@ -4436,8 +4391,7 @@ function statusEqRenderizarResumoTodos(locaisOrdenados){
   const cores = { 'OPERACIONAL': 'var(--ok)', 'EM MANUTENÇÃO': 'var(--ru)', 'EM DISPONIBILIDADE': '#c79a3a' };
   document.getElementById('status-eq-resumo').innerHTML = locaisOrdenados.map(function(local){
     const registrosDoLocal = movimentacoesItens.filter(function(m){ return m.localDestino === local && m.status; });
-    const totais = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
-    registrosDoLocal.forEach(function(m){ if (totais.hasOwnProperty(m.status)) totais[m.status] += m.diasNoLocal; });
+    const totais = somarDiasPorStatus(registrosDoLocal);
     const totalDias = totais['OPERACIONAL'] + totais['EM MANUTENÇÃO'] + totais['EM DISPONIBILIDADE'];
     const ultimaMov = movimentacoesItens.filter(function(m){ return m.localDestino === local; })
       .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); })[0];
