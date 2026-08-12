@@ -3838,7 +3838,8 @@ document.getElementById('loc-mover-confirmar').onclick = async function(){
     movimentacoesCarregadas = false;
 
     document.getElementById('loc-mover-overlay').classList.remove('aberto');
-    locRenderizarTabela();
+    if (document.getElementById('view-localizacao-atual').classList.contains('ativo')) locRenderizarTabela();
+    if (document.getElementById('view-status-equipamentos').classList.contains('ativo')) statusEqRenderizar();
   } catch(err) {
     erroEl.textContent = '⚠️ Falha ao mover: ' + err.message;
     erroEl.style.display = 'block';
@@ -4374,7 +4375,7 @@ function statusEqRenderizar(){
     const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
     const totais = statusEqTotaisPorStatus(eq);
     const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut.';
-    return '<div class="arv-folha" data-equip="'+eq+'" title="Clique em Localização Atual para mover este equipamento">' +
+    return '<div class="arv-folha" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mudar o status ou mover este equipamento">' +
       '<div class="arv-no-nome">🚜 '+nome+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
       '<div>'+diasTxt+'</div>' +
       '<div class="arv-sub">'+chegadaTxt+'</div>' +
@@ -4421,6 +4422,9 @@ function statusEqRenderizar(){
       if (filhos) filhos.classList.toggle('colapsado', vaiColapsar);
       if (vaiColapsar) statusEqColapsados.add(id); else statusEqColapsados.delete(id);
     };
+  });
+  arv.querySelectorAll('.arv-folha').forEach(function(el){
+    el.onclick = function(){ locAbrirModalMover(el.dataset.equip); };
   });
 
   statusEqRenderizarResumoTodos(locaisOrdenados);
