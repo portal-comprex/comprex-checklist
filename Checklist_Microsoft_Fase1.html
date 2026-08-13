@@ -577,11 +577,11 @@
   .ind-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
   .ind-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta);
     margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--navy)}
-  .ind-linha{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px}
+  .ind-linha{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13.5px}
   .ind-lbl{flex:0 0 46%;color:#2c2c2a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ind-bar-wrap{flex:1;background:#eef0f1;border-radius:4px;height:16px;overflow:hidden}
   .ind-bar{height:100%;border-radius:4px}
-  .ind-val{flex:0 0 24px;text-align:right;font-weight:700;color:var(--tinta)}
+  .ind-val{flex:0 0 30px;text-align:right;font-weight:700;color:var(--tinta)}
   .ind-vazio{font-size:12px;color:var(--cinza);padding:8px 0}
   .ind-loading{text-align:center;padding:40px;color:var(--cinza);font-size:13px}
 
@@ -712,10 +712,10 @@
   .oc-card{background:#fff;border:1px solid #f0c4bd;border-left:4px solid var(--ru);
     border-radius:10px;padding:14px 18px;margin-bottom:12px}
   .oc-cab{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-  .oc-eq{font-weight:800;font-size:14px;color:var(--ru)}
-  .oc-meta{font-size:11px;color:var(--cinza)}
+  .oc-eq{font-weight:800;font-size:15px;color:var(--ru)}
+  .oc-meta{font-size:12.5px;color:var(--cinza)}
   .oc-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-  .oc-chip{font-size:10px;padding:3px 9px;border-radius:20px;background:#fbe9e7;color:var(--ru);font-weight:600}
+  .oc-chip{font-size:11.5px;padding:4px 10px;border-radius:20px;background:#fbe9e7;color:var(--ru);font-weight:600}
   .oc-obs{font-size:11px;color:var(--cinza);font-style:italic;margin-top:6px}
   .oc-vazio{text-align:center;padding:40px;color:var(--cinza);font-size:13px;background:#fff;border-radius:12px}
 
@@ -773,10 +773,10 @@
   .aviso-coluna{background:#fbe9e7;border:1px solid #f0c4bd;border-radius:9px;
     padding:12px 16px;font-size:12px;color:var(--ru);margin-bottom:16px}
   .aviso-coluna b{display:block;margin-bottom:4px}
- .login-gate{position:fixed;inset:0;background:#1b5e20;display:flex;align-items:center;
+ .login-gate{position:fixed;inset:0;background:linear-gradient(180deg,#1b4a52 0%,#0f2e34 100%);display:flex;align-items:center;
     justify-content:center;z-index:1000;flex-direction:column;color:#fff;gap:16px}
   .login-gate h2{font-size:20px}
-  .login-gate button{background:#fff;color:#1b5e20;border:none;border-radius:9px;
+  .login-gate button{background:#fff;color:#1b4a52;border:none;border-radius:9px;
     padding:14px 28px;font-size:14px;font-weight:700;cursor:pointer}
   .login-gate .status{font-size:13px;color:#9fb0c2}
 
@@ -1830,6 +1830,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
   <div class="hist-info" id="oc-info">Carregando ocorrências…</div>
+  <div class="dash-card" style="margin-bottom:16px">
+    <h3>📊 Itens mais recorrentes</h3>
+    <div id="oc-top-recorrentes"><div class="lista-vazia-dash">Carregando…</div></div>
+  </div>
   <div id="oc-conteudo"><div class="oc-vazio">Carregando…</div></div>
 </div>
 <div class="view" id="view-frota">
@@ -3902,7 +3906,7 @@ function movFiltrarHistorico(itens){
     const d = new Date(i.criado);
     if (de && d < new Date(de + 'T00:00:00')) return false;
     if (ate && d > new Date(ate + 'T23:59:59')) return false;
-    if (equip && i.equipamento !== equip) return false;
+    if (equip && i.equipamento.toUpperCase().indexOf(equip.toUpperCase()) === -1) return false;
     if (local && i.localOrigem !== local && i.localDestino !== local) return false;
     return true;
   });
@@ -4031,7 +4035,7 @@ function movFiltrarPorPeriodoELocal(itens){
     const d = new Date(i.criado);
     if (de && d < new Date(de + 'T00:00:00')) return false;
     if (ate && d > new Date(ate + 'T23:59:59')) return false;
-    if (equip && i.equipamento !== equip) return false;
+    if (equip && i.equipamento.toUpperCase().indexOf(equip.toUpperCase()) === -1) return false;
     if (local && i.localDestino !== local && i.localOrigem !== local) return false;
     return true;
   });
@@ -4217,6 +4221,14 @@ function statusEqGrupoDoLocal(local){
   return (partes[0] || local).trim();
 }
 
+/** Remove o prefixo do grupo do nome do local, só pra exibição na árvore —
+ *  já que o grupo aparece como "pai" e não precisa ser repetido no filho.
+ *  Ex: "AMB - Juiz de Fora Sucata - 500020" -> "Juiz de Fora Sucata - 500020" */
+function statusEqLocalSemPrefixo(local){
+  const partes = String(local).split(/\s*-\s*/);
+  return partes.length > 1 ? partes.slice(1).join(' - ') : local;
+}
+
 async function carregarStatusEquipamentos(){
   await garantirDadosFrotaExtra();
   await garantirDadosMovimentacoes();
@@ -4329,7 +4341,7 @@ function statusEqRenderizar(){
     const chegada = statusEqDataChegada(eq);
     const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
     const totais = statusEqTotaisPorStatus(eq);
-    const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut.';
+    const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut. / ' + totais['EM DISPONIBILIDADE'] + 'd disp.';
     return '<div class="arv-folha" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mudar o status ou mover este equipamento">' +
       '<div class="arv-no-nome">🚜 '+nome+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
       '<div>'+diasTxt+'</div>' +
@@ -4358,7 +4370,7 @@ function statusEqRenderizar(){
     porGrupo[grupo].forEach(function(local){
       const idLocal = 'l:' + local;
       const eqs = porLocal[local];
-      html += noExpansor(idLocal, 2, '📍', local, eqs.length + ' equipamento(s)');
+      html += noExpansor(idLocal, 2, '📍', statusEqLocalSemPrefixo(local), eqs.length + ' equipamento(s)');
       html += '<div class="arv-filhos'+(statusEqColapsados.has(idLocal)?' colapsado':'')+'" data-filhos-de="'+idLocal+'">';
       eqs.forEach(function(eq){ html += linhaFolha(eq, local); });
       html += '</div>';
@@ -4756,7 +4768,7 @@ function pdFiltrarHistorico(itens){
     const d = new Date(i.criado);
     if (de && d < new Date(de + 'T00:00:00')) return false;
     if (ate && d > new Date(ate + 'T23:59:59')) return false;
-    if (equip && i.equipamento !== equip) return false;
+    if (equip && i.equipamento.toUpperCase().indexOf(equip.toUpperCase()) === -1) return false;
     if (operador && i.operador.toLowerCase().indexOf(operador) === -1) return false;
     if (local && i.local !== local) return false;
     return true;
@@ -5676,9 +5688,35 @@ function obterOcorrenciasFiltradas(){
   });
 }
 
+/** Conta, entre as ocorrências filtradas, qual item de checklist apareceu
+ *  com problema mais vezes — e desenha como barras horizontais, igual ao
+ *  "Top 10 Itens Mais Recorrentes" do modelo de referência. */
+function renderizarTopItensRecorrentes(filtradas){
+  const cont = document.getElementById('oc-top-recorrentes');
+  const contagem = {};
+  filtradas.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (!valor) return;
+      if (severidadeDaResposta(it[0], valor) === 'ru') {
+        const chave = prettify(it[0]) + ': ' + valor;
+        contagem[chave] = (contagem[chave] || 0) + 1;
+      }
+    });
+  });
+  const ranking = Object.keys(contagem).map(function(k){ return { label: k, valor: contagem[k], valorFmt: String(contagem[k]) }; })
+    .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 10);
+  if (!ranking.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Nenhum item recorrente nesse filtro.</div>';
+    return;
+  }
+  pdRenderizarRanking('oc-top-recorrentes', ranking, 'var(--ru)');
+}
+
 function renderizarOcorrencias(){
   const cont = document.getElementById('oc-conteudo');
   const filtradas = obterOcorrenciasFiltradas();
+  renderizarTopItensRecorrentes(filtradas);
   if (!filtradas.length) {
     cont.innerHTML = '<div class="oc-vazio">Nenhuma ocorrência encontrada para esse filtro.</div>';
     return;
