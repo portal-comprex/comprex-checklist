@@ -3243,7 +3243,15 @@ function renderizarListaModal(tipo) {
           '<label>Implemento vinculado</label>' +
           '<select class="mli-select-extra" id="mli-edit-implemento">' +
             '<option value="">Nenhum</option>' +
-            frotas.filter(function(f){ return f !== v; }).map(function(f){ return '<option value="'+f+'" '+(frotaItemVinculado[v]===f?'selected':'')+'>'+f+'</option>'; }).join('') +
+            (function(){
+              // Garante que o implemento já vinculado apareça na lista e venha
+              // selecionado, mesmo que por algum motivo ele não esteja (ainda)
+              // na lista de equipamentos carregada em memória.
+              const vinculadoAtual = frotaItemVinculado[v] || '';
+              const opcoes = frotas.filter(function(f){ return f !== v; });
+              if (vinculadoAtual && opcoes.indexOf(vinculadoAtual) === -1) opcoes.unshift(vinculadoAtual);
+              return opcoes.map(function(f){ return '<option value="'+f+'" '+(vinculadoAtual===f?'selected':'')+'>'+f+'</option>'; }).join('');
+            })() +
           '</select>' +
           '<label>Regime de trabalho</label>' +
           '<select class="mli-select-extra" id="mli-edit-regime">' +
