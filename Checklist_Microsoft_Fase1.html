@@ -1830,10 +1830,43 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
   <div class="hist-info" id="oc-info">Carregando ocorrências…</div>
-  <div class="dash-card" style="margin-bottom:16px">
-    <h3>📊 Itens mais recorrentes</h3>
-    <div id="oc-top-recorrentes"><div class="lista-vazia-dash">Carregando…</div></div>
+
+  <div class="dash-kpis" id="oc-kpis"></div>
+
+  <div class="dash-row" style="align-items:flex-start">
+    <div class="dash-card" style="flex:1.3">
+      <h3>📊 Top 10 Itens Mais Recorrentes</h3>
+      <div id="oc-top-recorrentes"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card" style="flex:1">
+      <h3>⚠️ Ocorrências por Nível de Criticidade</h3>
+      <div class="dash-row" style="align-items:center;gap:20px">
+        <div id="oc-donut-criticidade" style="width:110px;height:110px;border-radius:50%;flex-shrink:0"></div>
+        <div id="oc-legenda-criticidade" style="flex:1"></div>
+      </div>
+    </div>
+    <div class="dash-card" style="flex:1">
+      <h3>📍 Ocorrências por Local</h3>
+      <div id="oc-por-local"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
   </div>
+
+  <div class="dash-row" style="align-items:flex-start">
+    <div class="dash-card" style="flex:1.3">
+      <h3>📈 Evolução de Ocorrências</h3>
+      <div id="oc-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card" style="flex:1">
+      <h3>👷 Ocorrências por Operador</h3>
+      <div id="oc-por-operador"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+  </div>
+
+  <div class="dash-card" style="margin-bottom:16px">
+    <h3>📋 Detalhamento das Ocorrências</h3>
+    <div id="oc-tabela-detalhe"><div class="lista-vazia-dash">Carregando…</div></div>
+  </div>
+
   <div id="oc-conteudo"><div class="oc-vazio">Carregando…</div></div>
 </div>
 <div class="view" id="view-frota">
@@ -5699,6 +5732,146 @@ function obterOcorrenciasFiltradas(){
 /** Conta, entre as ocorrências filtradas, qual item de checklist apareceu
  *  com problema mais vezes — e desenha como barras horizontais, igual ao
  *  "Top 10 Itens Mais Recorrentes" do modelo de referência. */
+/** Nível de criticidade de UMA ocorrência: "CRÍTICO" se algum item foi
+ *  respondido literalmente como CRÍTICO, senão "MÍNIMO" (ela já é uma
+ *  ocorrência por ter pelo menos um item com problema). */
+function criticidadeDaOcorrencia(h){
+  const temCritico = ITENS.some(function(it){ return h.campos[it[0]] === 'CRÍTICO'; });
+  return temCritico ? 'CRÍTICO' : 'MÍNIMO';
+}
+
+function renderizarOcorrenciasKpis(filtradas, anteriores){
+  const equipsUnicos = new Set(filtradas.map(function(h){ return h.equipamento; })).size;
+  const operadoresUnicos = new Set(filtradas.map(function(h){ return h.operador; })).size;
+  const criticas = filtradas.filter(function(h){ return criticidadeDaOcorrencia(h) === 'CRÍTICO'; }).length;
+
+  const contagemItens = {};
+  filtradas.forEach(function(h){
+    ITENS.forEach(function(it){
+      const valor = h.campos[it[0]];
+      if (valor && severidadeDaResposta(it[0], valor) === 'ru') {
+        const chave = prettify(it[0]) + ': ' + valor;
+        contagemItens[chave] = (contagemItens[chave] || 0) + 1;
+      }
+    });
+  });
+  const top3 = Object.values(contagemItens).sort(function(a,b){ return b-a; }).slice(0,3).reduce(function(s,n){ return s+n; }, 0);
+
+  function variacao(atual, anterior){
+    if (!anterior) return null;
+    return Math.round((atual - anterior) / anterior * 100);
+  }
+  function linhaVariacao(v){
+    if (v === null) return '';
+    const seta = v > 0 ? '▲' : (v < 0 ? '▼' : '—');
+    return '<div style="font-size:11px;color:var(--cinza);margin-top:4px">'+seta+' '+Math.abs(v)+'% vs período anterior</div>';
+  }
+
+  const kpis = [
+    ['⚠️', 'TOTAL DE OCORRÊNCIAS', filtradas.length, variacao(filtradas.length, anteriores.length)],
+    ['🚜', 'EQUIPAMENTOS AFETADOS', equipsUnicos, null],
+    ['👤', 'OPERADORES ENVOLVIDOS', operadoresUnicos, null],
+    ['🛑', 'OCORRÊNCIAS CRÍTICAS', criticas, null],
+    ['🔁', 'RECORRÊNCIA (TOP 3 ITENS)', top3, null]
+  ];
+  document.getElementById('oc-kpis').innerHTML = kpis.map(function(k){
+    return '<div class="kpi-card"><div class="kpi-top"><div class="kpi-icone" style="background:#fbe9e7;color:var(--ru)">'+k[0]+'</div>' +
+      '<div><div class="kpi-num">'+k[2]+'</div><div class="kpi-lbl">'+k[1]+'</div></div></div>' +
+      linhaVariacao(k[3]) +
+    '</div>';
+  }).join('');
+}
+
+function renderizarOcorrenciasDonutCriticidade(filtradas){
+  const cont = { 'CRÍTICO': 0, 'MÍNIMO': 0 };
+  filtradas.forEach(function(h){ cont[criticidadeDaOcorrencia(h)]++; });
+  const total = filtradas.length;
+  const donut = document.getElementById('oc-donut-criticidade');
+  const legenda = document.getElementById('oc-legenda-criticidade');
+  if (!total) {
+    donut.style.background = '#eef1ee';
+    legenda.innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>';
+    return;
+  }
+  const pctCritico = cont['CRÍTICO'] / total * 100;
+  donut.style.background = 'conic-gradient(#e0392b 0%, #e0392b ' + pctCritico.toFixed(1) + '%, #f2a736 ' + pctCritico.toFixed(1) + '%, #f2a736 100%)';
+  legenda.innerHTML =
+    '<div class="arv-resumo-linha"><span><span class="resumo-dot" style="background:#e0392b;display:inline-block;margin-right:6px"></span>Crítico</span><b>'+Math.round(pctCritico)+'% ('+cont['CRÍTICO']+')</b></div>' +
+    '<div class="arv-resumo-linha"><span><span class="resumo-dot" style="background:#f2a736;display:inline-block;margin-right:6px"></span>Mínimo</span><b>'+Math.round(100-pctCritico)+'% ('+cont['MÍNIMO']+')</b></div>';
+}
+
+function renderizarOcorrenciasPorLocal(filtradas){
+  const cont = {};
+  filtradas.forEach(function(h){ cont[h.local] = (cont[h.local]||0) + 1; });
+  const ranking = Object.keys(cont).map(function(l){ return { label: l, valor: cont[l], valorFmt: String(cont[l]) }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+  if (!ranking.length) { document.getElementById('oc-por-local').innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>'; return; }
+  pdRenderizarRanking('oc-por-local', ranking, 'var(--navy)');
+}
+
+function renderizarOcorrenciasPorOperador(filtradas){
+  const cont = {};
+  filtradas.forEach(function(h){ cont[h.operador] = (cont[h.operador]||0) + 1; });
+  const ranking = Object.keys(cont).map(function(o){ return { label: o, valor: cont[o], valorFmt: String(cont[o]) }; })
+    .sort(function(a,b){ return b.valor - a.valor; });
+  if (!ranking.length) { document.getElementById('oc-por-operador').innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>'; return; }
+  pdRenderizarRanking('oc-por-operador', ranking, 'var(--navy)');
+}
+
+/** Gráfico de linha simples (SVG), sem depender de biblioteca nenhuma —
+ *  agrupa as ocorrências por dia e desenha a evolução. */
+function renderizarOcorrenciasEvolucao(filtradas){
+  const cont = document.getElementById('oc-evolucao');
+  if (!filtradas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>'; return; }
+
+  const porDia = {};
+  filtradas.forEach(function(h){ const d = h.criado.slice(0,10); porDia[d] = (porDia[d]||0) + 1; });
+  const dias = Object.keys(porDia).sort();
+  const valores = dias.map(function(d){ return porDia[d]; });
+  const maxVal = Math.max.apply(null, valores) || 1;
+
+  const largura = 560, altura = 160, margem = 24;
+  const passoX = dias.length > 1 ? (largura - margem*2) / (dias.length - 1) : 0;
+  const pontos = valores.map(function(v, i){
+    const x = margem + i*passoX;
+    const y = altura - margem - (v / maxVal) * (altura - margem*2);
+    return [x, y];
+  });
+  const linha = pontos.map(function(p){ return p[0]+','+p[1]; }).join(' ');
+  const area = 'M' + margem + ',' + (altura-margem) + ' L' + linha.replace(/ /g, ' L') + ' L' + (margem+(dias.length-1)*passoX) + ',' + (altura-margem) + ' Z';
+
+  const rotulos = pontos.map(function(p, i){
+    return '<text x="'+p[0]+'" y="'+(altura-4)+'" font-size="10" fill="var(--cinza)" text-anchor="middle">'+formatarDataCurta(dias[i])+'</text>' +
+           '<text x="'+p[0]+'" y="'+(p[1]-8)+'" font-size="11" font-weight="700" fill="var(--navy)" text-anchor="middle">'+valores[i]+'</text>' +
+           '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--navy)"></circle>';
+  }).join('');
+
+  cont.innerHTML = '<svg viewBox="0 0 '+largura+' '+altura+'" style="width:100%;height:180px">' +
+    '<path d="'+area+'" fill="var(--cream)" stroke="none"></path>' +
+    '<polyline points="'+linha+'" fill="none" stroke="var(--navy)" stroke-width="2"></polyline>' +
+    rotulos +
+  '</svg>';
+}
+function formatarDataCurta(isoData){
+  const partes = isoData.split('-');
+  return partes[2] + '/' + partes[1];
+}
+
+function renderizarOcorrenciasTabelaDetalhe(filtradas){
+  const cont = document.getElementById('oc-tabela-detalhe');
+  if (!filtradas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem ocorrências para esse filtro.</div>'; return; }
+  const linhas = filtradas.slice(0, 20).map(function(h){
+    const qtdItens = ITENS.filter(function(it){ return h.campos[it[0]] && severidadeDaResposta(it[0], h.campos[it[0]]) === 'ru'; }).length;
+    const crit = criticidadeDaOcorrencia(h);
+    const badge = crit === 'CRÍTICO' ? '<span class="hist-st parar">CRÍTICO</span>' : '<span class="hist-st at">MÍNIMO</span>';
+    return '<tr><td>'+h.equipamento+'</td><td>'+formatarDataHist(h.criado)+'</td><td>'+h.local+'</td><td>'+h.operador+'</td><td>'+qtdItens+' itens</td><td>'+badge+'</td></tr>';
+  }).join('');
+  cont.innerHTML = '<div class="hist-tabela-wrap"><table class="hist-tabela"><thead><tr>' +
+    '<th>Código</th><th>Data</th><th>Local</th><th>Operador</th><th>Itens com ocorrência</th><th>Nível</th>' +
+    '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+    (filtradas.length > 20 ? '<div style="font-size:11px;color:var(--cinza);margin-top:8px">Exibindo 20 de '+filtradas.length+' ocorrências.</div>' : '');
+}
+
 function renderizarTopItensRecorrentes(filtradas){
   const cont = document.getElementById('oc-top-recorrentes');
   const contagem = {};
@@ -5724,7 +5897,27 @@ function renderizarTopItensRecorrentes(filtradas){
 function renderizarOcorrencias(){
   const cont = document.getElementById('oc-conteudo');
   const filtradas = obterOcorrenciasFiltradas();
+
+  // Período anterior (mesma duração, imediatamente antes) — só pra comparação no KPI.
+  const deFiltro = document.getElementById('oc-filtro-de').value;
+  const ateFiltro = document.getElementById('oc-filtro-ate').value;
+  let anteriores = [];
+  if (deFiltro && ateFiltro) {
+    const de = new Date(deFiltro + 'T00:00:00'), ate = new Date(ateFiltro + 'T23:59:59');
+    const duracaoMs = ate - de;
+    const deAnterior = new Date(de.getTime() - duracaoMs - 86400000);
+    const ateAnterior = new Date(de.getTime() - 86400000);
+    anteriores = ocorrenciasItens.filter(function(h){ const d = new Date(h.criado); return d >= deAnterior && d <= ateAnterior; });
+  }
+
+  renderizarOcorrenciasKpis(filtradas, anteriores);
   renderizarTopItensRecorrentes(filtradas);
+  renderizarOcorrenciasDonutCriticidade(filtradas);
+  renderizarOcorrenciasPorLocal(filtradas);
+  renderizarOcorrenciasPorOperador(filtradas);
+  renderizarOcorrenciasEvolucao(filtradas);
+  renderizarOcorrenciasTabelaDetalhe(filtradas);
+
   if (!filtradas.length) {
     cont.innerHTML = '<div class="oc-vazio">Nenhuma ocorrência encontrada para esse filtro.</div>';
     return;
