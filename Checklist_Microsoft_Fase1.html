@@ -889,6 +889,13 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
 </head>
 <body>
 
+<div class="login-gate" id="acesso-negado-gate" style="display:none">
+  <h2>🚫 Acesso não autorizado</h2>
+  <div class="status" id="acesso-negado-texto">Sua conta não tem permissão para usar este sistema.</div>
+  <div class="status" style="font-size:12px;opacity:.8" id="acesso-negado-email"></div>
+  <button id="btn-acesso-negado-sair">Sair / trocar de conta</button>
+</div>
+
 <div class="login-gate" id="login-gate">
   <h2>🔒 Checklist Diário — Comprex</h2>
   <div class="status" id="login-status">Verificando login…</div>
@@ -2228,6 +2235,13 @@ const msalInstance = new msal.PublicClientApplication(msalConfig);
    ===================================================================== */
 const CONFIG = {
   emailsAdmin: ['vagner.nicanor@comprex.com.br', 'lucas.maciel@comprex.com.br'],
+  // e-mail (minúsculo) -> lista de seções liberadas. Quem não está aqui NEM em
+  // emailsAdmin fica bloqueado (não acessa nada, mesmo com e-mail corporativo).
+  // Seções possíveis: 'checklist', 'partediaria', 'rastreamento'.
+  acessosLimitados: {
+    // 'joao.silva@comprex.com.br': ['checklist'],
+    // 'maria.souza@comprex.com.br': ['checklist', 'partediaria'],
+  },
   tiposParada: ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'],
   diasReincidencia: 30,
   observacaoObrigatoriaChecklist: false,
@@ -2247,6 +2261,17 @@ async function carregarConfiguracoes(){
 
     if (porChave['EMAILS_ADMIN']) {
       CONFIG.emailsAdmin = porChave['EMAILS_ADMIN'].split(',').map(function(e){ return e.trim().toLowerCase(); }).filter(Boolean);
+    }
+    if (porChave['ACESSOS_LIMITADOS']) {
+      // Formato esperado: "email1:secao1,secao2;email2:secao3"
+      const novoMapa = {};
+      porChave['ACESSOS_LIMITADOS'].split(';').forEach(function(par){
+        const partes = par.split(':');
+        const email = (partes[0] || '').trim().toLowerCase();
+        const secoes = (partes[1] || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        if (email && secoes.length) novoMapa[email] = secoes;
+      });
+      if (Object.keys(novoMapa).length) CONFIG.acessosLimitados = novoMapa;
     }
     if (porChave['TIPOS_PARADA']) {
       CONFIG.tiposParada = porChave['TIPOS_PARADA'].split(',').map(function(t){ return t.trim(); }).filter(Boolean);
@@ -2269,6 +2294,46 @@ async function carregarConfiguracoes(){
 function usuarioEhAdmin(conta){
   const email = (conta && conta.username || '').trim().toLowerCase();
   return CONFIG.emailsAdmin.indexOf(email) !== -1;
+}
+
+/** Devolve o nível de acesso da conta: 'admin' (tudo liberado),
+ *  'limitado' (só as seções configuradas) ou 'bloqueado' (nada — nem entra). */
+function nivelDeAcesso(conta){
+  if (usuarioEhAdmin(conta)) return 'admin';
+  const email = (conta && conta.username || '').trim().toLowerCase();
+  if (CONFIG.acessosLimitados[email]) return 'limitado';
+  return 'bloqueado';
+}
+
+/** Seções que a conta pode ver. null = sem restrição (admin vê tudo). */
+function secoesPermitidasPara(conta){
+  if (usuarioEhAdmin(conta)) return null;
+  const email = (conta && conta.username || '').trim().toLowerCase();
+  return CONFIG.acessosLimitados[email] || [];
+}
+
+/** Esconde do menu superior e da barra lateral qualquer seção que a conta
+ *  não tenha permissão de ver, e manda pra primeira seção permitida se a
+ *  pessoa estiver "em cima" de algo que acabou de ser escondido. */
+function aplicarRestricaoDeSecoes(secoesPermitidas){
+  if (secoesPermitidas === null) return; // admin, sem restrição
+
+  const MAPA_IR_PARA_SECAO = { novo: 'checklist', partediaria: 'partediaria', rastreamento: 'rastreamento' };
+  document.querySelectorAll('.topo-toggle-opt').forEach(function(btn){
+    const secao = MAPA_IR_PARA_SECAO[btn.dataset.ir] || btn.dataset.ir;
+    if (secoesPermitidas.indexOf(secao) === -1) btn.style.display = 'none';
+  });
+  document.querySelectorAll('[data-secao]').forEach(function(el){
+    if (secoesPermitidas.indexOf(el.dataset.secao) === -1) el.style.display = 'none';
+  });
+
+  // O app sempre abre na tela "Checklists" por padrão — se essa seção não é
+  // permitida pra essa conta, manda pra primeira seção que ela pode ver.
+  if (secoesPermitidas.indexOf('checklist') === -1 && secoesPermitidas.length) {
+    const VIEW_INICIAL_DA_SECAO = { partediaria: 'partediaria', rastreamento: 'rastreamento' };
+    const viewInicial = VIEW_INICIAL_DA_SECAO[secoesPermitidas[0]];
+    if (viewInicial) mostrarView(viewInicial);
+  }
 }
 
 /** Atualiza os títulos fixos no HTML que mencionam "30 dias" pra refletir
@@ -2312,10 +2377,25 @@ document.getElementById('btn-entrar').onclick = async function(){
 document.getElementById('sidebar-sair').onclick = function(){
   if (confirm('Deseja realmente sair?')) msalInstance.logoutRedirect();
 };
+document.getElementById('btn-acesso-negado-sair').onclick = function(){
+  msalInstance.logoutRedirect();
+};
 
-function entrarComoLogado(conta){
+async function entrarComoLogado(conta){
   contaAtual = conta;
+  await carregarConfiguracoes(); // precisa vir antes da checagem de acesso
+
+  const nivel = nivelDeAcesso(conta);
+  if (nivel === 'bloqueado') {
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('acesso-negado-email').textContent = conta.username || '';
+    document.getElementById('acesso-negado-gate').style.display = 'flex';
+    return; // não chama iniciarAplicacao() — a pessoa não entra em nada
+  }
+
   document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('acesso-negado-gate').style.display = 'none';
   document.getElementById('app-shell').style.display = 'flex';
 
   const nome = conta.name || conta.username.split('@')[0];
@@ -2328,6 +2408,7 @@ function entrarComoLogado(conta){
   }
 
   iniciarAplicacao();
+  aplicarRestricaoDeSecoes(secoesPermitidasPara(conta));
 
   // Se voltamos de um redirect de renovação de token, retorna pra tela onde o usuário estava
   var viewSalva = null;
@@ -4208,6 +4289,14 @@ function dashMovRenderizarQtdPorLocal(){
       '<span class="qtd-arv-barra-mini"><div style="width:'+pctBarra+'%"></div></span></span>' +
     '</div>';
   }
+  function folhaEquip(eq){
+    const vinc = frotaItemVinculado[eq];
+    const nome = eq + (vinc ? (' + ' + vinc) : '');
+    return '<div class="qtd-arv-no qtd-arv-nivel-3" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mudar o status ou mover este equipamento">' +
+      '<span class="qtd-arv-nome" style="padding-left:54px">🚜 '+nome+'</span>' +
+      '<span>'+statusEqBadge(frotaStatusAtual[eq])+'</span>' +
+    '</div>';
+  }
 
   let html = noQtd('root', 0, '🏢 COMPREX', totalGeral, 100, 'qtd-arv-nivel-0');
   html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has('root')?' colapsado':'')+'" data-filhos-de="root">';
@@ -4218,14 +4307,18 @@ function dashMovRenderizarQtdPorLocal(){
     html += noQtd(idGrupo, 1, '🏭 ' + grupo, totalGrupo, Math.max(4, Math.round(totalGrupo/totalGeral*100)));
     html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has(idGrupo)?' colapsado':'')+'" data-filhos-de="'+idGrupo+'">';
     itens.forEach(function(x){
-      html += noQtd('ql:' + x.local, 2, '📍 ' + x.local, x.equips.length, Math.max(4, Math.round(x.equips.length/totalGrupo*100)), '', true);
+      const idLocal = 'ql:' + x.local;
+      html += noQtd(idLocal, 2, '📍 ' + x.local, x.equips.length, Math.max(4, Math.round(x.equips.length/totalGrupo*100)));
+      html += '<div class="qtd-arv-filhos'+(dashQtdColapsados.has(idLocal)?' colapsado':'')+'" data-filhos-de="'+idLocal+'">';
+      x.equips.forEach(function(eq){ html += folhaEquip(eq); });
+      html += '</div>';
     });
     html += '</div>';
   });
   html += '</div>';
   cont.innerHTML = html;
 
-  cont.querySelectorAll('.qtd-arv-no[data-no^="qg:"], .qtd-arv-no[data-no="root"]').forEach(function(el){
+  cont.querySelectorAll('.qtd-arv-no[data-no]').forEach(function(el){
     el.onclick = function(){
       const id = el.dataset.no;
       const filhos = cont.querySelector('[data-filhos-de="'+id+'"]');
@@ -4234,6 +4327,9 @@ function dashMovRenderizarQtdPorLocal(){
       if (filhos) filhos.classList.toggle('colapsado', vaiColapsar);
       if (vaiColapsar) dashQtdColapsados.add(id); else dashQtdColapsados.delete(id);
     };
+  });
+  cont.querySelectorAll('.qtd-arv-no[data-equip]').forEach(function(el){
+    el.onclick = function(e){ e.stopPropagation(); locAbrirModalMover(el.dataset.equip); };
   });
 }
 
