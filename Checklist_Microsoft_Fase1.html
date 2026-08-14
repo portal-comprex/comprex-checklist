@@ -505,6 +505,11 @@
   .qtd-arv-barra-mini{width:120px;height:8px;border-radius:4px;background:var(--cream);overflow:hidden;flex-shrink:0}
   .qtd-arv-barra-mini > div{height:100%;background:var(--navy)}
 
+  .acessos-linha{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;
+    border:1px solid var(--linha);border-radius:8px;margin-bottom:6px;font-size:12.5px}
+  .acessos-linha .acessos-secoes{color:var(--cinza);font-size:11px;margin-top:2px}
+  .acessos-remover{background:none;border:none;color:var(--ru);cursor:pointer;font-size:16px;padding:0 4px}
+
   .arv-no{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;align-items:center;
     padding:8px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
   .arv-no:hover{background:var(--cream)}
@@ -926,6 +931,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sidebar-item" data-view="status-equipamentos" data-secao="rastreamento"><i>🖥️</i> Status dos Equipamentos</div>
 
       <div class="sidebar-item acao" id="btn-abrir-cadastro"><i>🛠️</i> Cadastrar equip./local</div>
+      <div class="sidebar-item acao" id="btn-abrir-acessos"><i>🔐</i> Gerenciar Acessos</div>
     </nav>
     <div class="sidebar-sair">
       <div class="sidebar-item" id="sidebar-sair"><i>↩️</i> Sair do sistema</div>
@@ -2023,6 +2029,43 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   </div>
 </div>
 
+<div class="hist-detalhe-overlay" id="acessos-overlay">
+  <div class="hist-detalhe-modal" style="max-width:640px">
+    <div class="hist-detalhe-header">
+      <h3>🔐 Gerenciar Acessos</h3>
+      <button class="modal-fechar" id="acessos-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo">
+      <div id="acessos-aviso-sem-lista" style="display:none;background:#fdf3e3;border:1px solid #e5c98a;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#7a5a10">
+        ⚠️ A lista <b>Configuracoes</b> ainda não foi conectada (falta preencher <code>LISTA_CONFIGURACOES_ID</code> no código). As mudanças feitas aqui não vão salvar no SharePoint até isso ser resolvido.
+      </div>
+
+      <h4 style="margin:0 0 10px">Administradores <span style="font-weight:400;color:var(--cinza);font-size:11.5px">— acesso total</span></h4>
+      <div id="acessos-lista-admin"></div>
+      <div style="display:flex;gap:8px;margin:8px 0 22px">
+        <input type="email" id="acessos-novo-admin-email" placeholder="email@comprex.com.br" style="flex:1">
+        <button type="button" class="rel-btn-secundario" id="acessos-add-admin">+ Adicionar</button>
+      </div>
+
+      <h4 style="margin:0 0 10px">Acessos limitados <span style="font-weight:400;color:var(--cinza);font-size:11.5px">— só as seções marcadas</span></h4>
+      <div id="acessos-lista-limitados"></div>
+      <div style="border:1px dashed var(--linha);border-radius:8px;padding:12px;margin-top:8px">
+        <input type="email" id="acessos-novo-limitado-email" placeholder="email@comprex.com.br" style="width:100%;margin-bottom:8px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">
+          <label><input type="checkbox" class="acessos-nova-secao" value="checklist"> Checklists</label>
+          <label><input type="checkbox" class="acessos-nova-secao" value="partediaria"> Parte Diária</label>
+          <label><input type="checkbox" class="acessos-nova-secao" value="rastreamento"> Movimentações</label>
+        </div>
+        <button type="button" class="rel-btn-secundario" id="acessos-add-limitado">+ Adicionar pessoa</button>
+      </div>
+
+      <button type="button" class="rel-btn-primario" id="acessos-salvar" style="margin-top:22px;width:100%">💾 Salvar alterações no SharePoint</button>
+      <div class="erro-msg" id="acessos-erro"></div>
+      <div id="acessos-ok-msg" style="display:none;color:var(--ok);font-weight:700;margin-top:10px;text-align:center">✔ Salvo com sucesso!</div>
+    </div>
+  </div>
+</div>
+
 <div class="hist-detalhe-overlay" id="loc-mover-overlay">
   <div class="hist-detalhe-modal" style="max-width:480px">
     <div class="hist-detalhe-header">
@@ -2166,7 +2209,7 @@ const LISTA_FROTA_ID      = 'cfee676a-8fc0-4605-b90f-d9976bb2e820';
 const LISTA_LOCAIS_ID     = '4551e8ac-2403-4ae4-950b-aee1908471ae';
 const LISTA_OPERADORES_ID    = 'e9a31405-b56e-436e-800d-2e677d31169d';
 const LISTA_PARTE_DIARIA_ID  = '41e6bd19-ccb0-41de-98fc-b6463a9b39a0';
-const LISTA_CONFIGURACOES_ID = ''; // preencher com o ID da lista "Configuracoes" quando criada
+const LISTA_CONFIGURACOES_ID = '08f9882f-fe46-4d4a-9a2d-5bcad9bb0e15';
 const LISTA_MOVIMENTACOES_ID = 'a74f4dcf-c9ab-42c2-81eb-889d5f48dffa';
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
@@ -2248,15 +2291,19 @@ const CONFIG = {
   observacaoObrigatoriaParteDiaria: false
 };
 
+let configuracoesIds = {}; // chave (Título) -> id do item na lista Configuracoes
+
 async function carregarConfiguracoes(){
   if (!LISTA_CONFIGURACOES_ID) return;
   try {
     const d = await graphGet(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CONFIGURACOES_ID + '/items?$expand=fields&$top=999');
-    const linhas = (d.value || []).map(function(item){ return item.fields; });
     const porChave = {};
-    linhas.forEach(function(f){
-      const chave = String(f.Title || '').trim().toUpperCase();
-      if (chave) porChave[chave] = String(f.Valor || '').trim();
+    (d.value || []).forEach(function(item){
+      const chave = String(item.fields.Title || '').trim().toUpperCase();
+      if (chave) {
+        porChave[chave] = String(item.fields.Valor || '').trim();
+        configuracoesIds[chave] = item.id;
+      }
     });
 
     if (porChave['EMAILS_ADMIN']) {
@@ -2405,6 +2452,7 @@ async function entrarComoLogado(conta){
 
   if (!usuarioEhAdmin(conta)) {
     document.getElementById('btn-abrir-cadastro').style.display = 'none';
+    document.getElementById('btn-abrir-acessos').style.display = 'none';
   }
 
   iniciarAplicacao();
@@ -2625,6 +2673,7 @@ async function iniciarAplicacao(){
     // Reavalia o acesso admin e os tipos de parada agora que a lista Configuracoes
     // (se existir) já carregou — pode ter mudado o padrão fixo do código.
     document.getElementById('btn-abrir-cadastro').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
+    document.getElementById('btn-abrir-acessos').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     pdRenderizarParadas();
     atualizarTextosJanelaReincidencia();
   } catch(err) {
@@ -3319,6 +3368,133 @@ document.getElementById('btn-abrir-cadastro').onclick = function(){
   garantirDadosFrotaExtra().then(function(){ renderizarListaModal(tabAtiva); });
 };
 modalFechar.onclick = function(){ overlay.classList.remove('aberto'); };
+
+/* =====================================================================
+   GERENCIAR ACESSOS — tela pra editar EMAILS_ADMIN e ACESSOS_LIMITADOS
+   sem precisar abrir o SharePoint na mão.
+   ===================================================================== */
+let acessosRascunhoAdmin = [];
+let acessosRascunhoLimitados = {}; // email -> [secoes]
+
+function acessosAbrirTela(){
+  if (!usuarioEhAdmin(contaAtual)) { alert('Você não tem permissão para acessar esta área.'); return; }
+  acessosRascunhoAdmin = CONFIG.emailsAdmin.slice();
+  acessosRascunhoLimitados = {};
+  Object.keys(CONFIG.acessosLimitados).forEach(function(e){ acessosRascunhoLimitados[e] = CONFIG.acessosLimitados[e].slice(); });
+  document.getElementById('acessos-aviso-sem-lista').style.display = LISTA_CONFIGURACOES_ID ? 'none' : 'block';
+  document.getElementById('acessos-erro').style.display = 'none';
+  document.getElementById('acessos-ok-msg').style.display = 'none';
+  acessosRenderizar();
+  document.getElementById('acessos-overlay').classList.add('aberto');
+}
+document.getElementById('btn-abrir-acessos').onclick = acessosAbrirTela;
+document.getElementById('acessos-fechar').onclick = function(){ document.getElementById('acessos-overlay').classList.remove('aberto'); };
+document.getElementById('acessos-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+
+const NOMES_SECAO = { checklist: 'Checklists', partediaria: 'Parte Diária', rastreamento: 'Movimentações' };
+
+function acessosRenderizar(){
+  document.getElementById('acessos-lista-admin').innerHTML = acessosRascunhoAdmin.length
+    ? acessosRascunhoAdmin.map(function(email){
+        return '<div class="acessos-linha"><span>👑 ' + email + '</span>' +
+          '<button type="button" class="acessos-remover" data-remover-admin="' + email + '">✕</button></div>';
+      }).join('')
+    : '<div class="lista-vazia-dash">Nenhum administrador cadastrado.</div>';
+
+  const emailsLimitados = Object.keys(acessosRascunhoLimitados);
+  document.getElementById('acessos-lista-limitados').innerHTML = emailsLimitados.length
+    ? emailsLimitados.map(function(email){
+        const secoes = acessosRascunhoLimitados[email];
+        const nomesSecoes = secoes.map(function(s){ return NOMES_SECAO[s] || s; }).join(', ');
+        return '<div class="acessos-linha"><span>' + email + '<div class="acessos-secoes">' + nomesSecoes + '</div></span>' +
+          '<button type="button" class="acessos-remover" data-remover-limitado="' + email + '">✕</button></div>';
+      }).join('')
+    : '<div class="lista-vazia-dash">Nenhum acesso limitado cadastrado.</div>';
+
+  document.querySelectorAll('[data-remover-admin]').forEach(function(btn){
+    btn.onclick = function(){
+      acessosRascunhoAdmin = acessosRascunhoAdmin.filter(function(e){ return e !== btn.dataset.removerAdmin; });
+      acessosRenderizar();
+    };
+  });
+  document.querySelectorAll('[data-remover-limitado]').forEach(function(btn){
+    btn.onclick = function(){
+      delete acessosRascunhoLimitados[btn.dataset.removerLimitado];
+      acessosRenderizar();
+    };
+  });
+}
+
+document.getElementById('acessos-add-admin').onclick = function(){
+  const email = document.getElementById('acessos-novo-admin-email').value.trim().toLowerCase();
+  if (!email || email.indexOf('@') === -1) { alert('Digite um e-mail válido.'); return; }
+  if (acessosRascunhoAdmin.indexOf(email) === -1) acessosRascunhoAdmin.push(email);
+  delete acessosRascunhoLimitados[email]; // admin já é acesso total, tira de "limitado" se estava lá
+  document.getElementById('acessos-novo-admin-email').value = '';
+  acessosRenderizar();
+};
+
+document.getElementById('acessos-add-limitado').onclick = function(){
+  const email = document.getElementById('acessos-novo-limitado-email').value.trim().toLowerCase();
+  const secoes = Array.from(document.querySelectorAll('.acessos-nova-secao:checked')).map(function(c){ return c.value; });
+  if (!email || email.indexOf('@') === -1) { alert('Digite um e-mail válido.'); return; }
+  if (!secoes.length) { alert('Marque ao menos uma seção.'); return; }
+  if (acessosRascunhoAdmin.indexOf(email) !== -1) { alert('Esse e-mail já é administrador (acesso total).'); return; }
+  acessosRascunhoLimitados[email] = secoes;
+  document.getElementById('acessos-novo-limitado-email').value = '';
+  document.querySelectorAll('.acessos-nova-secao').forEach(function(c){ c.checked = false; });
+  acessosRenderizar();
+};
+
+/** Cria ou atualiza uma linha (Título=chave) na lista Configuracoes. */
+async function salvarConfiguracaoChave(chave, valor){
+  const idExistente = configuracoesIds[chave];
+  if (idExistente) {
+    await atualizarCamposItem(LISTA_CONFIGURACOES_ID, idExistente, { Valor: valor });
+  } else {
+    const resultado = await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_CONFIGURACOES_ID + '/items', {
+      fields: { Title: chave, Valor: valor }
+    });
+    configuracoesIds[chave] = resultado.id;
+  }
+}
+
+document.getElementById('acessos-salvar').onclick = async function(){
+  const erroEl = document.getElementById('acessos-erro');
+  const okEl = document.getElementById('acessos-ok-msg');
+  erroEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!LISTA_CONFIGURACOES_ID) {
+    erroEl.textContent = '⚠️ Não é possível salvar: a lista Configuracoes ainda não foi conectada no código (LISTA_CONFIGURACOES_ID vazio).';
+    erroEl.style.display = 'block';
+    return;
+  }
+
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const valorAdmin = acessosRascunhoAdmin.join(',');
+    const valorLimitados = Object.keys(acessosRascunhoLimitados).map(function(email){
+      return email + ':' + acessosRascunhoLimitados[email].join(',');
+    }).join(';');
+
+    await salvarConfiguracaoChave('EMAILS_ADMIN', valorAdmin);
+    await salvarConfiguracaoChave('ACESSOS_LIMITADOS', valorLimitados);
+
+    CONFIG.emailsAdmin = acessosRascunhoAdmin.slice();
+    CONFIG.acessosLimitados = {};
+    Object.keys(acessosRascunhoLimitados).forEach(function(e){ CONFIG.acessosLimitados[e] = acessosRascunhoLimitados[e].slice(); });
+
+    okEl.style.display = 'block';
+    setTimeout(function(){ okEl.style.display = 'none'; }, 4000);
+  } catch(err) {
+    erroEl.textContent = '⚠️ Falha ao salvar: ' + err.message;
+    erroEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar alterações no SharePoint';
+  }
+};
+
 overlay.onclick = function(e){ if (e.target === overlay) overlay.classList.remove('aberto'); };
 
 document.querySelectorAll('.tab').forEach(function(tab){
