@@ -793,9 +793,6 @@
   /* ---- Tela de login (duas colunas: vídeo + card) ---- */
   #login-gate{display:flex;overflow:hidden}
   .login-video-wrap{position:relative;flex:1.7;overflow:hidden;background:#0f2e34;min-width:0}
-  .login-video-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:26%;
-    background:linear-gradient(to right, transparent 0%, rgba(238,245,238,.18) 45%, rgba(238,245,238,.55) 75%, #eef5ee 100%);
-    pointer-events:none;z-index:2}
   .login-video{position:absolute;top:50%;left:50%;width:100%;height:100%;object-fit:cover;
     transform:translate(-50%,-50%)}
   .login-video-overlay{position:absolute;inset:0;
@@ -815,19 +812,10 @@
   .login-feature-desc{color:#b9d2cf;font-size:12.5px;margin-top:2px}
   .login-footer-note{font-size:12px;color:#9fc4c0;display:flex;align-items:center;gap:8px}
 
-  .login-right{position:relative;flex:0.8;display:flex;align-items:flex-start;justify-content:center;background:#eef5ee;padding:48px 24px;overflow-y:auto}
-  .login-right::before{content:"";position:absolute;top:0;left:0;bottom:0;width:160px;
-    background:linear-gradient(to right, #0f2e34 0%, rgba(15,46,52,.5) 45%, transparent 100%);
-    pointer-events:none;z-index:0}
-  .login-right-conteudo{position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:32px}
+  .login-right{position:relative;flex:0.8;display:flex;align-items:center;justify-content:center;background:#eef5ee;padding:24px;
+    box-shadow:-24px 0 40px -16px rgba(0,0,0,.28)}
+  .login-right-conteudo{width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:32px}
 
-  .mvv-bloco{width:100%;display:flex;flex-direction:column;gap:18px}
-  .mvv-item{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:18px 20px}
-  .mvv-titulo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--navy);margin-bottom:8px}
-  .mvv-icone{font-size:16px}
-  .mvv-texto{font-size:12.5px;color:var(--cinza);line-height:1.55;margin:0}
-  .mvv-lista{margin:0;padding-left:18px;font-size:12.5px;color:var(--cinza);line-height:1.8}
-  .mvv-lista li{margin-bottom:0}
   .login-card{background:#fff;border-radius:18px;padding:38px 34px;max-width:360px;width:100%;
     box-shadow:0 10px 40px rgba(0,0,0,.12);color:var(--tinta);text-align:center}
   .login-card-icon{width:56px;height:56px;border-radius:50%;background:#e6f4ed;color:var(--ok);
@@ -1012,26 +1000,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="login-ajuda">Precisa de ajuda? Fale com o <a href="mailto:vagner.nicanor@comprex.com.br">administrador do sistema</a>.</div>
     </div>
 
-    <div class="mvv-bloco">
-      <div class="mvv-item">
-        <div class="mvv-titulo"><span class="mvv-icone">🎯</span> Nossa Missão</div>
-        <p class="mvv-texto">Executar com excelência e alta performance serviços de demolição e beneficiamento de materiais, assegurando segurança, qualidade e respeito ao meio ambiente.</p>
-      </div>
-      <div class="mvv-item">
-        <div class="mvv-titulo"><span class="mvv-icone">🔭</span> Nossa Visão</div>
-        <p class="mvv-texto">Crescimento de 60% ao ano, nos próximos 3 anos, com processos inovadores.</p>
-      </div>
-      <div class="mvv-item">
-        <div class="mvv-titulo"><span class="mvv-icone">💎</span> Nossos Valores</div>
-        <ul class="mvv-lista">
-          <li>Respeito</li>
-          <li>Compromisso com a entrega</li>
-          <li>Ética</li>
-          <li>Inovação</li>
-          <li>Segurança</li>
-        </ul>
-      </div>
-    </div>
     </div>
   </div>
 </div>
