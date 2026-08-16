@@ -2185,6 +2185,13 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         <input type="date" id="loc-mover-data">
         <div class="modal-dica">Pode informar uma data retroativa, se for o caso.</div>
       </div>
+      <div class="campo" id="loc-mover-sem-historico-wrap" style="margin-top:12px;display:none;background:#fdf3e3;border:1px solid #e5c98a;border-radius:8px;padding:10px 12px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer">
+          <input type="checkbox" id="loc-mover-sem-historico" style="width:16px;height:16px">
+          🔒 Correção de cadastro (admin) — não aparece no Histórico de Movimentações
+        </label>
+        <div class="modal-dica">Use isso só pra corrigir datas/local incorretos do passado — uma movimentação de verdade deve ficar sem marcar essa opção.</div>
+      </div>
       <button type="button" class="rel-btn-primario" id="loc-mover-confirmar" style="margin-top:18px;width:100%">📦 Mover equipamento</button>
       <div class="erro-msg" id="loc-mover-erro"></div>
     </div>
@@ -2210,6 +2217,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
 
     <div class="modal-tabs">
       <div class="tab ativo" data-tab="equip">🚜 Equipamento</div>
+      <div class="tab" data-tab="implemento">🔧 Implemento</div>
       <div class="tab" data-tab="local">📍 Local / Obra</div>
     </div>
 
@@ -2257,6 +2265,44 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="modal-lista" id="lista-equip"></div>
       <button class="btn-salvar" id="btn-salvar-equip">Salvar equipamento</button>
       <div class="feedback-cadastro" id="fb-equip"></div>
+    </div>
+
+    <!-- Painel Implemento -->
+    <div class="modal-body" id="painel-implemento" style="display:none">
+      <div class="modal-campo">
+        <label>Código / Nome do implemento</label>
+        <input type="text" id="input-implemento" placeholder="Ex: GAR0007" autocomplete="off">
+        <div class="modal-dica">Ex: garras, tesouras, rompedores — cadastrados como itens próprios, iguais aos equipamentos.</div>
+      </div>
+      <div class="modal-campo">
+        <label>Vincular a um equipamento (opcional)</label>
+        <select id="input-implemento-equip">
+          <option value="">Nenhum — cadastrar solto por enquanto</option>
+        </select>
+        <div class="modal-dica">Se escolher um equipamento, ele passa a mostrar esse implemento vinculado.</div>
+      </div>
+      <div class="modal-campo">
+        <label>Local inicial (opcional)</label>
+        <select id="input-implemento-local">
+          <option value="">Nenhum</option>
+        </select>
+      </div>
+      <div class="modal-campo">
+        <label>Status inicial</label>
+        <select id="input-implemento-status">
+          <option value="OPERACIONAL">OPERACIONAL</option>
+          <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+          <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+        </select>
+      </div>
+      <div class="modal-campo">
+        <label>Data (opcional)</label>
+        <input type="date" id="input-implemento-data">
+        <div class="modal-dica">Se não preencher, usa a data de hoje.</div>
+      </div>
+      <div class="modal-dica" style="margin-top:6px">Pra editar ou renomear um implemento já cadastrado, use a aba "Equipamento" — implementos são itens da mesma lista.</div>
+      <button class="btn-salvar" id="btn-salvar-implemento">Salvar implemento</button>
+      <div class="feedback-cadastro" id="fb-implemento"></div>
     </div>
 
     <!-- Painel Local -->
@@ -3473,6 +3519,13 @@ function preencherSelectsCadastroEquip(){
   selImp.innerHTML = '<option value="">Nenhum</option>' + frotas.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
   selLoc.innerHTML = '<option value="">Nenhum</option>' + locais.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
   selImp.value = valorImpAtual; selLoc.value = valorLocAtual;
+
+  const selImpEquip = document.getElementById('input-implemento-equip');
+  const selImpLoc = document.getElementById('input-implemento-local');
+  const valorImpEquipAtual = selImpEquip.value, valorImpLocAtual = selImpLoc.value;
+  selImpEquip.innerHTML = '<option value="">Nenhum — cadastrar solto por enquanto</option>' + frotas.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
+  selImpLoc.innerHTML = '<option value="">Nenhum</option>' + locais.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+  selImpEquip.value = valorImpEquipAtual; selImpLoc.value = valorImpLocAtual;
 }
 
 document.getElementById('btn-abrir-cadastro').onclick = function(){
@@ -3569,7 +3622,10 @@ function acessosRenderizar(){
           return menu ? menu.label : token;
         }).join(', ');
         return '<div class="acessos-linha"><span>' + email + '<div class="acessos-secoes">' + nomesViews + '</div></span>' +
-          '<button type="button" class="acessos-remover" data-remover-limitado="' + email + '">✕</button></div>';
+          '<div style="display:flex;gap:4px">' +
+          '<button type="button" class="acessos-remover" data-editar-limitado="' + email + '" style="color:var(--navy)" title="Editar">✏️</button>' +
+          '<button type="button" class="acessos-remover" data-remover-limitado="' + email + '" title="Remover">✕</button>' +
+          '</div></div>';
       }).join('')
     : '<div class="lista-vazia-dash">Nenhum acesso limitado cadastrado.</div>';
 
@@ -3585,7 +3641,25 @@ function acessosRenderizar(){
       acessosRenderizar();
     };
   });
+  document.querySelectorAll('[data-editar-limitado]').forEach(function(btn){
+    btn.onclick = function(){ acessosCarregarParaEdicao(btn.dataset.editarLimitado); };
+  });
 }
+
+/** Preenche o formulário de "adicionar pessoa" com os dados de alguém que já
+ *  está na lista, pra ajustar em vez de recomeçar do zero. Ao clicar em
+ *  "+ Adicionar pessoa" de novo, a entrada é sobrescrita (mesmo e-mail). */
+function acessosCarregarParaEdicao(email){
+  document.getElementById('acessos-novo-limitado-email').value = email;
+  const tokens = acessosRascunhoLimitados[email] || [];
+  document.querySelectorAll('.acessos-nova-view').forEach(function(chk){
+    const secao = chk.dataset.secao, view = chk.value;
+    chk.checked = tokens.indexOf(secao) !== -1 || tokens.indexOf(secao + '/' + view) !== -1;
+  });
+  document.getElementById('acessos-novo-limitado-email').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('acessos-novo-limitado-email').focus();
+}
+
 
 document.getElementById('acessos-add-admin').onclick = function(){
   const email = document.getElementById('acessos-novo-admin-email').value.trim().toLowerCase();
@@ -3683,8 +3757,9 @@ document.querySelectorAll('.tab').forEach(function(tab){
     tab.classList.add('ativo');
     tabAtiva = tab.dataset.tab;
     document.getElementById('painel-equip').style.display = tabAtiva === 'equip' ? 'block' : 'none';
+    document.getElementById('painel-implemento').style.display = tabAtiva === 'implemento' ? 'block' : 'none';
     document.getElementById('painel-local').style.display = tabAtiva === 'local' ? 'block' : 'none';
-    renderizarListaModal(tabAtiva);
+    if (tabAtiva !== 'implemento') renderizarListaModal(tabAtiva);
   };
 });
 
@@ -3920,7 +3995,74 @@ try {
     botao.disabled = false; botao.textContent = 'Salvar equipamento';
   }
 };
-  
+
+document.getElementById('btn-salvar-implemento').onclick = async function(){
+  const val = document.getElementById('input-implemento').value.trim().toUpperCase();
+  if (!val) { mostrarFeedback('implemento', false, 'Digite o código do implemento.'); return; }
+  if (frotas.indexOf(val) >= 0) { mostrarFeedback('implemento', false, 'Esse código já existe na lista.'); return; }
+
+  const equipVinculado = document.getElementById('input-implemento-equip').value.trim().toUpperCase();
+  const localInicial = document.getElementById('input-implemento-local').value.trim();
+  const statusInicial = document.getElementById('input-implemento-status').value;
+  const dataInformada = document.getElementById('input-implemento-data').value;
+
+  const botao = document.getElementById('btn-salvar-implemento');
+  botao.disabled = true; botao.textContent = 'Salvando…';
+  try {
+    // O implemento é um item igual aos demais na lista Frota — só que
+    // normalmente aparece "vinculado" a um equipamento principal.
+    const resultado = await adicionarItemSimples(LISTA_FROTA_ID, val);
+    frotas.push(val);
+    frotasIds[val] = resultado.id;
+    ordenarListas();
+    preencherSelect('equipamento', frotas);
+
+    const camposExtras = { StatusAtual: statusInicial };
+    if (localInicial) camposExtras.LocalAtual = localInicial;
+    await atualizarCamposItem(LISTA_FROTA_ID, resultado.id, camposExtras);
+    if (localInicial) frotaLocalAtual[val] = localInicial;
+    frotaStatusAtual[val] = statusInicial;
+    frotaIdsExtra[val] = resultado.id;
+
+    if (localInicial) {
+      const dataEvento = dataInformada ? (dataInformada + 'T12:00:00') : new Date().toISOString();
+      await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_MOVIMENTACOES_ID + '/items', {
+        fields: {
+          Equipamento: val,
+          ItemVinculado: '',
+          LocalOrigem: 'Cadastro inicial',
+          LocalDestino: localInicial,
+          Status: statusInicial,
+          Data: dataEvento,
+          Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
+          Observacao: 'Cadastro do implemento'
+        }
+      });
+      movimentacoesCarregadas = false;
+    }
+
+    // Se escolheu vincular a um equipamento já existente, atualiza o
+    // ItemVinculado dele agora.
+    if (equipVinculado && frotasIds[equipVinculado]) {
+      const idEquipPrincipal = frotaIdsExtra[equipVinculado] || frotasIds[equipVinculado];
+      await atualizarCamposItem(LISTA_FROTA_ID, idEquipPrincipal, { ItemVinculado: val });
+      frotaItemVinculado[equipVinculado] = val;
+    }
+
+    document.getElementById('input-implemento').value = '';
+    document.getElementById('input-implemento-equip').value = '';
+    document.getElementById('input-implemento-local').value = '';
+    document.getElementById('input-implemento-data').value = '';
+    document.getElementById('input-implemento-status').value = 'OPERACIONAL';
+    preencherSelectsCadastroEquip();
+    mostrarFeedback('implemento', true, '✔ ' + val + ' adicionado com sucesso!' + (equipVinculado ? ' Vinculado a ' + equipVinculado + '.' : ''));
+  } catch(err) {
+    mostrarFeedback('implemento', false, 'Erro: ' + err.message);
+  } finally {
+    botao.disabled = false; botao.textContent = 'Salvar implemento';
+  }
+};
+
 document.getElementById('btn-salvar-local').onclick = async function(){
   const val = document.getElementById('input-local').value.trim();
   if (!val) { mostrarFeedback('local', false, 'Digite o nome do local/obra.'); return; }
@@ -4226,6 +4368,11 @@ document.getElementById('loc-atual-exportar-excel').onclick = function(){
 /* ---- Modal "Mover equipamento" a partir da Localização Atual ---- */
 let locMoverEquipAlvo = null;
 
+// Marca movimentações de "correção de cadastro" (admin) que não devem
+// aparecer no Histórico de Movimentações, mas continuam contando pro
+// cálculo de dias/status (usam os mesmos dados de sempre).
+const MARCADOR_SEM_HISTORICO = '[[SEM_HISTORICO]]';
+
 function locAbrirModalMover(eq){
   locMoverEquipAlvo = eq;
   document.getElementById('loc-mover-equip').value = eq;
@@ -4236,6 +4383,8 @@ function locAbrirModalMover(eq){
   const hoje = new Date();
   document.getElementById('loc-mover-data').value = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
   document.getElementById('loc-mover-erro').style.display = 'none';
+  document.getElementById('loc-mover-sem-historico').checked = false;
+  document.getElementById('loc-mover-sem-historico-wrap').style.display = usuarioEhAdmin(contaAtual) ? 'block' : 'none';
   document.getElementById('loc-mover-overlay').classList.add('aberto');
 }
 
@@ -4265,6 +4414,7 @@ document.getElementById('loc-mover-confirmar').onclick = async function(){
   const btn = this;
   btn.disabled = true; btn.textContent = 'Movendo…';
   try {
+    const semHistorico = usuarioEhAdmin(contaAtual) && document.getElementById('loc-mover-sem-historico').checked;
     const idEquip = frotaIdsExtra[eq] || frotasIds[eq];
     await atualizarCamposItem(LISTA_FROTA_ID, idEquip, { LocalAtual: novoLocal, StatusAtual: novoStatus });
     frotaLocalAtual[eq] = novoLocal;
@@ -4279,7 +4429,7 @@ document.getElementById('loc-mover-confirmar').onclick = async function(){
         Status: novoStatus,
         Data: dataInformada + 'T12:00:00',
         Usuario: (contaAtual && (contaAtual.name || contaAtual.username)) || '',
-        Observacao: 'Movido via Localização Atual'
+        Observacao: (semHistorico ? MARCADOR_SEM_HISTORICO + ' ' : '') + 'Movido via Localização Atual'
       }
     });
     movimentacoesCarregadas = false;
@@ -4381,6 +4531,7 @@ function movFiltrarHistorico(itens){
   const equip = document.getElementById('hist-mov-filtro-equip').value;
   const local = document.getElementById('hist-mov-filtro-local').value;
   return itens.filter(function(i){
+    if ((i.observacao || '').indexOf(MARCADOR_SEM_HISTORICO) !== -1) return false; // correção admin, não mostra aqui
     const d = new Date(i.criado);
     if (de && d < new Date(de + 'T00:00:00')) return false;
     if (ate && d > new Date(ate + 'T23:59:59')) return false;
@@ -4510,6 +4661,7 @@ function movFiltrarPorPeriodoELocal(itens){
   const equip = document.getElementById('dash-mov-filtro-equip').value;
   const local = document.getElementById('dash-mov-filtro-local').value;
   return itens.filter(function(i){
+    if ((i.observacao || '').indexOf(MARCADOR_SEM_HISTORICO) !== -1) return false;
     const d = new Date(i.criado);
     if (de && d < new Date(de + 'T00:00:00')) return false;
     if (ate && d > new Date(ate + 'T23:59:59')) return false;
