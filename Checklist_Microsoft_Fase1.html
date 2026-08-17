@@ -510,6 +510,20 @@
   .acessos-linha .acessos-secoes{color:var(--cinza);font-size:11px;margin-top:2px}
   .acessos-remover{background:none;border:none;color:var(--ru);cursor:pointer;font-size:16px;padding:0 4px}
 
+  .oc-tooltip-equip{position:absolute;margin-top:8px;background:#1a2430;color:#fff;border-radius:10px;
+    padding:12px 14px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:50;max-width:280px}
+  .oc-tooltip-equip .titulo{font-weight:700;color:#9fd3ae;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .oc-tooltip-equip .lista{display:flex;flex-wrap:wrap;gap:6px}
+  .oc-tooltip-chip{background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;cursor:pointer;font-weight:600}
+  .oc-tooltip-chip:hover{background:var(--navy)}
+  .oc-equip-kpi-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .oc-equip-kpi-mini .caixa{background:var(--cream);border-radius:10px;padding:12px;text-align:center}
+  .oc-equip-kpi-mini .num{font-size:22px;font-weight:800;color:var(--navy)}
+  .oc-equip-kpi-mini .lbl{font-size:10.5px;color:var(--cinza);text-transform:uppercase;letter-spacing:.3px}
+  .oc-equip-linha-hist{border-bottom:1px solid var(--linha);padding:10px 0;font-size:12.5px}
+  .oc-equip-linha-hist .data{font-weight:700;color:var(--tinta)}
+  .oc-equip-linha-hist .itens{color:var(--cinza);margin-top:2px}
+
   .acessos-grupo-secao{margin-bottom:10px}
   .acessos-grupo-titulo{font-size:11.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
   .acessos-grupo-views{display:flex;flex-wrap:wrap;gap:10px;padding-left:6px}
@@ -702,6 +716,10 @@
   .hist-detalhe-overlay.aberto{display:flex}
   .hist-detalhe-modal{background:#fff;border-radius:14px;width:100%;max-width:640px;
     max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .oc-painel-lateral{justify-content:flex-end !important;padding:0 !important}
+  .oc-painel-modal{max-width:480px !important;width:100% !important;height:100vh !important;
+    border-radius:0 !important;margin:0 !important;max-height:100vh !important;animation:oc-slide-in .18s ease-out}
+  @keyframes oc-slide-in{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
   .hist-detalhe-header{display:flex;justify-content:space-between;align-items:center;
     padding:18px 22px;border-bottom:1px solid var(--linha)}
   .hist-detalhe-header h3{font-size:15px;color:var(--tinta)}
@@ -1947,29 +1965,23 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-info" id="oc-info">Carregando ocorrências…</div>
 
   <div class="dash-kpis" id="oc-kpis"></div>
+  <div class="oc-tooltip-equip" id="oc-tooltip-equip" style="display:none"></div>
 
   <div class="dash-row" style="align-items:flex-start">
     <div class="dash-card" style="flex:1.3">
       <h3>📊 Top 10 Itens Mais Recorrentes</h3>
       <div id="oc-top-recorrentes"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
-    <div class="dash-card" style="flex:1">
-      <h3>⚠️ Ocorrências por Nível de Criticidade</h3>
-      <div class="dash-row" style="align-items:center;gap:20px">
-        <div id="oc-donut-criticidade" style="width:110px;height:110px;border-radius:50%;flex-shrink:0"></div>
-        <div id="oc-legenda-criticidade" style="flex:1"></div>
-      </div>
-    </div>
-    <div class="dash-card" style="flex:1">
-      <h3>📍 Ocorrências por Local</h3>
-      <div id="oc-por-local"><div class="lista-vazia-dash">Carregando…</div></div>
+    <div class="dash-card" style="flex:1.3">
+      <h3>📈 Evolução de Ocorrências</h3>
+      <div id="oc-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
   </div>
 
   <div class="dash-row" style="align-items:flex-start">
-    <div class="dash-card" style="flex:1.3">
-      <h3>📈 Evolução de Ocorrências</h3>
-      <div id="oc-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
+    <div class="dash-card" style="flex:1">
+      <h3>📍 Ocorrências por Local</h3>
+      <div id="oc-por-local"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
     <div class="dash-card" style="flex:1">
       <h3>👷 Ocorrências por Operador</h3>
@@ -2128,6 +2140,16 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
     <div class="hist-detalhe-corpo" id="pd-detalhe-corpo"></div>
+  </div>
+</div>
+
+<div class="hist-detalhe-overlay oc-painel-lateral" id="oc-equip-overlay">
+  <div class="hist-detalhe-modal oc-painel-modal">
+    <div class="hist-detalhe-header">
+      <h3>🚜 Histórico do Equipamento — <span id="oc-equip-titulo"></span></h3>
+      <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo" id="oc-equip-corpo"></div>
   </div>
 </div>
 
@@ -6384,10 +6406,141 @@ function criticidadeDaOcorrencia(h){
   return temCritico ? 'CRÍTICO' : 'MÍNIMO';
 }
 
+/** Um item é "impeditivo" quando a resposta em si é literalmente NÃO ou NÃO
+ *  POSSUI **e** essa resposta já é considerada "ruim" pra aquele item — assim
+ *  não conta por engano um "NÃO" que na verdade é a resposta boa (ex:
+ *  "Necessita paralizar o equipamento? NÃO" é a resposta OK, não impeditiva). */
+function ehRespostaImpeditiva(item, valor){
+  const v = String(valor || '').trim().toUpperCase();
+  if (v !== 'NÃO' && v !== 'NÃO POSSUI') return false;
+  return severidadeDaResposta(item, valor) === 'ru';
+}
+function itensImpeditivosDe(h){
+  return ITENS.filter(function(it){ return ehRespostaImpeditiva(it[0], h.campos[it[0]]); }).map(function(it){ return prettify(it[0]); });
+}
+function temItemImpeditivo(h){
+  return ITENS.some(function(it){ return ehRespostaImpeditiva(it[0], h.campos[it[0]]); });
+}
+
+let ocorrenciasFiltradasAtual = [];
+
+/** Liga o hover no card "Total de Ocorrências" — mostra um tooltip com os
+ *  equipamentos únicos das ocorrências filtradas, cada um clicável. */
+function configurarHoverTotalOcorrencias(){
+  const card = document.getElementById('oc-kpi-total-card');
+  const tooltip = document.getElementById('oc-tooltip-equip');
+  if (!card) return;
+
+  card.style.cursor = 'default';
+  card.onmouseenter = function(){
+    const equipsUnicos = Array.from(new Set(ocorrenciasFiltradasAtual.map(function(h){ return h.equipamento; }))).sort();
+    if (!equipsUnicos.length) { tooltip.style.display = 'none'; return; }
+    tooltip.innerHTML = '<div class="titulo">Equipamentos nessas ocorrências</div>' +
+      '<div class="lista">' + equipsUnicos.map(function(eq){
+        return '<span class="oc-tooltip-chip" data-ver-equip="'+eq+'">'+eq+'</span>';
+      }).join('') + '</div>';
+    const rect = card.getBoundingClientRect();
+    tooltip.style.left = rect.left + 'px';
+    tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+    tooltip.style.display = 'block';
+    tooltip.querySelectorAll('[data-ver-equip]').forEach(function(chip){
+      chip.onclick = function(){ tooltip.style.display = 'none'; abrirHistoricoEquipamentoOcorrencias(chip.dataset.verEquip); };
+    });
+  };
+  card.onmouseleave = function(){
+    setTimeout(function(){
+      if (!tooltip.matches(':hover')) tooltip.style.display = 'none';
+    }, 150);
+  };
+  tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
+}
+
+/** Abre o painel lateral com o histórico de ocorrências de UM equipamento
+ *  específico — mini KPIs, gráfico ao longo do tempo e lista de ocorrências. */
+function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
+  document.getElementById('oc-equip-titulo').textContent = equip + (soImpeditivos ? ' — itens impeditivos' : '');
+  let todasDoEquip = ocorrenciasItens.filter(function(h){ return h.equipamento === equip; })
+    .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
+  if (soImpeditivos) todasDoEquip = todasDoEquip.filter(temItemImpeditivo);
+
+  const criticas = todasDoEquip.filter(function(h){ return criticidadeDaOcorrencia(h) === 'CRÍTICO'; }).length;
+  const ultimaData = todasDoEquip.length ? formatarDataHist(todasDoEquip[0].criado) : '—';
+
+  // Gráfico simples de barras por mês (reaproveita o estilo dos rankings)
+  const porMes = {};
+  todasDoEquip.forEach(function(h){ const m = h.criado.slice(0,7); porMes[m] = (porMes[m]||0)+1; });
+  const meses = Object.keys(porMes).sort();
+  const maxMes = Math.max.apply(null, meses.map(function(m){ return porMes[m]; })) || 1;
+  const graficoHtml = meses.map(function(m){
+    const pct = Math.max(6, Math.round(porMes[m]/maxMes*100));
+    const rotulo = m.slice(5,7) + '/' + m.slice(0,4);
+    return '<div class="ind-linha"><span class="ind-lbl">'+rotulo+'</span>' +
+      '<div class="ind-bar-wrap"><div class="ind-bar" style="width:'+pct+'%;background:var(--ru)"></div></div>' +
+      '<span class="ind-val">'+porMes[m]+'</span></div>';
+  }).join('');
+
+  const listaHtml = todasDoEquip.slice(0, 30).map(function(h){
+    const itensImpeditivo = itensImpeditivosDe(h);
+    const qtdItens = soImpeditivos
+      ? itensImpeditivo.join(', ')
+      : ITENS.filter(function(it){ return h.campos[it[0]] && severidadeDaResposta(it[0], h.campos[it[0]]) === 'ru'; })
+          .map(function(it){ return prettify(it[0]); }).join(', ');
+    const badge = itensImpeditivo.length ? '<span class="hist-st parar">IMPEDITIVO</span>' :
+      (criticidadeDaOcorrencia(h) === 'CRÍTICO' ? '<span class="hist-st parar">CRÍTICO</span>' : '<span class="hist-st at">MÍNIMO</span>');
+    return '<div class="oc-equip-linha-hist"><span class="data">'+formatarDataHist(h.criado)+'</span> ' + badge +
+      '<div class="itens">'+qtdItens+'</div></div>';
+  }).join('');
+
+  document.getElementById('oc-equip-corpo').innerHTML =
+    '<div class="oc-equip-kpi-mini">' +
+      '<div class="caixa"><div class="num">'+todasDoEquip.length+'</div><div class="lbl">Total de ocorrências</div></div>' +
+      '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl">Críticas</div></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--cinza);margin-bottom:16px">Última ocorrência: '+ultimaData+'</div>' +
+    (meses.length ? '<h4 style="margin:0 0 10px">Ocorrências por mês</h4>' + graficoHtml : '') +
+    '<h4 style="margin:18px 0 6px">Histórico</h4>' +
+    (listaHtml || '<div class="lista-vazia-dash">Nenhuma ocorrência registrada.</div>');
+
+  document.getElementById('oc-equip-overlay').classList.add('aberto');
+}
+document.getElementById('oc-equip-fechar').onclick = function(){ document.getElementById('oc-equip-overlay').classList.remove('aberto'); };
+document.getElementById('oc-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+
+/** Igual ao hover do "Total de Ocorrências", só que aqui só lista equipamentos
+ *  que têm pelo menos uma ocorrência com item impeditivo (NÃO/NÃO POSSUI). */
+function configurarHoverImpeditivos(){
+  const card = document.getElementById('oc-kpi-impeditivo-card');
+  const tooltip = document.getElementById('oc-tooltip-equip');
+  if (!card) return;
+
+  card.style.cursor = 'default';
+  card.onmouseenter = function(){
+    const comImpeditivo = ocorrenciasFiltradasAtual.filter(temItemImpeditivo);
+    const equipsUnicos = Array.from(new Set(comImpeditivo.map(function(h){ return h.equipamento; }))).sort();
+    if (!equipsUnicos.length) { tooltip.style.display = 'none'; return; }
+    tooltip.innerHTML = '<div class="titulo">Equipamentos com item impeditivo</div>' +
+      '<div class="lista">' + equipsUnicos.map(function(eq){
+        return '<span class="oc-tooltip-chip" data-ver-equip-impeditivo="'+eq+'">'+eq+'</span>';
+      }).join('') + '</div>';
+    const rect = card.getBoundingClientRect();
+    tooltip.style.left = rect.left + 'px';
+    tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+    tooltip.style.display = 'block';
+    tooltip.querySelectorAll('[data-ver-equip-impeditivo]').forEach(function(chip){
+      chip.onclick = function(){ tooltip.style.display = 'none'; abrirHistoricoEquipamentoOcorrencias(chip.dataset.verEquipImpeditivo, true); };
+    });
+  };
+  card.onmouseleave = function(){
+    setTimeout(function(){
+      if (!tooltip.matches(':hover')) tooltip.style.display = 'none';
+    }, 150);
+  };
+}
+
 function renderizarOcorrenciasKpis(filtradas, anteriores){
   const equipsUnicos = new Set(filtradas.map(function(h){ return h.equipamento; })).size;
   const operadoresUnicos = new Set(filtradas.map(function(h){ return h.operador; })).size;
-  const criticas = filtradas.filter(function(h){ return criticidadeDaOcorrencia(h) === 'CRÍTICO'; }).length;
+  const comImpeditivo = filtradas.filter(temItemImpeditivo).length;
 
   const contagemItens = {};
   filtradas.forEach(function(h){
@@ -6415,33 +6568,20 @@ function renderizarOcorrenciasKpis(filtradas, anteriores){
     ['⚠️', 'TOTAL DE OCORRÊNCIAS', filtradas.length, variacao(filtradas.length, anteriores.length)],
     ['🚜', 'EQUIPAMENTOS AFETADOS', equipsUnicos, null],
     ['👤', 'OPERADORES ENVOLVIDOS', operadoresUnicos, null],
-    ['🛑', 'OCORRÊNCIAS CRÍTICAS', criticas, null],
+    ['🛑', 'ITENS IMPEDITIVOS', comImpeditivo, null],
     ['🔁', 'RECORRÊNCIA (TOP 3 ITENS)', top3, null]
   ];
-  document.getElementById('oc-kpis').innerHTML = kpis.map(function(k){
-    return '<div class="kpi-card"><div class="kpi-top"><div class="kpi-icone" style="background:#fbe9e7;color:var(--ru)">'+k[0]+'</div>' +
+  const IDS_KPI = ['oc-kpi-total-card', null, null, 'oc-kpi-impeditivo-card', null];
+  document.getElementById('oc-kpis').innerHTML = kpis.map(function(k, i){
+    return '<div class="kpi-card" '+(IDS_KPI[i]?'id="'+IDS_KPI[i]+'"':'')+'><div class="kpi-top"><div class="kpi-icone" style="background:#fbe9e7;color:var(--ru)">'+k[0]+'</div>' +
       '<div><div class="kpi-num">'+k[2]+'</div><div class="kpi-lbl">'+k[1]+'</div></div></div>' +
       linhaVariacao(k[3]) +
     '</div>';
   }).join('');
-}
 
-function renderizarOcorrenciasDonutCriticidade(filtradas){
-  const cont = { 'CRÍTICO': 0, 'MÍNIMO': 0 };
-  filtradas.forEach(function(h){ cont[criticidadeDaOcorrencia(h)]++; });
-  const total = filtradas.length;
-  const donut = document.getElementById('oc-donut-criticidade');
-  const legenda = document.getElementById('oc-legenda-criticidade');
-  if (!total) {
-    donut.style.background = '#eef1ee';
-    legenda.innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>';
-    return;
-  }
-  const pctCritico = cont['CRÍTICO'] / total * 100;
-  donut.style.background = 'conic-gradient(#e0392b 0%, #e0392b ' + pctCritico.toFixed(1) + '%, #f2a736 ' + pctCritico.toFixed(1) + '%, #f2a736 100%)';
-  legenda.innerHTML =
-    '<div class="arv-resumo-linha"><span><span class="resumo-dot" style="background:#e0392b;display:inline-block;margin-right:6px"></span>Crítico</span><b>'+Math.round(pctCritico)+'% ('+cont['CRÍTICO']+')</b></div>' +
-    '<div class="arv-resumo-linha"><span><span class="resumo-dot" style="background:#f2a736;display:inline-block;margin-right:6px"></span>Mínimo</span><b>'+Math.round(100-pctCritico)+'% ('+cont['MÍNIMO']+')</b></div>';
+  ocorrenciasFiltradasAtual = filtradas;
+  configurarHoverTotalOcorrencias();
+  configurarHoverImpeditivos();
 }
 
 function renderizarOcorrenciasPorLocal(filtradas){
@@ -6556,7 +6696,6 @@ function renderizarOcorrencias(){
 
   renderizarOcorrenciasKpis(filtradas, anteriores);
   renderizarTopItensRecorrentes(filtradas);
-  renderizarOcorrenciasDonutCriticidade(filtradas);
   renderizarOcorrenciasPorLocal(filtradas);
   renderizarOcorrenciasPorOperador(filtradas);
   renderizarOcorrenciasEvolucao(filtradas);
@@ -7428,4 +7567,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-     
