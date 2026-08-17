@@ -83,6 +83,12 @@
 
   /* ===================== DASHBOARD ===================== */
   .dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+  #oc-kpis.dash-kpis{grid-template-columns:repeat(6,1fr);gap:10px}
+  #oc-kpis .kpi-card{padding:12px;cursor:default}
+  #oc-kpis .kpi-top{gap:8px;margin-bottom:4px}
+  #oc-kpis .kpi-icone{width:32px;height:32px;border-radius:9px;font-size:14px}
+  #oc-kpis .kpi-num{font-size:19px}
+  #oc-kpis .kpi-lbl{font-size:9.5px;line-height:1.25}
   .kpi-card{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:18px}
   .kpi-top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
   .kpi-icone{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;
@@ -523,6 +529,16 @@
   .oc-equip-linha-hist{border-bottom:1px solid var(--linha);padding:10px 0;font-size:12.5px}
   .oc-equip-linha-hist .data{font-weight:700;color:var(--tinta)}
   .oc-equip-linha-hist .itens{color:var(--cinza);margin-top:2px}
+
+  .oc-equip-foto-wrap{display:flex;justify-content:center;margin-bottom:16px}
+  .oc-equip-foto{width:100%;max-width:280px;height:150px;border-radius:10px;background:var(--cream);
+    display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}
+  .oc-conform-barra{height:22px;border-radius:6px;overflow:hidden;background:#f3c9c2;display:flex;margin-bottom:8px}
+  .oc-conform-ok{height:100%;background:var(--ok)}
+  .oc-conform-legenda{display:flex;gap:16px;font-size:11.5px;color:var(--cinza);margin-bottom:6px}
+  .oc-conform-legenda .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .oc-conform-legenda .dot.ok{background:var(--ok)}
+  .oc-conform-legenda .dot.ru{background:#e0392b}
 
   .acessos-grupo-secao{margin-bottom:10px}
   .acessos-grupo-titulo{font-size:11.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
@@ -1033,8 +1049,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sidebar-item" data-view="historico" data-secao="checklist"><i>🕒</i> Histórico</div>
       <div class="sidebar-item" data-view="dashboard" data-secao="checklist"><i>📊</i> Dashboard</div>
      <div class="sidebar-item" data-view="ocorrencias" data-secao="checklist"><i>⚠️</i> Ocorrências</div>
-      <div class="sidebar-item" data-view="frota" data-secao="checklist"><i>🚚</i> Frota</div>
-      <div class="sidebar-item" data-view="operadores" data-secao="checklist"><i>👷</i> Operadores</div>
       <div class="sidebar-item" data-view="indicadores" data-secao="checklist"><i>📈</i> Indicadores</div>
       <div class="sidebar-item" data-view="historico-pd" data-secao="partediaria"><i>🕒</i> Histórico</div>
       <div class="sidebar-item" data-view="dashboard-pd" data-secao="partediaria"><i>📊</i> Dashboard</div>
@@ -1993,21 +2007,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <h3>📋 Detalhamento das Ocorrências</h3>
     <div id="oc-tabela-detalhe"><div class="lista-vazia-dash">Carregando…</div></div>
   </div>
-
-  <div id="oc-conteudo"><div class="oc-vazio">Carregando…</div></div>
-</div>
-<div class="view" id="view-frota">
-  <div class="ind-total" id="frota-total"></div>
-  <div id="frota-conteudo"><div class="ind-loading">Carregando frota…</div></div>
-</div>
-<div class="view" id="view-operadores">
-  <div class="periodo-toggle" id="op-periodo-toggle">
-    <div class="periodo-opt" data-periodo="semana">Semana</div>
-    <div class="periodo-opt ativo" data-periodo="mes">Mês</div>
-    <div class="periodo-opt" data-periodo="ano">Ano</div>
-  </div>
-  <div class="ind-total" id="op-total"></div>
-  <div id="op-conteudo"><div class="ind-loading">Carregando operadores…</div></div>
 </div>
 <div class="view" id="view-indicadores">
  <div class="ind2-filtros">
@@ -3638,8 +3637,6 @@ const MENUS_POR_SECAO = {
     { view: 'historico', label: 'Histórico' },
     { view: 'dashboard', label: 'Dashboard' },
     { view: 'ocorrencias', label: 'Ocorrências' },
-    { view: 'frota', label: 'Frota' },
-    { view: 'operadores', label: 'Operadores' },
     { view: 'indicadores', label: 'Indicadores' }
   ],
   partediaria: [
@@ -5840,8 +5837,6 @@ const INFO_PAGINA = {
   if (nome === 'historico' && !historicoCarregado) carregarHistorico();
   if (nome === 'dashboard') carregarDashboard();
   if (nome === 'ocorrencias') carregarOcorrencias();
-  if (nome === 'frota') carregarFrota();
-  if (nome === 'operadores') carregarOperadores(periodoOpAtivo);
   if (nome === 'indicadores') { carregarIndicadoresV2(); }
   if (nome === 'partediaria') inicializarTelaParteDiariaSeNecessario();
   if (nome === 'historico-pd') carregarHistoricoPD();
@@ -6223,6 +6218,12 @@ function renderNotificacoes(ocorrencias){
   }).join('');
 }
 
+function normalizarNomeOperador(nome){
+  return String(nome || '').trim().split(/\s+/).map(function(p){
+    return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  }).join(' ');
+}
+
 function renderTopOperadores(itens){
   const cont = document.getElementById('dash-top-operadores');
   const contagem = {};
@@ -6426,37 +6427,6 @@ let ocorrenciasFiltradasAtual = [];
 
 /** Liga o hover no card "Total de Ocorrências" — mostra um tooltip com os
  *  equipamentos únicos das ocorrências filtradas, cada um clicável. */
-function configurarHoverTotalOcorrencias(){
-  const card = document.getElementById('oc-kpi-total-card');
-  const tooltip = document.getElementById('oc-tooltip-equip');
-  if (!card) return;
-
-  card.style.cursor = 'default';
-  card.onmouseenter = function(){
-    const equipsUnicos = Array.from(new Set(ocorrenciasFiltradasAtual.map(function(h){ return h.equipamento; }))).sort();
-    if (!equipsUnicos.length) { tooltip.style.display = 'none'; return; }
-    tooltip.innerHTML = '<div class="titulo">Equipamentos nessas ocorrências</div>' +
-      '<div class="lista">' + equipsUnicos.map(function(eq){
-        return '<span class="oc-tooltip-chip" data-ver-equip="'+eq+'">'+eq+'</span>';
-      }).join('') + '</div>';
-    const rect = card.getBoundingClientRect();
-    tooltip.style.left = rect.left + 'px';
-    tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
-    tooltip.style.display = 'block';
-    tooltip.querySelectorAll('[data-ver-equip]').forEach(function(chip){
-      chip.onclick = function(){ tooltip.style.display = 'none'; abrirHistoricoEquipamentoOcorrencias(chip.dataset.verEquip); };
-    });
-  };
-  card.onmouseleave = function(){
-    setTimeout(function(){
-      if (!tooltip.matches(':hover')) tooltip.style.display = 'none';
-    }, 150);
-  };
-  tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
-}
-
-/** Abre o painel lateral com o histórico de ocorrências de UM equipamento
- *  específico — mini KPIs, gráfico ao longo do tempo e lista de ocorrências. */
 function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
   document.getElementById('oc-equip-titulo').textContent = equip + (soImpeditivos ? ' — itens impeditivos' : '');
   let todasDoEquip = ocorrenciasItens.filter(function(h){ return h.equipamento === equip; })
@@ -6465,6 +6435,14 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
 
   const criticas = todasDoEquip.filter(function(h){ return criticidadeDaOcorrencia(h) === 'CRÍTICO'; }).length;
   const ultimaData = todasDoEquip.length ? formatarDataHist(todasDoEquip[0].criado) : '—';
+
+  // Conformidade x Inconformidade: olha TODOS os checklists desse equipamento
+  // (historicoItens, não só as ocorrências) — conforme = não gerou ocorrência.
+  const todosChecklistsDoEquip = (typeof historicoItens !== 'undefined' ? historicoItens : []).filter(function(h){ return h.equipamento === equip; });
+  const naoConforme = todosChecklistsDoEquip.filter(function(h){ return h.status && h.status.classe === 'parar'; }).length;
+  const conforme = todosChecklistsDoEquip.length - naoConforme;
+  const totalChecklists = todosChecklistsDoEquip.length || 1;
+  const pctConforme = Math.round(conforme / totalChecklists * 100);
 
   // Gráfico simples de barras por mês (reaproveita o estilo dos rankings)
   const porMes = {};
@@ -6492,67 +6470,90 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
   }).join('');
 
   document.getElementById('oc-equip-corpo').innerHTML =
+    '<div class="oc-equip-foto-wrap">' +
+      '<div class="oc-equip-foto" id="oc-equip-foto">🚜</div>' +
+    '</div>' +
     '<div class="oc-equip-kpi-mini">' +
       '<div class="caixa"><div class="num">'+todasDoEquip.length+'</div><div class="lbl">Total de ocorrências</div></div>' +
       '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl">Críticas</div></div>' +
     '</div>' +
     '<div style="font-size:11px;color:var(--cinza);margin-bottom:16px">Última ocorrência: '+ultimaData+'</div>' +
-    (meses.length ? '<h4 style="margin:0 0 10px">Ocorrências por mês</h4>' + graficoHtml : '') +
+    '<h4 style="margin:0 0 10px">Conformidade x Inconformidade</h4>' +
+    '<div class="oc-conform-barra"><div class="oc-conform-ok" style="width:'+pctConforme+'%"></div></div>' +
+    '<div class="oc-conform-legenda">' +
+      '<span><span class="dot ok"></span>Conforme: '+conforme+' ('+pctConforme+'%)</span>' +
+      '<span><span class="dot ru"></span>Não conforme: '+naoConforme+' ('+(100-pctConforme)+'%)</span>' +
+    '</div>' +
+    (meses.length ? '<h4 style="margin:18px 0 10px">Ocorrências por mês</h4>' + graficoHtml : '') +
     '<h4 style="margin:18px 0 6px">Histórico</h4>' +
     (listaHtml || '<div class="lista-vazia-dash">Nenhuma ocorrência registrada.</div>');
 
   document.getElementById('oc-equip-overlay').classList.add('aberto');
+
+  const fotoEl = document.getElementById('oc-equip-foto');
+  buscarUrlFotoEquipamento(equip).then(function(url){
+    if (url) fotoEl.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+  }).catch(function(){});
 }
 document.getElementById('oc-equip-fechar').onclick = function(){ document.getElementById('oc-equip-overlay').classList.remove('aberto'); };
 document.getElementById('oc-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
 
 /** Igual ao hover do "Total de Ocorrências", só que aqui só lista equipamentos
  *  que têm pelo menos uma ocorrência com item impeditivo (NÃO/NÃO POSSUI). */
-function configurarHoverImpeditivos(){
-  const card = document.getElementById('oc-kpi-impeditivo-card');
+
+/** Tooltip genérico e reaproveitável — mostra uma lista (chips) ao passar o
+ *  mouse num card, e pode deixar cada chip clicável (abre o painel lateral). */
+function configurarHoverGenerico(cardId, titulo, obterConteudoHtml, aoClicarChip){
+  const card = document.getElementById(cardId);
   const tooltip = document.getElementById('oc-tooltip-equip');
   if (!card) return;
-
-  card.style.cursor = 'default';
   card.onmouseenter = function(){
-    const comImpeditivo = ocorrenciasFiltradasAtual.filter(temItemImpeditivo);
-    const equipsUnicos = Array.from(new Set(comImpeditivo.map(function(h){ return h.equipamento; }))).sort();
-    if (!equipsUnicos.length) { tooltip.style.display = 'none'; return; }
-    tooltip.innerHTML = '<div class="titulo">Equipamentos com item impeditivo</div>' +
-      '<div class="lista">' + equipsUnicos.map(function(eq){
-        return '<span class="oc-tooltip-chip" data-ver-equip-impeditivo="'+eq+'">'+eq+'</span>';
-      }).join('') + '</div>';
+    const html = obterConteudoHtml();
+    if (!html) { tooltip.style.display = 'none'; return; }
+    tooltip.innerHTML = '<div class="titulo">'+titulo+'</div><div class="lista">' + html + '</div>';
     const rect = card.getBoundingClientRect();
     tooltip.style.left = rect.left + 'px';
     tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
     tooltip.style.display = 'block';
-    tooltip.querySelectorAll('[data-ver-equip-impeditivo]').forEach(function(chip){
-      chip.onclick = function(){ tooltip.style.display = 'none'; abrirHistoricoEquipamentoOcorrencias(chip.dataset.verEquipImpeditivo, true); };
-    });
+    if (aoClicarChip) {
+      tooltip.querySelectorAll('[data-chip]').forEach(function(chip){
+        chip.onclick = function(){ tooltip.style.display = 'none'; aoClicarChip(chip.dataset.chip); };
+      });
+    }
   };
   card.onmouseleave = function(){
-    setTimeout(function(){
-      if (!tooltip.matches(':hover')) tooltip.style.display = 'none';
-    }, 150);
+    setTimeout(function(){ if (!tooltip.matches(':hover')) tooltip.style.display = 'none'; }, 150);
   };
+  tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
 }
 
 function renderizarOcorrenciasKpis(filtradas, anteriores){
-  const equipsUnicos = new Set(filtradas.map(function(h){ return h.equipamento; })).size;
-  const operadoresUnicos = new Set(filtradas.map(function(h){ return h.operador; })).size;
+  const equipsUnicos = Array.from(new Set(filtradas.map(function(h){ return h.equipamento; }))).sort();
+  const operadoresUnicos = Array.from(new Set(filtradas.map(function(h){ return h.operador; }))).sort();
   const comImpeditivo = filtradas.filter(temItemImpeditivo).length;
 
+  // Pra cada item recorrente, guarda tambem QUAIS equipamentos tiveram ele.
   const contagemItens = {};
   filtradas.forEach(function(h){
     ITENS.forEach(function(it){
       const valor = h.campos[it[0]];
       if (valor && severidadeDaResposta(it[0], valor) === 'ru') {
         const chave = prettify(it[0]) + ': ' + valor;
-        contagemItens[chave] = (contagemItens[chave] || 0) + 1;
+        if (!contagemItens[chave]) contagemItens[chave] = { qtd: 0, equips: new Set() };
+        contagemItens[chave].qtd++;
+        contagemItens[chave].equips.add(h.equipamento);
       }
     });
   });
-  const top3 = Object.values(contagemItens).sort(function(a,b){ return b-a; }).slice(0,3).reduce(function(s,n){ return s+n; }, 0);
+  const top3Chaves = Object.keys(contagemItens).sort(function(a,b){ return contagemItens[b].qtd - contagemItens[a].qtd; }).slice(0,3);
+  const top3 = top3Chaves.reduce(function(s,k){ return s + contagemItens[k].qtd; }, 0);
+
+  // Equipamentos que ainda não fizeram checklist hoje.
+  const hojeStr = new Date().toISOString().slice(0,10);
+  const fizeramHoje = new Set((typeof historicoItens !== 'undefined' ? historicoItens : [])
+    .filter(function(h){ return h.criado && h.criado.slice(0,10) === hojeStr; })
+    .map(function(h){ return h.equipamento; }));
+  const semChecklistHoje = frotas.filter(function(eq){ return !fizeramHoje.has(eq); }).sort();
 
   function variacao(atual, anterior){
     if (!anterior) return null;
@@ -6561,27 +6562,62 @@ function renderizarOcorrenciasKpis(filtradas, anteriores){
   function linhaVariacao(v){
     if (v === null) return '';
     const seta = v > 0 ? '▲' : (v < 0 ? '▼' : '—');
-    return '<div style="font-size:11px;color:var(--cinza);margin-top:4px">'+seta+' '+Math.abs(v)+'% vs período anterior</div>';
+    return '<div style="font-size:10px;color:var(--cinza);margin-top:2px">'+seta+' '+Math.abs(v)+'%</div>';
   }
 
   const kpis = [
-    ['⚠️', 'TOTAL DE OCORRÊNCIAS', filtradas.length, variacao(filtradas.length, anteriores.length)],
-    ['🚜', 'EQUIPAMENTOS AFETADOS', equipsUnicos, null],
-    ['👤', 'OPERADORES ENVOLVIDOS', operadoresUnicos, null],
-    ['🛑', 'ITENS IMPEDITIVOS', comImpeditivo, null],
-    ['🔁', 'RECORRÊNCIA (TOP 3 ITENS)', top3, null]
+    ['⚠️', 'TOTAL DE OCORRÊNCIAS', filtradas.length, variacao(filtradas.length, anteriores.length), 'oc-kpi-total-card'],
+    ['🚜', 'EQUIPAMENTOS AFETADOS', equipsUnicos.length, null, 'oc-kpi-equip-card'],
+    ['👤', 'OPERADORES ENVOLVIDOS', operadoresUnicos.length, null, 'oc-kpi-operador-card'],
+    ['🛑', 'ITENS IMPEDITIVOS', comImpeditivo, null, 'oc-kpi-impeditivo-card'],
+    ['🔁', 'RECORRÊNCIA (TOP 3)', top3, null, 'oc-kpi-recorrencia-card'],
+    ['📋', 'SEM CHECKLIST HOJE', semChecklistHoje.length, null, 'oc-kpi-semchecklist-card']
   ];
-  const IDS_KPI = ['oc-kpi-total-card', null, null, 'oc-kpi-impeditivo-card', null];
-  document.getElementById('oc-kpis').innerHTML = kpis.map(function(k, i){
-    return '<div class="kpi-card" '+(IDS_KPI[i]?'id="'+IDS_KPI[i]+'"':'')+'><div class="kpi-top"><div class="kpi-icone" style="background:#fbe9e7;color:var(--ru)">'+k[0]+'</div>' +
+  document.getElementById('oc-kpis').innerHTML = kpis.map(function(k){
+    return '<div class="kpi-card" id="'+k[4]+'"><div class="kpi-top"><div class="kpi-icone" style="background:#fbe9e7;color:var(--ru)">'+k[0]+'</div>' +
       '<div><div class="kpi-num">'+k[2]+'</div><div class="kpi-lbl">'+k[1]+'</div></div></div>' +
       linhaVariacao(k[3]) +
     '</div>';
   }).join('');
 
   ocorrenciasFiltradasAtual = filtradas;
-  configurarHoverTotalOcorrencias();
-  configurarHoverImpeditivos();
+
+  const chipsEquip = function(lista){ return lista.map(function(eq){ return '<span class="oc-tooltip-chip" data-chip="'+eq+'">'+eq+'</span>'; }).join(''); };
+
+  configurarHoverGenerico('oc-kpi-total-card', 'Equipamentos nessas ocorrências',
+    function(){ return equipsUnicos.length ? chipsEquip(equipsUnicos) : ''; },
+    function(eq){ abrirHistoricoEquipamentoOcorrencias(eq); });
+
+  configurarHoverGenerico('oc-kpi-equip-card', 'Equipamentos afetados',
+    function(){ return equipsUnicos.length ? chipsEquip(equipsUnicos) : ''; },
+    function(eq){ abrirHistoricoEquipamentoOcorrencias(eq); });
+
+  configurarHoverGenerico('oc-kpi-operador-card', 'Operadores envolvidos',
+    function(){ return operadoresUnicos.length ? operadoresUnicos.map(function(o){ return '<span class="oc-tooltip-chip" style="cursor:default">'+o+'</span>'; }).join('') : ''; },
+    null);
+
+  configurarHoverGenerico('oc-kpi-impeditivo-card', 'Equipamentos com item impeditivo',
+    function(){
+      const comImp = Array.from(new Set(filtradas.filter(temItemImpeditivo).map(function(h){ return h.equipamento; }))).sort();
+      return comImp.length ? chipsEquip(comImp) : '';
+    },
+    function(eq){ abrirHistoricoEquipamentoOcorrencias(eq, true); });
+
+  configurarHoverGenerico('oc-kpi-recorrencia-card', 'Itens mais recorrentes',
+    function(){
+      if (!top3Chaves.length) return '';
+      return top3Chaves.map(function(k){
+        const info = contagemItens[k];
+        return '<div style="width:100%;margin-bottom:8px"><b>'+k+'</b> ('+info.qtd+'x)<br>' +
+          Array.from(info.equips).map(function(eq){ return '<span class="oc-tooltip-chip" data-chip="'+eq+'">'+eq+'</span>'; }).join(' ') +
+        '</div>';
+      }).join('');
+    },
+    function(eq){ abrirHistoricoEquipamentoOcorrencias(eq); });
+
+  configurarHoverGenerico('oc-kpi-semchecklist-card', 'Sem checklist hoje',
+    function(){ return semChecklistHoje.length ? chipsEquip(semChecklistHoje) : ''; },
+    function(eq){ abrirHistoricoEquipamentoOcorrencias(eq); });
 }
 
 function renderizarOcorrenciasPorLocal(filtradas){
@@ -6679,7 +6715,6 @@ function renderizarTopItensRecorrentes(filtradas){
 }
 
 function renderizarOcorrencias(){
-  const cont = document.getElementById('oc-conteudo');
   const filtradas = obterOcorrenciasFiltradas();
 
   // Período anterior (mesma duração, imediatamente antes) — só pra comparação no KPI.
@@ -6700,28 +6735,6 @@ function renderizarOcorrencias(){
   renderizarOcorrenciasPorOperador(filtradas);
   renderizarOcorrenciasEvolucao(filtradas);
   renderizarOcorrenciasTabelaDetalhe(filtradas);
-
-  if (!filtradas.length) {
-    cont.innerHTML = '<div class="oc-vazio">Nenhuma ocorrência encontrada para esse filtro.</div>';
-    return;
-  }
-  cont.innerHTML = filtradas.map(function(h){
-    const chips = ITENS.filter(function(it){
-      const valor = h.campos[it[0]];
-      if (!valor) return false;
-      return severidadeDaResposta(it[0], valor) === 'ru';
-    }).map(function(it){
-      return '<span class="oc-chip">' + prettify(it[0]) + ': ' + h.campos[it[0]] + '</span>';
-    }).join('');
-    const chipsFinal = chips || '<span class="oc-chip">Marcado para paralisar pelo operador</span>';
-    const obs = h.observacao ? '<div class="oc-obs">"' + h.observacao + '"</div>' : '';
-    return '<div class="oc-card">' +
-      '<div class="oc-cab"><span class="oc-eq">' + h.equipamento + '</span><span class="oc-meta">' + formatarDataHist(h.criado) + '</span></div>' +
-      '<div class="oc-meta">Operador: ' + (h.operador || '—') + ' · ' + (h.local || '—') + '</div>' +
-      '<div class="oc-chips">' + chipsFinal + '</div>' +
-      obs +
-    '</div>';
-  }).join('');
 }
 
 ['oc-filtro-de','oc-filtro-ate','oc-filtro-equip','oc-filtro-operador','oc-filtro-local'].forEach(function(id){
@@ -6737,163 +6750,6 @@ document.getElementById('oc-limpar-filtros').onclick = function(){
   document.getElementById('oc-filtro-local').value = '';
   renderizarOcorrencias();
 };
-  /* =====================================================================
-   FROTA — status de cada equipamento
-   ===================================================================== */
-async function carregarFrota(){
-  const total = document.getElementById('frota-total');
-  const cont = document.getElementById('frota-conteudo');
-  cont.innerHTML = '<div class="ind-loading">Carregando frota…</div>';
-  try {
-    await garantirDadosHistorico();
-  } catch(err) {
-    cont.innerHTML = '<div class="ind-vazio">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
-    return;
-  }
-
-  const hoje = new Date();
-  const limite30 = new Date(hoje.getTime() - CONFIG.diasReincidencia*86400000);
-
-  const porEquip = {};
-  historicoItens.forEach(function(h){
-    if (!h.equipamento) return;
-    if (!porEquip[h.equipamento]) porEquip[h.equipamento] = { ultimo: null, ocorrencias30d: 0 };
-    const info = porEquip[h.equipamento];
-    if (!info.ultimo || new Date(h.criado) > new Date(info.ultimo.criado)) info.ultimo = h;
-    if (new Date(h.criado) >= limite30 && h.status.classe === 'parar') info.ocorrencias30d++;
-  });
-
-  frotas.forEach(function(eq){
-    if (!porEquip[eq]) porEquip[eq] = { ultimo: null, ocorrencias30d: 0 };
-  });
-
-  const lista = Object.keys(porEquip).map(function(eq){
-    const info = porEquip[eq];
-    let situacao = 'sem-registro', diasSemChecklist = null, ultimaData = null;
-    if (info.ultimo) {
-      diasSemChecklist = Math.floor((hoje - new Date(info.ultimo.criado)) / 86400000);
-      ultimaData = formatarDataHist(info.ultimo.criado);
-      situacao = info.ultimo.status.classe === 'parar' ? 'parado'
-               : info.ultimo.status.classe === 'at' ? 'atencao'
-               : 'ok';
-    }
-    return { equip: eq, situacao: situacao, ultimaData: ultimaData, diasSemChecklist: diasSemChecklist, ocorrencias30d: info.ocorrencias30d };
-  }).sort(function(a,b){
-    const ordem = { parado: 0, atencao: 1, ok: 2, 'sem-registro': 3 };
-    return ordem[a.situacao] - ordem[b.situacao];
-  });
-
-  total.textContent = lista.length + ' equipamento(s) monitorado(s)';
-  cont.innerHTML = '<div class="frota-grid">' + lista.map(function(f){
-    const stTxt = { ok: 'Ok', atencao: 'Atenção', parado: 'Necessita paralisar!', 'sem-registro': 'Sem registro' }[f.situacao];
-    const alerta = f.situacao === 'parado' ? '<span class="frota-alerta">!</span>' : '';
-    const info = f.ultimaData
-      ? 'Último checklist: ' + f.ultimaData + ' (' + f.diasSemChecklist + 'd atrás)<br>Ocorrências (30d): ' + f.ocorrencias30d
-      : 'Nenhum checklist registrado ainda';
-    return '<div class="frota-card st-' + f.situacao + '">' +
-      '<div class="frota-eq">' + alerta + f.equip + '</div>' +
-      '<span class="frota-st ' + f.situacao + '">' + stTxt + '</span>' +
-      '<div class="frota-info">' + info + '</div>' +
-    '</div>';
-  }).join('') + '</div>';
-}
-  /* =====================================================================
-   OPERADORES — ranking por período
-   ===================================================================== */
-function normalizarNomeOperador(nome){
-  return String(nome || '').trim().split(/\s+/).map(function(p){
-    return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-  }).join(' ');
-}
-
-let periodoOpAtivo = 'mes';
-
-document.querySelectorAll('#op-periodo-toggle .periodo-opt').forEach(function(opt){
-  opt.onclick = function(){
-    document.querySelectorAll('#op-periodo-toggle .periodo-opt').forEach(function(o){ o.classList.remove('ativo'); });
-    opt.classList.add('ativo');
-    periodoOpAtivo = opt.dataset.periodo;
-    carregarOperadores(periodoOpAtivo);
-  };
-});
-
-async function carregarOperadores(periodo){
-  const total = document.getElementById('op-total');
-  const cont = document.getElementById('op-conteudo');
-  cont.innerHTML = '<div class="ind-loading">Carregando…</div>';
-  try {
-    await garantirDadosHistorico();
-  } catch(err) {
-    cont.innerHTML = '<div class="ind-vazio">⚠️ Erro ao carregar dados: ' + err.message + '</div>';
-    return;
-  }
-
-  const dias = periodo === 'semana' ? 7 : periodo === 'ano' ? 365 : 30;
-  const limite = new Date(Date.now() - dias*86400000);
-  const filtrado = historicoItens.filter(function(h){ return new Date(h.criado) >= limite && h.operador; });
-
-  const contagem = {};
-  filtrado.forEach(function(h){
-    const nome = normalizarNomeOperador(h.operador);
-    contagem[nome] = (contagem[nome] || 0) + 1;
-  });
-
-  const lista = Object.keys(contagem).map(function(op){ return { label: op, valor: contagem[op] }; })
-    .sort(function(a,b){ return b.valor - a.valor; });
-
-  const nomePeriodo = periodo === 'semana' ? 'últimos 7 dias' : periodo === 'ano' ? 'últimos 365 dias' : 'últimos 30 dias';
-  total.textContent = filtrado.length + ' checklist(s) — ' + nomePeriodo;
-
-  if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Sem dados no período.</div>'; return; }
-
-  const max = lista[0].valor || 1;
-  cont.innerHTML = '<div class="op-card">' + lista.map(function(o, i){
-    const pct = Math.max(6, Math.round(o.valor / max * 100));
-    return '<div class="op-linha">' +
-      '<div class="op-pos">' + (i+1) + '</div>' +
-      '<div class="op-nome">' + o.label + '</div>' +
-      '<div class="op-bar-wrap"><div class="op-bar" style="width:' + pct + '%"></div></div>' +
-      '<div class="op-val">' + o.valor + '</div>' +
-    '</div>';
-  }).join('') + '</div>';
-}
-const ITENS_SEGURANCA_LABELS = [
-  'ALARME SONORO PARA CINTO DE SEGURANÇA (FUNCIONA)',
-  'ALARME SONORO E/OU VISUAL PARA FREIO DE ESTACIONAMENTO (FUNCIONA)',
-  'ALARME DE RÉ (FUNCIONA)',
-  'SENSOR DE RÉ (FUNCIONA)',
-  'CÂMERA DE RÉ (FUNCIONA)',
-  'SISTEMA DE DETECÇÃO DE PROXIMIDADE (FUNCIONA)'
-];
-
- /* =====================================================================
-   CARD DO EQUIPAMENTO — Bloco B1 (sem foto real ainda)
-   ===================================================================== */
-function situacaoDoUltimoChecklist(h){
-  if (!h) return 'sem-registro';
-  return h.status.classe === 'parar' ? 'parado' : h.status.classe === 'at' ? 'atencao' : 'ok';
-}
-
-/** Regra: a cada 500h; se também múltiplo de 1000 é revisão maior; se também múltiplo de 2000, a maior de todas. */
-function calcularProximaPreventiva(horimetroAtual){
-  if (horimetroAtual == null || isNaN(horimetroAtual)) return null;
-  let proximo = Math.ceil(horimetroAtual / 500) * 500;
-  if (proximo <= horimetroAtual) proximo += 500;
-  let tipo = 500;
-  if (proximo % 2000 === 0) tipo = 2000;
-  else if (proximo % 1000 === 0) tipo = 1000;
-  return { proximo: proximo, tipo: tipo, faltam: Math.round(proximo - horimetroAtual) };
-}
-
-function formatarUltimoChecklistCard(iso){
-  const d = new Date(iso);
-  const hoje = new Date();
-  const hora = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-  if (d.toDateString() === hoje.toDateString()) return 'Hoje às ' + hora;
-  const dias = Math.floor((hoje - d) / 86400000);
-  return dias === 1 ? 'Ontem às ' + hora : dias + 'd atrás';
-}
-
 
  /* =====================================================================
    TIMER DO CHECKLIST — painel "Informações rápidas"
