@@ -1104,6 +1104,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
 
     <div class="content">
+      <div class="oc-tooltip-equip" id="tooltip-global" style="display:none"></div>
       <div id="aviso-colunas-area"></div>
 
 <div class="view ativo" id="view-novo">
@@ -1895,25 +1896,25 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
 </div>
 <div class="view" id="view-dashboard">
   <div class="dash-kpis">
-    <div class="kpi-card">
+    <div class="kpi-card" id="dash-kpi-checklists-hoje" style="cursor:pointer" title="Clique para ver quem já fez">
       <div class="kpi-top">
         <div class="kpi-icone azul">📋</div>
         <div><div class="kpi-num" id="kpi-checklists-hoje">—</div><div class="kpi-lbl">Checklists hoje</div></div>
       </div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" id="dash-kpi-pendentes" style="cursor:pointer" title="Clique para ver quem falta">
       <div class="kpi-top">
         <div class="kpi-icone tan">⏱️</div>
         <div><div class="kpi-num" id="kpi-pendentes">—</div><div class="kpi-lbl">Pendentes hoje</div></div>
       </div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" id="dash-kpi-ocorrencias" style="cursor:pointer" title="Clique para ver quais equipamentos">
       <div class="kpi-top">
         <div class="kpi-icone ru">⚠️</div>
         <div><div class="kpi-num" id="kpi-ocorrencias">—</div><div class="kpi-lbl">Ocorrências (30d)</div></div>
       </div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card" id="dash-kpi-operadores" style="cursor:pointer" title="Clique para ver quais operadores">
       <div class="kpi-top">
         <div class="kpi-icone ok">👷</div>
         <div><div class="kpi-num" id="kpi-operadores">—</div><div class="kpi-lbl">Operadores ativos (30d)</div></div>
@@ -1996,8 +1997,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-info" id="oc-info">Carregando ocorrências…</div>
 
   <div class="dash-kpis" id="oc-kpis"></div>
-  <div class="oc-tooltip-equip" id="oc-tooltip-equip" style="display:none"></div>
-
   <div class="dash-row" style="align-items:stretch;grid-template-columns:1fr 1fr">
     <div class="dash-card" style="display:flex;flex-direction:column">
       <h3>📊 Top 10 Itens Mais Recorrentes</h3>
@@ -4790,13 +4789,13 @@ async function carregarDashboardMov(){
   itens.forEach(function(i){ if (i.equipamento) porEquip[i.equipamento] = (porEquip[i.equipamento]||0) + 1; });
   const rankEquip = Object.keys(porEquip).map(function(k){ return {label:k, valor:porEquip[k], valorFmt:String(porEquip[k])}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
-  pdRenderizarRanking('dash-mov-rank-equip', rankEquip, 'var(--navy)');
+  pdRenderizarRanking('dash-mov-rank-equip', rankEquip, 'var(--navy)', 'equipamento');
 
   const porLocal = {};
   itens.forEach(function(i){ if (i.localDestino) porLocal[i.localDestino] = (porLocal[i.localDestino]||0) + 1; });
   const rankLocal = Object.keys(porLocal).map(function(k){ return {label:k, valor:porLocal[k], valorFmt:String(porLocal[k])}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
-  pdRenderizarRanking('dash-mov-rank-local', rankLocal, '#c79a3a');
+  pdRenderizarRanking('dash-mov-rank-local', rankLocal, '#c79a3a', 'local');
 
   // ---- Quantidade de equipamentos por status (respeita o filtro de local/equipamento) ----
   const filtroLocalAtual = document.getElementById('dash-mov-filtro-local').value;
@@ -4844,7 +4843,7 @@ async function carregarDashboardMov(){
   const rankManutencao = Object.keys(porEquipManutencao)
     .map(function(k){ return {label:k, valor:porEquipManutencao[k], valorFmt: porEquipManutencao[k] + (porEquipManutencao[k]===1?' dia':' dias')}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
-  pdRenderizarRanking('dash-mov-rank-manutencao', rankManutencao, 'var(--ru)');
+  pdRenderizarRanking('dash-mov-rank-manutencao', rankManutencao, 'var(--ru)', 'equipamento');
 
   dashMovRenderizarQtdPorLocal();
   document.getElementById('dash-mov-ver-detalhes').onclick = function(){ mostrarView('status-equipamentos'); };
@@ -5197,12 +5196,15 @@ function statusEqRenderizarResumoTodos(locaisOrdenados){
     }).join('');
 
     return '<div class="dash-card" id="resumo-local-'+local.replace(/[^a-zA-Z0-9]/g,'')+'" style="margin-bottom:14px">' +
-      '<div class="arv-resumo-total">'+local+'</div>' +
+      '<div class="arv-resumo-total" data-ver-equip-local="'+local+'" style="cursor:pointer" title="Ver equipamentos desse local">'+local+' 🔍</div>' +
       '<div style="font-size:11px;color:var(--cinza);margin-bottom:10px">'+totalDias+' dias registrados</div>' +
       linhas +
       (ultimaMov ? '<div style="font-size:11px;color:var(--cinza);margin-top:10px;border-top:1px solid var(--linha);padding-top:8px">Última movimentação: '+formatarDataHist(ultimaMov.criado)+'</div>' : '') +
     '</div>';
   }).join('');
+  document.querySelectorAll('[data-ver-equip-local]').forEach(function(el){
+    el.onclick = function(){ mostrarEquipamentosDoLocalTooltip(el, el.dataset.verEquipLocal); };
+  });
 }
 
 document.getElementById('status-eq-limpar-filtros').onclick = function(){
@@ -5678,16 +5680,25 @@ document.getElementById('hist-pd-exportar-excel').onclick = async function(){
 };
 
 /* ---- Dashboard da Parte Diária ---- */
-function pdRenderizarRanking(containerId, itens, cor){
+function pdRenderizarRanking(containerId, itens, cor, tipo){
   const cont = document.getElementById(containerId);
   if (!itens.length) { cont.innerHTML = '<div class="lista-vazia-dash">Sem dados no período.</div>'; return; }
   const max = itens[0].valor || 1;
+  const clicavel = tipo === 'equipamento' || tipo === 'local';
   cont.innerHTML = itens.map(function(x){
     const pct = Math.max(4, Math.round(x.valor / max * 100));
-    return '<div class="ind-linha"><div class="ind-lbl" title="'+x.label+'">'+x.label+'</div>' +
+    return '<div class="ind-linha" '+(clicavel?'data-rank-clique="'+x.label+'" style="cursor:pointer"':'')+'><div class="ind-lbl" title="'+x.label+'">'+x.label+'</div>' +
       '<div class="ind-bar-wrap"><div class="ind-bar" style="width:'+pct+'%;background:'+cor+'"></div></div>' +
       '<div class="ind-val">'+x.valorFmt+'</div></div>';
   }).join('');
+  if (clicavel) {
+    cont.querySelectorAll('[data-rank-clique]').forEach(function(el){
+      el.onclick = function(){
+        if (tipo === 'local') mostrarEquipamentosDoLocalTooltip(el, el.dataset.rankClique);
+        else garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(el.dataset.rankClique); });
+      };
+    });
+  }
 }
 
 async function carregarDashboardPD(){
@@ -5709,7 +5720,7 @@ async function carregarDashboardPD(){
   ultimos30.forEach(function(p){ if (p.equipamento) porEquipParadas[p.equipamento] = (porEquipParadas[p.equipamento]||0) + p.paradas; });
   const rankParadas = Object.keys(porEquipParadas).map(function(k){ return {label:k, valor:porEquipParadas[k], valorFmt:pdFormatarHoras(porEquipParadas[k])}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 8);
-  pdRenderizarRanking('dash-pd-ranking-paradas', rankParadas, '#c79a3a');
+  pdRenderizarRanking('dash-pd-ranking-paradas', rankParadas, '#c79a3a', 'equipamento');
 
   const porTipo = {};
   ultimos30.forEach(function(p){
@@ -5767,8 +5778,8 @@ async function carregarIndicadoresPD(){
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 10);
   const rankPar = Object.keys(porEquipPar).map(function(k){ return {label:k, valor:porEquipPar[k], valorFmt:pdFormatarHoras(porEquipPar[k])}; })
     .sort(function(a,b){ return b.valor - a.valor; }).slice(0, 10);
-  pdRenderizarRanking('ind-pd-rank-trabalhadas', rankTrab, 'var(--ok)');
-  pdRenderizarRanking('ind-pd-rank-paradas', rankPar, '#c79a3a');
+  pdRenderizarRanking('ind-pd-rank-trabalhadas', rankTrab, 'var(--ok)', 'equipamento');
+  pdRenderizarRanking('ind-pd-rank-paradas', rankPar, '#c79a3a', 'equipamento');
 }
 
 ['ind-pd-de','ind-pd-ate'].forEach(function(id){
@@ -6213,6 +6224,49 @@ async function carregarDashboard(){
   renderPendencias(pendentes);
   renderAtividades(historicoItens);
   renderCalendario();
+
+  configurarHoverGenerico2('dash-kpi-checklists-hoje', 'tooltip-global', 'Já fizeram checklist hoje',
+    function(){ return Array.from(feitosHojeSet).sort().map(function(eq){ return '<span class="oc-tooltip-chip" data-chip="'+eq+'">'+eq+'</span>'; }).join(''); },
+    function(eq){ garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); }); });
+
+  configurarHoverGenerico2('dash-kpi-pendentes', 'tooltip-global', 'Ainda não fizeram checklist hoje',
+    function(){ return pendentes.map(function(eq){ return '<span class="oc-tooltip-chip" style="background:#c79a3a" data-chip="'+eq+'">'+eq+'</span>'; }).join(''); },
+    function(eq){ garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); }); });
+
+  configurarHoverGenerico2('dash-kpi-ocorrencias', 'tooltip-global', 'Equipamentos com ocorrência (' + CONFIG.diasReincidencia + 'd)',
+    function(){ return Array.from(new Set(ocorrencias30.map(function(h){ return h.equipamento; }))).sort().map(function(eq){ return '<span class="oc-tooltip-chip" data-chip="'+eq+'">'+eq+'</span>'; }).join(''); },
+    function(eq){ garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); }); });
+
+  configurarHoverGenerico2('dash-kpi-operadores', 'tooltip-global', 'Operadores ativos (' + CONFIG.diasReincidencia + 'd)',
+    function(){ return Array.from(operadoresSet).sort().map(function(o){ return '<span class="oc-tooltip-chip" style="cursor:default">'+o+'</span>'; }).join(''); },
+    null);
+}
+
+/** Versão da função de hover genérica que aceita QUALQUER tooltip de destino
+ *  (a original estava fixada no tooltip de Ocorrências). Usada nas outras
+ *  telas (Dashboard, Indicadores, Movimentações...). */
+function configurarHoverGenerico2(cardId, tooltipId, titulo, obterConteudoHtml, aoClicarChip){
+  const card = document.getElementById(cardId);
+  const tooltip = document.getElementById(tooltipId);
+  if (!card || !tooltip) return;
+  card.onmouseenter = function(){
+    const html = obterConteudoHtml();
+    if (!html) { tooltip.style.display = 'none'; return; }
+    tooltip.innerHTML = '<div class="titulo">'+titulo+'</div><div class="lista">' + html + '</div>';
+    const rect = card.getBoundingClientRect();
+    tooltip.style.left = rect.left + 'px';
+    tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+    tooltip.style.display = 'block';
+    if (aoClicarChip) {
+      tooltip.querySelectorAll('[data-chip]').forEach(function(chip){
+        chip.onclick = function(){ tooltip.style.display = 'none'; aoClicarChip(chip.dataset.chip); };
+      });
+    }
+  };
+  card.onmouseleave = function(){
+    setTimeout(function(){ if (!tooltip.matches(':hover')) tooltip.style.display = 'none'; }, 150);
+  };
+  tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
 }
 
 function renderBarChart(itens, deChave, ateChave){
@@ -6715,27 +6769,7 @@ document.getElementById('oc-equip-overlay').onclick = function(e){ if (e.target 
 /** Tooltip genérico e reaproveitável — mostra uma lista (chips) ao passar o
  *  mouse num card, e pode deixar cada chip clicável (abre o painel lateral). */
 function configurarHoverGenerico(cardId, titulo, obterConteudoHtml, aoClicarChip){
-  const card = document.getElementById(cardId);
-  const tooltip = document.getElementById('oc-tooltip-equip');
-  if (!card) return;
-  card.onmouseenter = function(){
-    const html = obterConteudoHtml();
-    if (!html) { tooltip.style.display = 'none'; return; }
-    tooltip.innerHTML = '<div class="titulo">'+titulo+'</div><div class="lista">' + html + '</div>';
-    const rect = card.getBoundingClientRect();
-    tooltip.style.left = rect.left + 'px';
-    tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
-    tooltip.style.display = 'block';
-    if (aoClicarChip) {
-      tooltip.querySelectorAll('[data-chip]').forEach(function(chip){
-        chip.onclick = function(){ tooltip.style.display = 'none'; aoClicarChip(chip.dataset.chip); };
-      });
-    }
-  };
-  card.onmouseleave = function(){
-    setTimeout(function(){ if (!tooltip.matches(':hover')) tooltip.style.display = 'none'; }, 150);
-  };
-  tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
+  configurarHoverGenerico2(cardId, 'tooltip-global', titulo, obterConteudoHtml, aoClicarChip);
 }
 
 function renderizarOcorrenciasKpis(filtradas, anteriores){
@@ -6843,7 +6877,7 @@ function renderizarOcorrenciasPorLocal(filtradas){
   const ranking = Object.keys(cont).map(function(l){ return { label: l, valor: cont[l], valorFmt: String(cont[l]) }; })
     .sort(function(a,b){ return b.valor - a.valor; });
   if (!ranking.length) { document.getElementById('oc-por-local').innerHTML = '<div class="lista-vazia-dash">Sem dados.</div>'; return; }
-  pdRenderizarRanking('oc-por-local', ranking, 'var(--navy)');
+  pdRenderizarRanking('oc-por-local', ranking, 'var(--navy)', 'local');
 }
 
 function renderizarOcorrenciasPorOperador(filtradas){
@@ -6891,7 +6925,7 @@ function renderizarOcorrenciasEvolucao(filtradas){
   '</svg>' +
   '<div style="text-align:center;font-size:10.5px;color:var(--cinza);margin-top:4px">Passe o mouse num ponto pra ver o dia · clique pra ver o detalhamento daquele dia</div>';
 
-  const tooltip = document.getElementById('oc-tooltip-equip');
+  const tooltip = document.getElementById('tooltip-global');
   cont.querySelectorAll('.oc-ponto-evolucao').forEach(function(ponto){
     ponto.onmouseenter = function(){
       const dia = ponto.dataset.dia, valor = ponto.dataset.valor;
@@ -7429,8 +7463,8 @@ async function carregarIndicadoresV2(){
     return h.criado >= (anteriorDeStr + 'T00:00:00') && h.criado <= (anteriorAteStr + 'T23:59:59');
   });
   renderRankReincidencias(calcularReincidencias30d());
-  renderRankCriticidade('ind2-criticidade-equip', calcularCriticidadePor('equipamento', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#3a5a7a');
-  renderRankCriticidade('ind2-criticidade-local', calcularCriticidadePor('local', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#5a7a3a');
+  renderRankCriticidade('ind2-criticidade-equip', calcularCriticidadePor('equipamento', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#3a5a7a', 'equipamento');
+  renderRankCriticidade('ind2-criticidade-local', calcularCriticidadePor('local', itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); })), '#5a7a3a', 'local');
   renderSegurancaV2(itens.filter(function(h){ return h.criado >= (de+'T00:00:00') && h.criado <= (ate+'T23:59:59'); }), itensAnteriorPeriodo);
 }
 document.getElementById('ind2-limpar-filtros').onclick = function(){
@@ -7596,16 +7630,19 @@ function renderRankReincidencias(lista){
   const max = top[0].ocorrencias || 1;
   cont.innerHTML = top.map(function(x){
     const pct = Math.max(8, Math.round(x.ocorrencias/max*100));
-    return '<div class="ind2-rank-linha">' +
+    return '<div class="ind2-rank-linha" data-ver-equip-ind="'+x.equipamento+'" style="cursor:pointer" title="Ver histórico detalhado">' +
       '<span class="ind2-rank-nome">'+x.equipamento+'</span>' +
       '<span class="ind2-rank-sub">'+x.apontamento+'</span>' +
       '<div class="ind2-rank-bar-wrap"><div class="ind2-rank-bar" style="width:'+pct+'%;background:var(--ru)"></div></div>' +
       '<span class="ind2-rank-val">'+x.ocorrencias+'</span>' +
     '</div>';
   }).join('');
+  cont.querySelectorAll('[data-ver-equip-ind]').forEach(function(el){
+    el.onclick = function(){ garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(el.dataset.verEquipInd); }); };
+  });
 }
 
-function renderRankCriticidade(idDiv, lista, cor){
+function renderRankCriticidade(idDiv, lista, cor, tipo){
   const cont = document.getElementById(idDiv);
   if (!lista.length) { cont.innerHTML = '<div class="ind-vazio">Sem apontamentos no período.</div>'; return; }
   const top = lista.slice(0, 6);
@@ -7613,13 +7650,44 @@ function renderRankCriticidade(idDiv, lista, cor){
   cont.innerHTML = top.map(function(x){
     const pct = Math.max(8, Math.round(x.pontos/max*100));
     const nivel = nivelCriticidade(x.pontos);
-    return '<div class="ind2-rank-linha">' +
+    return '<div class="ind2-rank-linha" data-ver-crit="'+x.label+'" style="cursor:pointer" title="'+(tipo==='local'?'Ver equipamentos desse local':'Ver histórico detalhado')+'">' +
       '<span class="ind2-rank-nome">'+x.label+'</span>' +
       '<div class="ind2-rank-bar-wrap"><div class="ind2-rank-bar" style="width:'+pct+'%;background:'+cor+'"></div></div>' +
       '<span class="ind2-rank-val">'+x.pontos+'</span>' +
       '<span class="ind2-nivel '+nivel.classe+'">'+nivel.texto+'</span>' +
     '</div>';
   }).join('');
+  cont.querySelectorAll('[data-ver-crit]').forEach(function(el){
+    el.onclick = function(){
+      if (tipo === 'local') {
+        mostrarEquipamentosDoLocalTooltip(el, el.dataset.verCrit);
+      } else {
+        garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(el.dataset.verCrit); });
+      }
+    };
+  });
+}
+
+/** Ao clicar num LOCAL (não num equipamento), mostra quem está lá agora —
+ *  reaproveita o mesmo tooltip genérico, só que ancorado no elemento clicado. */
+function mostrarEquipamentosDoLocalTooltip(elemento, local){
+  const tooltip = document.getElementById('tooltip-global') || document.getElementById('tooltip-global');
+  const equipsDoLocal = frotas.filter(function(eq){ return frotaLocalAtual[eq] === local; }).sort();
+  if (!equipsDoLocal.length) return;
+  tooltip.innerHTML = '<div class="titulo">Equipamentos em '+local+'</div><div class="lista">' +
+    equipsDoLocal.map(function(eq){ return '<span class="oc-tooltip-chip" data-chip="'+eq+'">'+eq+'</span>'; }).join('') + '</div>';
+  const rect = elemento.getBoundingClientRect();
+  tooltip.style.left = rect.left + 'px';
+  tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+  tooltip.style.display = 'block';
+  tooltip.querySelectorAll('[data-chip]').forEach(function(chip){
+    chip.onclick = function(){ tooltip.style.display = 'none'; garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(chip.dataset.chip); }); };
+  });
+  setTimeout(function(){
+    document.addEventListener('click', function fechar(e){
+      if (!tooltip.contains(e.target)) { tooltip.style.display = 'none'; document.removeEventListener('click', fechar); }
+    });
+  }, 10);
 }
 
 function renderSegurancaV2(itens, itensAnterior){
