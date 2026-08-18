@@ -532,6 +532,7 @@
   .oc-equip-linha-hist{border-bottom:1px solid var(--linha);padding:10px 0;font-size:12.5px}
   .oc-equip-linha-hist .data{font-weight:700;color:var(--tinta)}
   .oc-equip-linha-hist .itens{color:var(--cinza);margin-top:2px}
+  .oc-equip-linha-hist .oc-equip-meta{color:var(--cinza);font-size:11px;margin-top:4px}
 
   .oc-equip-foto-wrap{display:flex;justify-content:center;margin-bottom:16px}
   .oc-equip-foto{width:100%;max-width:280px;height:150px;border-radius:10px;background:var(--cream);
@@ -1987,14 +1988,14 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="dash-kpis" id="oc-kpis"></div>
   <div class="oc-tooltip-equip" id="oc-tooltip-equip" style="display:none"></div>
 
-  <div class="dash-row" style="align-items:stretch">
-    <div class="dash-card" style="flex:1.3;display:flex;flex-direction:column">
+  <div class="dash-row" style="align-items:stretch;grid-template-columns:1fr 1fr">
+    <div class="dash-card" style="display:flex;flex-direction:column">
       <h3>📊 Top 10 Itens Mais Recorrentes</h3>
-      <div id="oc-top-recorrentes" style="flex:1"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div id="oc-top-recorrentes" style="flex:1;min-width:0"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
-    <div class="dash-card" style="flex:1.3;display:flex;flex-direction:column">
+    <div class="dash-card" style="display:flex;flex-direction:column">
       <h3>📈 Evolução de Ocorrências</h3>
-      <div id="oc-evolucao" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div id="oc-evolucao" style="flex:1;display:flex;flex-direction:column;justify-content:center;min-width:0"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
   </div>
 
@@ -6547,18 +6548,35 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
   const totalChecklists = todosChecklistsDoEquip.length || 1;
   const pctConforme = Math.round(conforme / totalChecklists * 100);
 
-  // Gráfico simples de barras por mês (reaproveita o estilo dos rankings)
-  const porMes = {};
-  todasDoEquip.forEach(function(h){ const m = h.criado.slice(0,7); porMes[m] = (porMes[m]||0)+1; });
-  const meses = Object.keys(porMes).sort();
-  const maxMes = Math.max.apply(null, meses.map(function(m){ return porMes[m]; })) || 1;
-  const graficoHtml = meses.map(function(m){
-    const pct = Math.max(6, Math.round(porMes[m]/maxMes*100));
-    const rotulo = m.slice(5,7) + '/' + m.slice(0,4);
-    return '<div class="ind-linha"><span class="ind-lbl">'+rotulo+'</span>' +
-      '<div class="ind-bar-wrap"><div class="ind-bar" style="width:'+pct+'%;background:var(--ru)"></div></div>' +
-      '<span class="ind-val">'+porMes[m]+'</span></div>';
-  }).join('');
+  // Trajetória do equipamento — gráfico de linha (mesmo estilo da Evolução geral),
+  // mas só com as ocorrências desse equipamento, dia a dia.
+  const porDiaEquip = {};
+  todasDoEquip.forEach(function(h){ const d = h.criado.slice(0,10); porDiaEquip[d] = (porDiaEquip[d]||0) + 1; });
+  const diasEquip = Object.keys(porDiaEquip).sort();
+  let trajetoriaHtml = '';
+  if (diasEquip.length) {
+    const valoresEquip = diasEquip.map(function(d){ return porDiaEquip[d]; });
+    const maxEquip = Math.max.apply(null, valoresEquip) || 1;
+    const largEq = 420, altEq = 130, margEq = 22;
+    const passoEq = diasEquip.length > 1 ? (largEq - margEq*2) / (diasEquip.length - 1) : 0;
+    const ptsEq = valoresEquip.map(function(v, i){
+      const x = margEq + i*passoEq;
+      const y = altEq - margEq - (v / maxEquip) * (altEq - margEq*2);
+      return [x, y];
+    });
+    const linhaEq = ptsEq.map(function(p){ return p[0]+','+p[1]; }).join(' ');
+    const areaEq = 'M' + margEq + ',' + (altEq-margEq) + ' L' + linhaEq.replace(/ /g, ' L') + ' L' + (margEq+(diasEquip.length-1)*passoEq) + ',' + (altEq-margEq) + ' Z';
+    const rotulosEq = ptsEq.map(function(p, i){
+      return '<text x="'+p[0]+'" y="'+(altEq-4)+'" font-size="9" fill="var(--cinza)" text-anchor="middle">'+formatarDataCurta(diasEquip[i])+'</text>' +
+        '<text x="'+p[0]+'" y="'+(p[1]-7)+'" font-size="10" font-weight="700" fill="var(--ru)" text-anchor="middle">'+valoresEquip[i]+'</text>' +
+        '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--ru)"></circle>';
+    }).join('');
+    trajetoriaHtml = '<svg viewBox="0 0 '+largEq+' '+altEq+'" style="width:100%;height:140px">' +
+      '<path d="'+areaEq+'" fill="#fbe9e7" stroke="none"></path>' +
+      '<polyline points="'+linhaEq+'" fill="none" stroke="var(--ru)" stroke-width="2"></polyline>' +
+      rotulosEq +
+    '</svg>';
+  }
 
   const listaHtml = todasDoEquip.slice(0, 30).map(function(h){
     const itensImpeditivo = itensImpeditivosDe(h);
@@ -6566,10 +6584,12 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
       ? itensImpeditivo.join(', ')
       : ITENS.filter(function(it){ return h.campos[it[0]] && severidadeDaResposta(it[0], h.campos[it[0]]) === 'ru'; })
           .map(function(it){ return prettify(it[0]); }).join(', ');
-    const badge = itensImpeditivo.length ? '<span class="hist-st parar">IMPEDITIVO</span>' :
-      (criticidadeDaOcorrencia(h) === 'CRÍTICO' ? '<span class="hist-st parar">CRÍTICO</span>' : '<span class="hist-st at">MÍNIMO</span>');
+    const badge = itensImpeditivo.length ? '<span class="hist-st parar" title="Item de segurança ausente ou não funciona">ITEM IMPEDITIVO</span>' :
+      (criticidadeDaOcorrencia(h) === 'CRÍTICO' ? '<span class="hist-st parar" title="Algum item de desgaste/condição chegou no nível crítico">DESGASTE CRÍTICO</span>' : '<span class="hist-st at" title="Teve problema, mas nenhum item chegou no nível crítico">DESGASTE MÍNIMO</span>');
     return '<div class="oc-equip-linha-hist"><span class="data">'+formatarDataHist(h.criado)+'</span> ' + badge +
-      '<div class="itens">'+qtdItens+'</div></div>';
+      '<div class="itens">'+qtdItens+'</div>' +
+      '<div class="oc-equip-meta">👤 '+(h.operador || '—')+' &nbsp;·&nbsp; 📍 '+(h.local || '—')+'</div>' +
+    '</div>';
   }).join('');
 
   document.getElementById('oc-equip-corpo').innerHTML =
@@ -6578,7 +6598,7 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
     '</div>' +
     '<div class="oc-equip-kpi-mini">' +
       '<div class="caixa"><div class="num">'+todasDoEquip.length+'</div><div class="lbl">Total de ocorrências</div></div>' +
-      '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl">Críticas</div></div>' +
+      '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl" title="Ocorrências com algum item de desgaste/condição no nível crítico">Desgaste Crítico</div></div>' +
     '</div>' +
     '<div style="font-size:11px;color:var(--cinza);margin-bottom:16px">Última ocorrência: '+ultimaData+'</div>' +
     '<h4 style="margin:0 0 10px">Conformidade x Inconformidade</h4>' +
@@ -6587,7 +6607,7 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
       '<span><span class="dot ok"></span>Conforme: '+conforme+' ('+pctConforme+'%)</span>' +
       '<span><span class="dot ru"></span>Não conforme: '+naoConforme+' ('+(100-pctConforme)+'%)</span>' +
     '</div>' +
-    (meses.length ? '<h4 style="margin:18px 0 10px">Ocorrências por mês</h4>' + graficoHtml : '') +
+    (diasEquip.length ? '<h4 style="margin:18px 0 10px">Trajetória do equipamento (ocorrências por dia)</h4>' + trajetoriaHtml : '') +
     '<h4 style="margin:18px 0 6px">Histórico</h4>' +
     (listaHtml || '<div class="lista-vazia-dash">Nenhuma ocorrência registrada.</div>');
 
@@ -6772,14 +6792,37 @@ function renderizarOcorrenciasEvolucao(filtradas){
   const rotulos = pontos.map(function(p, i){
     return '<text x="'+p[0]+'" y="'+(altura-4)+'" font-size="10" fill="var(--cinza)" text-anchor="middle">'+formatarDataCurta(dias[i])+'</text>' +
            '<text x="'+p[0]+'" y="'+(p[1]-8)+'" font-size="11" font-weight="700" fill="var(--navy)" text-anchor="middle">'+valores[i]+'</text>' +
-           '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--navy)"></circle>';
+           '<circle class="oc-ponto-evolucao" data-dia="'+dias[i]+'" data-valor="'+valores[i]+'" cx="'+p[0]+'" cy="'+p[1]+'" r="6" fill="var(--navy)" style="cursor:pointer" opacity="0"></circle>' +
+           '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--navy)" style="pointer-events:none"></circle>';
   }).join('');
 
   cont.innerHTML = '<svg viewBox="0 0 '+largura+' '+altura+'" style="width:100%;height:180px">' +
     '<path d="'+area+'" fill="var(--cream)" stroke="none"></path>' +
     '<polyline points="'+linha+'" fill="none" stroke="var(--navy)" stroke-width="2"></polyline>' +
     rotulos +
-  '</svg>';
+  '</svg>' +
+  '<div style="text-align:center;font-size:10.5px;color:var(--cinza);margin-top:4px">Passe o mouse num ponto pra ver o dia · clique pra ver o detalhamento daquele dia</div>';
+
+  const tooltip = document.getElementById('oc-tooltip-equip');
+  cont.querySelectorAll('.oc-ponto-evolucao').forEach(function(ponto){
+    ponto.onmouseenter = function(){
+      const dia = ponto.dataset.dia, valor = ponto.dataset.valor;
+      tooltip.innerHTML = '<div class="titulo">'+formatarDataHist(dia + 'T12:00:00').split(' ')[0]+'</div>' +
+        '<div class="lista">'+valor+' '+(valor === '1' ? 'ocorrência' : 'ocorrências')+'</div>';
+      const rect = ponto.getBoundingClientRect();
+      tooltip.style.left = (rect.left - 40) + 'px';
+      tooltip.style.top = (rect.top + window.scrollY - 54) + 'px';
+      tooltip.style.display = 'block';
+    };
+    ponto.onmouseleave = function(){ tooltip.style.display = 'none'; };
+    ponto.onclick = function(){
+      tooltip.style.display = 'none';
+      document.getElementById('oc-filtro-de').value = ponto.dataset.dia;
+      document.getElementById('oc-filtro-ate').value = ponto.dataset.dia;
+      renderizarOcorrencias();
+      document.getElementById('oc-tabela-detalhe').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+  });
 }
 function formatarDataCurta(isoData){
   const partes = isoData.split('-');
@@ -6792,11 +6835,11 @@ function renderizarOcorrenciasTabelaDetalhe(filtradas){
   const linhas = filtradas.slice(0, 20).map(function(h){
     const qtdItens = ITENS.filter(function(it){ return h.campos[it[0]] && severidadeDaResposta(it[0], h.campos[it[0]]) === 'ru'; }).length;
     const crit = criticidadeDaOcorrencia(h);
-    const badge = crit === 'CRÍTICO' ? '<span class="hist-st parar">CRÍTICO</span>' : '<span class="hist-st at">MÍNIMO</span>';
+    const badge = crit === 'CRÍTICO' ? '<span class="hist-st parar" title="Algum item de desgaste/condição chegou no nível crítico">DESGASTE CRÍTICO</span>' : '<span class="hist-st at" title="Teve problema, mas nenhum item chegou no nível crítico">DESGASTE MÍNIMO</span>';
     return '<tr><td>'+h.equipamento+'</td><td>'+formatarDataHist(h.criado)+'</td><td>'+h.local+'</td><td>'+h.operador+'</td><td>'+qtdItens+' itens</td><td>'+badge+'</td></tr>';
   }).join('');
   cont.innerHTML = '<div class="hist-tabela-wrap"><table class="hist-tabela"><thead><tr>' +
-    '<th>Código</th><th>Data</th><th>Local</th><th>Operador</th><th>Itens com ocorrência</th><th>Nível</th>' +
+    '<th>Código</th><th>Data</th><th>Local</th><th>Operador</th><th>Itens com ocorrência</th><th>Nível de Desgaste</th>' +
     '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
     (filtradas.length > 20 ? '<div style="font-size:11px;color:var(--cinza);margin-top:8px">Exibindo 20 de '+filtradas.length+' ocorrências.</div>' : '');
 }
