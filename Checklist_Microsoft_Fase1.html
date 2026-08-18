@@ -538,8 +538,8 @@
   .arv-btn-detalhe{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
     font-size:12px;padding:2px 6px;cursor:pointer;flex-shrink:0}
   .arv-btn-detalhe:hover{background:var(--navy);color:#fff}
-  .oc-link-equip{color:var(--navy);font-weight:700;text-decoration:none;border-bottom:1px dashed var(--navy)}
-  .oc-link-equip:hover{color:var(--ru);border-bottom-color:var(--ru)}
+  .oc-linha-clicavel{cursor:pointer}
+  .oc-linha-clicavel:hover{background:var(--cream)}
 
   .oc-equip-foto-wrap{display:flex;justify-content:center;margin-bottom:16px}
   .oc-equip-foto{width:100%;max-width:280px;height:150px;border-radius:10px;background:var(--cream);
@@ -6960,16 +6960,15 @@ function renderizarOcorrenciasTabelaDetalhe(filtradas){
     const qtdItens = ITENS.filter(function(it){ return h.campos[it[0]] && severidadeDaResposta(it[0], h.campos[it[0]]) === 'ru'; }).length;
     const crit = criticidadeDaOcorrencia(h);
     const badge = crit === 'CRÍTICO' ? '<span class="hist-st parar" title="Algum item de desgaste/condição chegou no nível crítico">DESGASTE CRÍTICO</span>' : '<span class="hist-st at" title="Teve problema, mas nenhum item chegou no nível crítico">DESGASTE MÍNIMO</span>';
-    return '<tr><td><a href="#" class="oc-link-equip" data-ver-detalhe-tabela="'+h.equipamento+'" title="Ver histórico e detalhes desse equipamento">'+h.equipamento+'</a></td><td>'+formatarDataHist(h.criado)+'</td><td>'+h.local+'</td><td>'+h.operador+'</td><td>'+qtdItens+' itens</td><td>'+badge+'</td></tr>';
+    return '<tr class="oc-linha-clicavel" data-ver-detalhe-tabela="'+h.equipamento+'" title="Ver histórico e detalhes desse equipamento"><td>'+h.equipamento+'</td><td>'+formatarDataHist(h.criado)+'</td><td>'+h.local+'</td><td>'+h.operador+'</td><td>'+qtdItens+' itens</td><td>'+badge+'</td></tr>';
   }).join('');
   cont.innerHTML = '<div class="hist-tabela-wrap"><table class="hist-tabela"><thead><tr>' +
     '<th>Código</th><th>Data</th><th>Local</th><th>Operador</th><th>Itens com ocorrência</th><th>Nível de Desgaste</th>' +
     '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
     (filtradas.length > 20 ? '<div style="font-size:11px;color:var(--cinza);margin-top:8px">Exibindo 20 de '+filtradas.length+' ocorrências.</div>' : '');
-  cont.querySelectorAll('[data-ver-detalhe-tabela]').forEach(function(link){
-    link.onclick = function(e){
-      e.preventDefault();
-      garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(link.dataset.verDetalheTabela); });
+  cont.querySelectorAll('[data-ver-detalhe-tabela]').forEach(function(linha){
+    linha.onclick = function(){
+      garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(linha.dataset.verDetalheTabela); });
     };
   });
 }
