@@ -527,29 +527,38 @@
   .oc-tooltip-equip .lista{display:flex;flex-wrap:wrap;gap:6px}
   .oc-tooltip-chip{background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;cursor:pointer;font-weight:600}
   .oc-tooltip-chip:hover{background:var(--navy)}
-  .oc-equip-kpi-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-  .oc-equip-kpi-mini .caixa{background:var(--cream);border-radius:10px;padding:12px;text-align:center}
-  .oc-equip-kpi-mini .num{font-size:22px;font-weight:800;color:var(--navy)}
-  .oc-equip-kpi-mini .lbl{font-size:10.5px;color:var(--cinza);text-transform:uppercase;letter-spacing:.3px}
-  .oc-equip-linha-hist{border-bottom:1px solid var(--linha);padding:10px 0;font-size:12.5px}
-  .oc-equip-linha-hist .data{font-weight:700;color:var(--tinta)}
-  .oc-equip-linha-hist .itens{color:var(--cinza);margin-top:2px}
-  .oc-equip-linha-hist .oc-equip-meta{color:var(--cinza);font-size:11px;margin-top:4px}
   .arv-btn-detalhe{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
     font-size:12px;padding:2px 6px;cursor:pointer;flex-shrink:0}
   .arv-btn-detalhe:hover{background:var(--navy);color:#fff}
   .oc-linha-clicavel{cursor:pointer}
   .oc-linha-clicavel:hover{background:var(--cream)}
 
-  .oc-equip-foto-wrap{display:flex;justify-content:center;margin-bottom:16px}
-  .oc-equip-foto{width:100%;max-width:280px;height:150px;border-radius:10px;background:var(--cream);
-    display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}
-  .oc-conform-barra{height:22px;border-radius:6px;overflow:hidden;background:#f3c9c2;display:flex;margin-bottom:8px}
+  .oc-equip-header{display:flex;gap:22px;margin-bottom:24px}
+  .oc-equip-foto{width:230px;height:180px;border-radius:16px;background:var(--cream);
+    display:flex;align-items:center;justify-content:center;font-size:56px;overflow:hidden;flex-shrink:0;
+    box-shadow:0 6px 18px rgba(0,0,0,.10)}
+  .oc-equip-header-info{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px}
+  .oc-equip-nome-grande{font-size:28px;font-weight:800;color:var(--navy);line-height:1.1}
+  .oc-equip-header-meta{font-size:13px;color:var(--cinza)}
+  .oc-equip-kpi-mini{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .oc-equip-kpi-mini .caixa{background:var(--cream);border-radius:14px;padding:16px;text-align:center}
+  .oc-equip-kpi-mini .num{font-size:30px;font-weight:800;color:var(--navy)}
+  .oc-equip-kpi-mini .lbl{font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+
+  .oc-equip-secao{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:22px;margin-bottom:20px}
+  .oc-equip-secao h4{margin:0 0 16px;font-size:15px;display:flex;align-items:center;gap:8px}
+
+  .oc-conform-barra{height:28px;border-radius:9px;overflow:hidden;background:#f3c9c2;display:flex;margin-bottom:12px}
   .oc-conform-ok{height:100%;background:var(--ok)}
-  .oc-conform-legenda{display:flex;gap:16px;font-size:11.5px;color:var(--cinza);margin-bottom:6px}
-  .oc-conform-legenda .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .oc-conform-legenda{display:flex;gap:22px;font-size:13px;color:var(--cinza)}
+  .oc-conform-legenda .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px}
   .oc-conform-legenda .dot.ok{background:var(--ok)}
   .oc-conform-legenda .dot.ru{background:#e0392b}
+
+  .oc-equip-hist-card{background:var(--cream);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .oc-equip-hist-card .data{font-weight:800;color:var(--navy);font-size:13px}
+  .oc-equip-hist-card .itens{color:var(--tinta);margin-top:5px;font-size:13px}
+  .oc-equip-hist-card .oc-equip-meta{color:var(--cinza);font-size:11.5px;margin-top:7px}
 
   .acessos-grupo-secao{margin-bottom:10px}
   .acessos-grupo-titulo{font-size:11.5px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
@@ -744,7 +753,7 @@
   .hist-detalhe-modal{background:#fff;border-radius:14px;width:100%;max-width:640px;
     max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .oc-painel-lateral{justify-content:flex-end !important;padding:0 !important}
-  .oc-painel-modal{max-width:480px !important;width:100% !important;height:100vh !important;
+  .oc-painel-modal{max-width:760px !important;width:100% !important;height:100vh !important;
     border-radius:0 !important;margin:0 !important;max-height:100vh !important;animation:oc-slide-in .18s ease-out}
   @keyframes oc-slide-in{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
   .hist-detalhe-header{display:flex;justify-content:space-between;align-items:center;
@@ -6701,7 +6710,7 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
   if (diasEquip.length) {
     const valoresEquip = diasEquip.map(function(d){ return porDiaEquip[d]; });
     const maxEquip = Math.max.apply(null, valoresEquip) || 1;
-    const largEq = 420, altEq = 130, margEq = 22;
+    const largEq = 660, altEq = 170, margEq = 30;
     const passoEq = diasEquip.length > 1 ? (largEq - margEq*2) / (diasEquip.length - 1) : 0;
     const ptsEq = valoresEquip.map(function(v, i){
       const x = margEq + i*passoEq;
@@ -6711,13 +6720,13 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
     const linhaEq = ptsEq.map(function(p){ return p[0]+','+p[1]; }).join(' ');
     const areaEq = 'M' + margEq + ',' + (altEq-margEq) + ' L' + linhaEq.replace(/ /g, ' L') + ' L' + (margEq+(diasEquip.length-1)*passoEq) + ',' + (altEq-margEq) + ' Z';
     const rotulosEq = ptsEq.map(function(p, i){
-      return '<text x="'+p[0]+'" y="'+(altEq-4)+'" font-size="9" fill="var(--cinza)" text-anchor="middle">'+formatarDataCurta(diasEquip[i])+'</text>' +
-        '<text x="'+p[0]+'" y="'+(p[1]-7)+'" font-size="10" font-weight="700" fill="var(--ru)" text-anchor="middle">'+valoresEquip[i]+'</text>' +
-        '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="var(--ru)"></circle>';
+      return '<text x="'+p[0]+'" y="'+(altEq-6)+'" font-size="10" fill="var(--cinza)" text-anchor="middle">'+formatarDataCurta(diasEquip[i])+'</text>' +
+        '<text x="'+p[0]+'" y="'+(p[1]-9)+'" font-size="11" font-weight="700" fill="var(--ru)" text-anchor="middle">'+valoresEquip[i]+'</text>' +
+        '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5" fill="var(--ru)"></circle>';
     }).join('');
-    trajetoriaHtml = '<svg viewBox="0 0 '+largEq+' '+altEq+'" style="width:100%;height:140px">' +
+    trajetoriaHtml = '<svg viewBox="0 0 '+largEq+' '+altEq+'" style="width:100%;height:190px">' +
       '<path d="'+areaEq+'" fill="#fbe9e7" stroke="none"></path>' +
-      '<polyline points="'+linhaEq+'" fill="none" stroke="var(--ru)" stroke-width="2"></polyline>' +
+      '<polyline points="'+linhaEq+'" fill="none" stroke="var(--ru)" stroke-width="2.5"></polyline>' +
       rotulosEq +
     '</svg>';
   }
@@ -6730,36 +6739,49 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
           .map(function(it){ return prettify(it[0]); }).join(', ');
     const badge = itensImpeditivo.length ? '<span class="hist-st parar" title="Item de segurança ausente ou não funciona">ITEM IMPEDITIVO</span>' :
       (criticidadeDaOcorrencia(h) === 'CRÍTICO' ? '<span class="hist-st parar" title="Algum item de desgaste/condição chegou no nível crítico">DESGASTE CRÍTICO</span>' : '<span class="hist-st at" title="Teve problema, mas nenhum item chegou no nível crítico">DESGASTE MÍNIMO</span>');
-    return '<div class="oc-equip-linha-hist"><span class="data">'+formatarDataHist(h.criado)+'</span> ' + badge +
+    return '<div class="oc-equip-hist-card"><span class="data">'+formatarDataHist(h.criado)+'</span> ' + badge +
       '<div class="itens">'+qtdItens+'</div>' +
       '<div class="oc-equip-meta">👤 '+(h.operador || '—')+' &nbsp;·&nbsp; 📍 '+(h.local || '—')+'</div>' +
     '</div>';
   }).join('');
 
+  const statusAtualBadge = (typeof frotaStatusAtual !== 'undefined' && frotaStatusAtual[equip]) ? statusEqBadge(frotaStatusAtual[equip]) : '';
+  const localAtualTxt = (typeof frotaLocalAtual !== 'undefined' && frotaLocalAtual[equip]) ? frotaLocalAtual[equip] : '—';
+
   document.getElementById('oc-equip-corpo').innerHTML =
-    '<div class="oc-equip-foto-wrap">' +
+    '<div class="oc-equip-header">' +
       '<div class="oc-equip-foto" id="oc-equip-foto">🚜</div>' +
+      '<div class="oc-equip-header-info">' +
+        '<div class="oc-equip-nome-grande">'+equip+'</div>' +
+        '<div class="oc-equip-header-meta">'+statusAtualBadge+' &nbsp; 📍 '+localAtualTxt+'<br>Última ocorrência: '+ultimaData+'</div>' +
+        '<div class="oc-equip-kpi-mini">' +
+          '<div class="caixa"><div class="num">'+todasDoEquip.length+'</div><div class="lbl">Total de ocorrências</div></div>' +
+          '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl" title="Ocorrências com algum item de desgaste/condição no nível crítico">Desgaste Crítico</div></div>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="oc-equip-kpi-mini">' +
-      '<div class="caixa"><div class="num">'+todasDoEquip.length+'</div><div class="lbl">Total de ocorrências</div></div>' +
-      '<div class="caixa"><div class="num">'+criticas+'</div><div class="lbl" title="Ocorrências com algum item de desgaste/condição no nível crítico">Desgaste Crítico</div></div>' +
+
+    '<div class="oc-equip-secao">' +
+      '<h4>✅ Conformidade x Inconformidade</h4>' +
+      '<div class="oc-conform-barra"><div class="oc-conform-ok" style="width:'+pctConforme+'%"></div></div>' +
+      '<div class="oc-conform-legenda">' +
+        '<span><span class="dot ok"></span>Conforme: '+conforme+' ('+pctConforme+'%)</span>' +
+        '<span><span class="dot ru"></span>Não conforme: '+naoConforme+' ('+(100-pctConforme)+'%)</span>' +
+      '</div>' +
     '</div>' +
-    '<div style="font-size:11px;color:var(--cinza);margin-bottom:16px">Última ocorrência: '+ultimaData+'</div>' +
-    '<h4 style="margin:0 0 10px">Conformidade x Inconformidade</h4>' +
-    '<div class="oc-conform-barra"><div class="oc-conform-ok" style="width:'+pctConforme+'%"></div></div>' +
-    '<div class="oc-conform-legenda">' +
-      '<span><span class="dot ok"></span>Conforme: '+conforme+' ('+pctConforme+'%)</span>' +
-      '<span><span class="dot ru"></span>Não conforme: '+naoConforme+' ('+(100-pctConforme)+'%)</span>' +
-    '</div>' +
-    (diasEquip.length ? '<h4 style="margin:18px 0 10px">Trajetória do equipamento (ocorrências por dia)</h4>' + trajetoriaHtml : '') +
-    '<h4 style="margin:18px 0 6px">Histórico</h4>' +
-    (listaHtml || '<div class="lista-vazia-dash">Nenhuma ocorrência registrada.</div>');
+
+    (diasEquip.length ? '<div class="oc-equip-secao"><h4>📈 Trajetória do equipamento (ocorrências por dia)</h4>' + trajetoriaHtml + '</div>' : '') +
+
+    '<div class="oc-equip-secao">' +
+      '<h4>🕒 Histórico</h4>' +
+      (listaHtml || '<div class="lista-vazia-dash">Nenhuma ocorrência registrada.</div>') +
+    '</div>';
 
   document.getElementById('oc-equip-overlay').classList.add('aberto');
 
   const fotoEl = document.getElementById('oc-equip-foto');
   buscarUrlFotoEquipamento(equip).then(function(url){
-    if (url) fotoEl.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px">';
+    if (url) fotoEl.innerHTML = '<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:16px">';
   }).catch(function(){});
 }
 document.getElementById('oc-equip-fechar').onclick = function(){ document.getElementById('oc-equip-overlay').classList.remove('aberto'); };
