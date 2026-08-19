@@ -2209,6 +2209,11 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div style="border:1px dashed var(--linha);border-radius:8px;padding:12px;margin-top:8px">
         <input type="email" id="acessos-novo-limitado-email" placeholder="email@comprex.com.br" style="width:100%;margin-bottom:10px">
         <div id="acessos-arvore-menus"></div>
+        <div id="acessos-localidades-wrap" style="margin-top:14px;border-top:1px solid var(--linha);padding-top:12px;display:none">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px">🔒 Restringir edição de Movimentações a estas localidades (opcional)</div>
+          <div style="font-size:11px;color:var(--cinza);margin-bottom:8px">Se marcar alguma, essa pessoa só edita (move/muda status) equipamentos dessas localidades — as demais ficam somente leitura para ela. Se deixar tudo desmarcado, edita qualquer local normalmente.</div>
+          <div id="acessos-lista-localidades" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
         <button type="button" class="rel-btn-secundario" id="acessos-add-limitado" style="margin-top:10px">+ Adicionar pessoa</button>
       </div>
 
@@ -2484,6 +2489,13 @@ const CONFIG = {
     // 'joao.silva@comprex.com.br': ['checklist'],
     // 'maria.souza@comprex.com.br': ['checklist', 'partediaria'],
   },
+  // e-mail -> lista de locais que a pessoa pode EDITAR em Movimentações
+  // (mover equipamento, mudar status). Locais fora dessa lista ficam
+  // "somente leitura" pra ela. Se o e-mail nem aparecer aqui, não há
+  // restrição — edita qualquer local (comportamento de hoje, sem mudança).
+  localidadesPorUsuario: {
+    // 'joao.silva@comprex.com.br': ['AMT - Sucata - 500010'],
+  },
   tiposParada: ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'],
   diasReincidencia: 30,
   observacaoObrigatoriaChecklist: false,
@@ -2519,6 +2531,19 @@ async function carregarConfiguracoes(){
       });
       if (Object.keys(novoMapa).length) CONFIG.acessosLimitados = novoMapa;
     }
+    if (porChave['LOCALIDADES_POR_USUARIO']) {
+      // Mesmo formato do ACESSOS_LIMITADOS, só que os valores são nomes de local:
+      // "email1:Local A,Local B;email2:Local C"
+      const novoMapaLocais = {};
+      porChave['LOCALIDADES_POR_USUARIO'].split(';').forEach(function(par){
+        const idx = par.indexOf(':');
+        if (idx === -1) return;
+        const email = par.slice(0, idx).trim().toLowerCase();
+        const locaisDaPessoa = par.slice(idx + 1).split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        if (email && locaisDaPessoa.length) novoMapaLocais[email] = locaisDaPessoa;
+      });
+      CONFIG.localidadesPorUsuario = novoMapaLocais; // pode ficar {} se ninguém tiver restrição
+    }
     if (porChave['TIPOS_PARADA']) {
       CONFIG.tiposParada = porChave['TIPOS_PARADA'].split(',').map(function(t){ return t.trim(); }).filter(Boolean);
     }
@@ -2540,6 +2565,18 @@ async function carregarConfiguracoes(){
 function usuarioEhAdmin(conta){
   const email = (conta && conta.username || '').trim().toLowerCase();
   return CONFIG.emailsAdmin.indexOf(email) !== -1;
+}
+
+/** Decide se a conta atual pode EDITAR (mover/mudar status) um equipamento
+ *  que está nesse local — admin sempre pode; quem não tem restrição
+ *  configurada também pode (comportamento de sempre); só bloqueia quem tem
+ *  uma lista de localidades e esse local não está nela. */
+function usuarioPodeEditarLocal(local){
+  if (usuarioEhAdmin(contaAtual)) return true;
+  const email = (contaAtual && contaAtual.username || '').trim().toLowerCase();
+  const restricao = CONFIG.localidadesPorUsuario[email];
+  if (!restricao) return true; // sem restrição configurada = sem mudança de comportamento
+  return restricao.indexOf(local) !== -1;
 }
 
 /** Devolve o nível de acesso da conta: 'admin' (tudo liberado),
@@ -3646,12 +3683,15 @@ modalFechar.onclick = function(){ overlay.classList.remove('aberto'); };
    ===================================================================== */
 let acessosRascunhoAdmin = [];
 let acessosRascunhoLimitados = {}; // email -> [secoes]
+let acessosRascunhoLocalidades = {}; // email -> [locais que pode editar em Movimentações]
 
 function acessosAbrirTela(){
   if (!usuarioEhAdmin(contaAtual)) { alert('Você não tem permissão para acessar esta área.'); return; }
   acessosRascunhoAdmin = CONFIG.emailsAdmin.slice();
   acessosRascunhoLimitados = {};
   Object.keys(CONFIG.acessosLimitados).forEach(function(e){ acessosRascunhoLimitados[e] = CONFIG.acessosLimitados[e].slice(); });
+  acessosRascunhoLocalidades = {};
+  Object.keys(CONFIG.localidadesPorUsuario).forEach(function(e){ acessosRascunhoLocalidades[e] = CONFIG.localidadesPorUsuario[e].slice(); });
   document.getElementById('acessos-aviso-sem-lista').style.display = LISTA_CONFIGURACOES_ID ? 'none' : 'block';
   document.getElementById('acessos-erro').style.display = 'none';
   document.getElementById('acessos-ok-msg').style.display = 'none';
@@ -3674,6 +3714,19 @@ function acessosRenderizarArvoreMenus(){
       '</div>' +
     '</div>';
   }).join('');
+
+  document.getElementById('acessos-lista-localidades').innerHTML = locais.slice().sort().map(function(l){
+    return '<label style="font-size:12px"><input type="checkbox" class="acessos-nova-localidade" value="'+l+'"> ' + l + '</label>';
+  }).join('');
+
+  function atualizarVisibilidadeLocalidades(){
+    const temRastreamento = Array.from(document.querySelectorAll('.acessos-nova-view')).some(function(c){
+      return c.dataset.secao === 'rastreamento' && c.checked;
+    });
+    document.getElementById('acessos-localidades-wrap').style.display = temRastreamento ? 'block' : 'none';
+  }
+  cont.querySelectorAll('.acessos-nova-view').forEach(function(c){ c.onchange = atualizarVisibilidadeLocalidades; });
+  atualizarVisibilidadeLocalidades();
 }
 document.getElementById('btn-abrir-acessos').onclick = acessosAbrirTela;
 document.getElementById('acessos-fechar').onclick = function(){ document.getElementById('acessos-overlay').classList.remove('aberto'); };
@@ -3723,7 +3776,10 @@ function acessosRenderizar(){
           const menu = (MENUS_POR_SECAO[partes[0]] || []).find(function(m){ return m.view === partes[1]; });
           return menu ? menu.label : token;
         }).join(', ');
-        return '<div class="acessos-linha"><span>' + email + '<div class="acessos-secoes">' + nomesViews + '</div></span>' +
+        const localidades = acessosRascunhoLocalidades[email];
+        const linhaLocalidades = localidades && localidades.length
+          ? '<div class="acessos-secoes">🔒 Só edita: ' + localidades.join(', ') + '</div>' : '';
+        return '<div class="acessos-linha"><span>' + email + '<div class="acessos-secoes">' + nomesViews + '</div>' + linhaLocalidades + '</span>' +
           '<div style="display:flex;gap:4px">' +
           '<button type="button" class="acessos-remover" data-editar-limitado="' + email + '" style="color:var(--navy)" title="Editar">✏️</button>' +
           '<button type="button" class="acessos-remover" data-remover-limitado="' + email + '" title="Remover">✕</button>' +
@@ -3740,6 +3796,7 @@ function acessosRenderizar(){
   document.querySelectorAll('[data-remover-limitado]').forEach(function(btn){
     btn.onclick = function(){
       delete acessosRascunhoLimitados[btn.dataset.removerLimitado];
+      delete acessosRascunhoLocalidades[btn.dataset.removerLimitado];
       acessosRenderizar();
     };
   });
@@ -3758,6 +3815,12 @@ function acessosCarregarParaEdicao(email){
     const secao = chk.dataset.secao, view = chk.value;
     chk.checked = tokens.indexOf(secao) !== -1 || tokens.indexOf(secao + '/' + view) !== -1;
   });
+  const localidadesDaPessoa = acessosRascunhoLocalidades[email] || [];
+  document.querySelectorAll('.acessos-nova-localidade').forEach(function(chk){
+    chk.checked = localidadesDaPessoa.indexOf(chk.value) !== -1;
+  });
+  const temRastreamento = tokens.some(function(t){ return t === 'rastreamento' || t.indexOf('rastreamento/') === 0; });
+  document.getElementById('acessos-localidades-wrap').style.display = temRastreamento ? 'block' : 'none';
   document.getElementById('acessos-novo-limitado-email').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.getElementById('acessos-novo-limitado-email').focus();
 }
@@ -3797,8 +3860,15 @@ document.getElementById('acessos-add-limitado').onclick = function(){
   });
 
   acessosRascunhoLimitados[email] = tokens;
+
+  const localidadesMarcadas = Array.from(document.querySelectorAll('.acessos-nova-localidade:checked')).map(function(c){ return c.value; });
+  if (localidadesMarcadas.length) acessosRascunhoLocalidades[email] = localidadesMarcadas;
+  else delete acessosRascunhoLocalidades[email];
+
   document.getElementById('acessos-novo-limitado-email').value = '';
   document.querySelectorAll('.acessos-nova-view').forEach(function(c){ c.checked = false; });
+  document.querySelectorAll('.acessos-nova-localidade').forEach(function(c){ c.checked = false; });
+  document.getElementById('acessos-localidades-wrap').style.display = 'none';
   acessosRenderizar();
 };
 
@@ -3833,13 +3903,19 @@ document.getElementById('acessos-salvar').onclick = async function(){
     const valorLimitados = Object.keys(acessosRascunhoLimitados).map(function(email){
       return email + ':' + acessosRascunhoLimitados[email].join(',');
     }).join(';');
+    const valorLocalidades = Object.keys(acessosRascunhoLocalidades).map(function(email){
+      return email + ':' + acessosRascunhoLocalidades[email].join(',');
+    }).join(';');
 
     await salvarConfiguracaoChave('EMAILS_ADMIN', valorAdmin);
     await salvarConfiguracaoChave('ACESSOS_LIMITADOS', valorLimitados);
+    await salvarConfiguracaoChave('LOCALIDADES_POR_USUARIO', valorLocalidades);
 
     CONFIG.emailsAdmin = acessosRascunhoAdmin.slice();
     CONFIG.acessosLimitados = {};
     Object.keys(acessosRascunhoLimitados).forEach(function(e){ CONFIG.acessosLimitados[e] = acessosRascunhoLimitados[e].slice(); });
+    CONFIG.localidadesPorUsuario = {};
+    Object.keys(acessosRascunhoLocalidades).forEach(function(e){ CONFIG.localidadesPorUsuario[e] = acessosRascunhoLocalidades[e].slice(); });
 
     okEl.style.display = 'block';
     setTimeout(function(){ okEl.style.display = 'none'; }, 4000);
@@ -4415,7 +4491,10 @@ function locRenderizarTabela(){
   tbody.innerHTML = linhas.map(function(eq){
     const dias = frotaDiasNoLocal[eq];
     const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
-    return '<tr class="hist-linha-clicavel" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mover este equipamento"><td>' + eq + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
+    const podeEditar = usuarioPodeEditarLocal(frotaLocalAtual[eq] || '');
+    const estiloLinha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
+    const dica = podeEditar ? 'Clique para mover este equipamento' : 'Somente leitura — fora da sua localidade';
+    return '<tr class="hist-linha-clicavel" data-equip="'+eq+'" style="'+estiloLinha+'" title="'+dica+'"><td>' + eq + (podeEditar?'':' 🔒') + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
       '<td>' + (frotaLocalAtual[eq] ? '<span class="hist-st ok">' + frotaLocalAtual[eq] + '</span>' : '<span style="color:var(--cinza)">Sem registro</span>') + '</td>' +
       '<td>' + locBadgeStatus(frotaStatusAtual[eq]) + '</td>' +
       '<td>' + diasTxt + '</td></tr>';
@@ -4482,6 +4561,11 @@ let locMoverEquipAlvo = null;
 const MARCADOR_SEM_HISTORICO = '[[SEM_HISTORICO]]';
 
 function locAbrirModalMover(eq){
+  const localDoEquip = frotaLocalAtual[eq] || '';
+  if (!usuarioPodeEditarLocal(localDoEquip)) {
+    alert('Você só pode editar equipamentos da sua localidade. "' + (localDoEquip || 'Sem local registrado') + '" é somente leitura para você.');
+    return;
+  }
   locMoverEquipAlvo = eq;
   document.getElementById('loc-mover-equip').value = eq;
   document.getElementById('loc-mover-local-atual').value = frotaLocalAtual[eq] || 'Sem local registrado';
@@ -5131,8 +5215,11 @@ function statusEqRenderizar(){
     const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
     const totais = statusEqTotaisPorStatus(eq);
     const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut. / ' + totais['EM DISPONIBILIDADE'] + 'd disp.';
-    return '<div class="arv-folha" data-equip="'+eq+'" style="cursor:pointer" title="Clique para mudar o status ou mover este equipamento">' +
-      '<div class="arv-no-nome">🚜 '+nome+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
+    const podeEditar = usuarioPodeEditarLocal(frotaLocalAtual[eq] || '');
+    const estiloFolha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
+    const dicaFolha = podeEditar ? 'Clique para mudar o status ou mover este equipamento' : 'Somente leitura — fora da sua localidade';
+    return '<div class="arv-folha" data-equip="'+eq+'" style="'+estiloFolha+'" title="'+dicaFolha+'">' +
+      '<div class="arv-no-nome">🚜 '+nome+(podeEditar?'':' 🔒')+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
       '<div>'+diasTxt+'</div>' +
       '<div class="arv-sub">'+chegadaTxt+'</div>' +
       '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
