@@ -439,6 +439,24 @@
   .mli-editando-extra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px dashed var(--linha)}
   .mli-editando-extra label{font-size:10.5px;font-weight:700;color:var(--cinza)}
   .mli-select-extra{border:1px solid var(--linha);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--card);color:var(--tinta)}
+  /* ---- Painel lateral (Frota/Movimentações): visão completa + edição (admin) ---- */
+  .oc-equip-editar-btn{border:1.5px solid var(--navy);color:var(--navy);background:transparent;
+    border-radius:20px;padding:5px 14px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .oc-equip-editar-btn:hover{background:var(--navy);color:#fff}
+  .oc-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}
+  .oc-info-item label{display:block;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--cinza);font-weight:700;margin-bottom:3px}
+  .oc-info-item .valor{font-size:13.5px;color:var(--tinta);font-weight:600}
+  .oc-edit-form{display:flex;flex-direction:column;gap:12px}
+  .oc-edit-campo label{display:block;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--cinza);font-weight:700;margin-bottom:5px}
+  .oc-edit-campo input, .oc-edit-campo select{width:100%;border:1.5px solid #d8dee3;border-radius:9px;
+    padding:9px 12px;font-size:13.5px;color:var(--tinta);outline:none;font-family:inherit;background:var(--card)}
+  .oc-edit-campo input:focus, .oc-edit-campo select:focus{border-color:var(--navy)}
+  .oc-edit-acoes{display:flex;gap:8px;margin-top:2px}
+  .oc-edit-salvar{background:var(--ok);color:#fff;border:none;border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .oc-edit-cancelar{background:transparent;border:1.5px solid var(--linha);color:var(--cinza);border-radius:20px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .oc-edit-salvar:disabled{opacity:.6;cursor:not-allowed}
+  .oc-edit-feedback{font-size:12px;margin-top:2px}
+  body.tema-escuro .oc-edit-campo input, body.tema-escuro .oc-edit-campo select{background:#1a222b;border-color:#2a3540;color:#e8edf1}
   /* ---- Status dos Equipamentos: árvore + resumo ---- */
   .arv-linha-local{display:grid;grid-template-columns:1fr 140px 120px;gap:10px;align-items:center;
     padding:10px 12px;background:var(--cream);border-radius:8px;margin-top:10px;cursor:pointer;font-weight:700;font-size:12.5px}
@@ -6542,7 +6560,11 @@ function atualizarGraficosComFiltroDeData(){
    Histórico de Movimentações (ou num card da Frota). Mesma pegada visual
    do painel de Ocorrências: foto grande, KPIs, extratos e linha do tempo.
    ===================================================================== */
+let movEquipAtual = null;
+let movEquipEditando = false;
 async function abrirHistoricoMovimentacaoEquipamento(equip){
+  movEquipAtual = equip;
+  movEquipEditando = false;
   const corpo = document.getElementById('mov-equip-corpo');
   document.getElementById('mov-equip-titulo').textContent = equip;
   corpo.innerHTML = '<div class="lista-vazia-dash">Carregando…</div>';
@@ -6603,11 +6625,15 @@ async function abrirHistoricoMovimentacaoEquipamento(equip){
     '</div>';
   }).join('') : '';
   const descricao = frotaDescricao[equip] || '';
+  const podeEditar = usuarioEhAdmin(contaAtual);
   corpo.innerHTML =
     '<div class="oc-equip-header">' +
       '<div class="oc-equip-foto" id="mov-equip-foto">🚜</div>' +
       '<div class="oc-equip-header-info">' +
-        '<div class="oc-equip-nome-grande">' + frotaEsc(equip) + '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+          '<div class="oc-equip-nome-grande">' + frotaEsc(equip) + '</div>' +
+          (podeEditar ? '<button type="button" class="oc-equip-editar-btn" id="mov-equip-editar-btn">✏️ Editar</button>' : '') +
+        '</div>' +
         (descricao ? '<div style="font-size:12.5px;color:var(--cinza);margin-top:-6px">' + frotaEsc(descricao) + '</div>' : '') +
         '<div class="oc-equip-header-meta">' + statusEqBadge(frotaStatusAtual[equip]) +
           ' &nbsp; 📍 ' + frotaEsc(frotaLocalAtual[equip] || '—') +
@@ -6618,6 +6644,7 @@ async function abrirHistoricoMovimentacaoEquipamento(equip){
         '</div>' +
       '</div>' +
     '</div>' +
+    '<div class="oc-equip-secao" id="mov-equip-cadastro-secao"></div>' +
     '<div class="oc-equip-secao">' +
       '<h4>📍 Tempo por local <span style="font-weight:400;font-size:12px;color:var(--cinza)">(' + locaisDistintos + ' local(is) diferentes)</span></h4>' +
       montarExtrato(periodosLocal, 'Nenhum local registrado ainda.') +
@@ -6635,6 +6662,118 @@ async function abrirHistoricoMovimentacaoEquipamento(equip){
   buscarUrlFotoEquipamento(equip).then(function(url){
     if (url) fotoEl.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:16px">';
   }).catch(function(){});
+  renderizarSecaoCadastroEquip();
+  if (podeEditar) {
+    document.getElementById('mov-equip-editar-btn').onclick = function(){
+      movEquipEditando = true;
+      renderizarSecaoCadastroEquip();
+    };
+  }
+}
+/** Seção "Dados cadastrais" do painel lateral de Frota/Movimentações — mostra
+ *  a visão completa do item e, se movEquipEditando estiver ligado (só admin
+ *  chega a ligar, via botão ✏️ Editar), troca pra um formulário de edição
+ *  que grava direto na lista Frota do SharePoint. */
+function renderizarSecaoCadastroEquip(){
+  const equip = movEquipAtual;
+  const cont = document.getElementById('mov-equip-cadastro-secao');
+  if (!cont || !equip) return;
+  const ehImplemento = frotaTipoItem[equip] === 'implemento';
+  if (!movEquipEditando) {
+    const vinculadoLabel = ehImplemento ? 'Vinculado ao equipamento' : 'Implemento vinculado';
+    const vinculado = frotaItemVinculado[equip] || '';
+    cont.innerHTML =
+      '<h4>📋 Dados cadastrais</h4>' +
+      '<div class="oc-info-grid">' +
+        '<div class="oc-info-item"><label>Tipo</label><div class="valor">' + (ehImplemento ? '🔧 Implemento' : '🚜 Equipamento') + '</div></div>' +
+        '<div class="oc-info-item"><label>Status atual</label><div class="valor">' + statusEqBadge(frotaStatusAtual[equip]) + '</div></div>' +
+        '<div class="oc-info-item"><label>Local atual</label><div class="valor">' + frotaEsc(frotaLocalAtual[equip] || '—') + '</div></div>' +
+        '<div class="oc-info-item"><label>Regime de trabalho</label><div class="valor">' + frotaEsc(frotaRegimeTrabalho[equip] || '8h') + '</div></div>' +
+        '<div class="oc-info-item"><label>' + vinculadoLabel + '</label><div class="valor">' + (vinculado ? frotaEsc(vinculado) : '—') + '</div></div>' +
+        '<div class="oc-info-item"><label>Descrição</label><div class="valor">' + (frotaDescricao[equip] ? frotaEsc(frotaDescricao[equip]) : '<i style="opacity:.6;font-weight:400">Sem descrição cadastrada</i>') + '</div></div>' +
+      '</div>';
+    return;
+  }
+  const opcoesVinculo = ehImplemento
+    ? frotas.filter(function(f){ return f !== equip && frotaTipoItem[f] !== 'implemento'; })
+    : frotas.filter(function(f){ return f !== equip && frotaTipoItem[f] === 'implemento'; });
+  const vinculadoAtual = frotaItemVinculado[equip] || '';
+  if (vinculadoAtual && opcoesVinculo.indexOf(vinculadoAtual) === -1) opcoesVinculo.unshift(vinculadoAtual);
+  cont.innerHTML =
+    '<h4>✏️ Editando dados cadastrais</h4>' +
+    '<div class="oc-edit-form">' +
+      '<div class="oc-edit-campo"><label>Tipo</label>' +
+        '<select id="mov-edit-tipo">' +
+          '<option value="equipamento" ' + (!ehImplemento ? 'selected' : '') + '>🚜 Equipamento</option>' +
+          '<option value="implemento" ' + (ehImplemento ? 'selected' : '') + '>🔧 Implemento</option>' +
+        '</select></div>' +
+      '<div class="oc-edit-campo"><label>Descrição</label>' +
+        '<input type="text" id="mov-edit-descricao" value="' + (frotaDescricao[equip] || '').replace(/"/g, '&quot;') + '" placeholder="Ex: ESCAVADEIRA HIDRA. DOOSAN DX530LC"></div>' +
+      '<div class="oc-edit-campo"><label>Status atual</label>' +
+        '<select id="mov-edit-status">' +
+          ['OPERACIONAL', 'EM MANUTENÇÃO', 'EM DISPONIBILIDADE'].map(function(s){
+            return '<option value="' + s + '" ' + ((frotaStatusAtual[equip] || 'OPERACIONAL') === s ? 'selected' : '') + '>' + s + '</option>';
+          }).join('') +
+        '</select></div>' +
+      '<div class="oc-edit-campo"><label>Regime de trabalho</label>' +
+        '<select id="mov-edit-regime">' +
+          REGIMES_TRABALHO.map(function(r){
+            return '<option value="' + r + '" ' + ((frotaRegimeTrabalho[equip] || '8h') === r ? 'selected' : '') + '>' + r + '</option>';
+          }).join('') +
+        '</select></div>' +
+      '<div class="oc-edit-campo"><label>' + (ehImplemento ? 'Vincular a um equipamento' : 'Implemento vinculado') + '</label>' +
+        '<select id="mov-edit-vinculo"><option value="">Nenhum</option>' +
+          opcoesVinculo.map(function(f){ return '<option value="' + f + '" ' + (vinculadoAtual === f ? 'selected' : '') + '>' + f + '</option>'; }).join('') +
+        '</select></div>' +
+      '<div class="oc-edit-campo"><button type="button" class="oc-equip-editar-btn" id="mov-edit-trocar-foto">📷 Trocar foto</button>' +
+        '<div class="modal-dica" style="margin-top:6px">Pra mudar o local, use "Mover Equip./Implemento" — assim fica registrado no histórico de movimentações.</div></div>' +
+      '<div class="oc-edit-acoes">' +
+        '<button class="oc-edit-salvar" id="mov-edit-salvar">💾 Salvar</button>' +
+        '<button class="oc-edit-cancelar" id="mov-edit-cancelar">Cancelar</button>' +
+      '</div>' +
+      '<div class="oc-edit-feedback" id="mov-edit-feedback"></div>' +
+    '</div>';
+  document.getElementById('mov-edit-trocar-foto').onclick = function(){
+    equipFotoAlvo = equip;
+    document.getElementById('input-foto-equip').click();
+  };
+  document.getElementById('mov-edit-cancelar').onclick = function(){
+    movEquipEditando = false;
+    renderizarSecaoCadastroEquip();
+  };
+  document.getElementById('mov-edit-salvar').onclick = function(){
+    if (!usuarioEhAdmin(contaAtual)) return;
+    const btn = document.getElementById('mov-edit-salvar');
+    const fb = document.getElementById('mov-edit-feedback');
+    const novoTipo = document.getElementById('mov-edit-tipo').value;
+    const novaDescricao = document.getElementById('mov-edit-descricao').value.trim();
+    const novoStatus = document.getElementById('mov-edit-status').value;
+    const novoRegime = document.getElementById('mov-edit-regime').value;
+    const novoVinculo = document.getElementById('mov-edit-vinculo').value;
+    const itemId = frotaIdsExtra[equip] || frotasIds[equip];
+    if (!itemId) { fb.style.color = 'var(--ru)'; fb.textContent = '⚠️ Não foi possível localizar este item no SharePoint.'; return; }
+    const campos = {};
+    if (novoTipo !== (ehImplemento ? 'implemento' : 'equipamento')) campos.TipoItem = novoTipo;
+    if (novaDescricao !== (frotaDescricao[equip] || '')) campos.Descricao = novaDescricao;
+    if (novoStatus !== (frotaStatusAtual[equip] || 'OPERACIONAL')) campos.StatusAtual = novoStatus;
+    if (novoRegime !== (frotaRegimeTrabalho[equip] || '8h')) campos.RegimeTrabalho = novoRegime;
+    if (novoVinculo !== vinculadoAtual) campos.ItemVinculado = novoVinculo;
+    if (!Object.keys(campos).length) { movEquipEditando = false; renderizarSecaoCadastroEquip(); return; }
+    btn.disabled = true; btn.textContent = 'Salvando…'; fb.textContent = '';
+    atualizarCamposItem(LISTA_FROTA_ID, itemId, campos).then(function(){
+      if (campos.TipoItem !== undefined) frotaTipoItem[equip] = campos.TipoItem;
+      if (campos.Descricao !== undefined) frotaDescricao[equip] = campos.Descricao;
+      if (campos.StatusAtual !== undefined) frotaStatusAtual[equip] = campos.StatusAtual;
+      if (campos.RegimeTrabalho !== undefined) frotaRegimeTrabalho[equip] = campos.RegimeTrabalho;
+      if (campos.ItemVinculado !== undefined) frotaItemVinculado[equip] = campos.ItemVinculado;
+      if (typeof frotaViewCarregada !== 'undefined' && frotaViewCarregada) renderizarViewFrota();
+      if (typeof painelCarregado !== 'undefined' && painelCarregado) carregarPainelGeral(true);
+      abrirHistoricoMovimentacaoEquipamento(equip);
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = '💾 Salvar';
+      fb.style.color = 'var(--ru)'; fb.textContent = '⚠️ Erro ao salvar: ' + err.message;
+    });
+  };
 }
 document.getElementById('mov-equip-fechar').onclick = function(){ document.getElementById('mov-equip-overlay').classList.remove('aberto'); };
 document.getElementById('mov-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
