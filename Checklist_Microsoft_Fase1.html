@@ -967,20 +967,20 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .painel-badge.vermelho{background:#fbe9e7;color:var(--ru)}
   .painel-evolucao-legenda{display:flex;gap:18px;font-size:12px;color:var(--cinza);margin-bottom:8px}
   .painel-evolucao-legenda .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
-  .painel-criticos-aviso{background:#fdf3e3;border:1px solid #f0d9a8;border-radius:12px;padding:14px 18px;font-size:13px;color:#7a5a1f;margin-top:16px;display:flex;align-items:center;gap:8px}
+  .painel-criticos-aviso{background:#fdf3e3;border:1px solid #f0d9a8;border-radius:10px;padding:9px 14px;font-size:11.5px;color:#7a5a1f;margin-top:10px;display:flex;align-items:center;gap:8px}
   .painel-criticos-aviso b{color:var(--ru)}
-  .painel-criticos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:10px}
-  .painel-crit-card{background:#fff;border:1px solid var(--linha);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-  .painel-crit-foto{height:140px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden}
-  .painel-crit-body{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
-  .painel-crit-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-  .painel-crit-nome{font-weight:800;color:var(--navy);font-size:15px}
-  .painel-crit-tipo{font-size:11px;color:var(--cinza)}
-  .painel-crit-tag{font-size:10px;font-weight:800;color:#a0522d;background:#fde3d3;padding:3px 9px;border-radius:20px;white-space:nowrap}
-  .painel-crit-item{font-size:12.5px;color:var(--tinta);font-weight:600}
-  .painel-crit-meta{font-size:11.5px;color:var(--cinza)}
-  .painel-crit-rodape{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
-  .painel-btn-detalhe{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:700;cursor:pointer}
+  .painel-criticos{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:8px}
+  .painel-crit-card{background:#fff;border:1px solid var(--linha);border-radius:11px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .painel-crit-foto{height:78px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}
+  .painel-crit-body{padding:9px 11px;display:flex;flex-direction:column;gap:3px;flex:1}
+  .painel-crit-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+  .painel-crit-nome{font-weight:800;color:var(--navy);font-size:12.5px}
+  .painel-crit-tipo{font-size:9.5px;color:var(--cinza)}
+  .painel-crit-tag{font-size:9px;font-weight:800;color:#a0522d;background:#fde3d3;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .painel-crit-item{font-size:10.5px;color:var(--tinta);font-weight:600;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .painel-crit-meta{font-size:9.5px;color:var(--cinza)}
+  .painel-crit-rodape{display:flex;align-items:center;justify-content:space-between;margin-top:3px;gap:6px}
+  .painel-btn-detalhe{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
   .painel-btn-detalhe:hover{background:var(--navy-2)}
   body.tema-escuro .painel-tabela-wrap, body.tema-escuro .painel-crit-card{background:#1a222b;border-color:#2a3540}
   body.tema-escuro .painel-tabela th{color:#9fb0b8;border-color:#2a3540}
@@ -1279,7 +1279,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
   <div class="dash-row" style="grid-template-columns:1.7fr 1fr;align-items:start">
-    <div class="painel-tabela-wrap" style="display:flex;flex-direction:column;max-height:416px">
+    <div class="painel-tabela-wrap" style="display:flex;flex-direction:column;max-height:600px">
       <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:12px">Equipamentos — situação do checklist diário</h3>
       <div class="painel-filtros">
         <div class="painel-filtro-campo">
@@ -6395,7 +6395,7 @@ const PAINEL_SITUACAO_INFO = {
 let painelLinhasAtual = [];
 let painelCarregado = false;
 let painelTabelaExpandida = false;
-const PAINEL_LINHAS_POR_TELA = 8;
+const PAINEL_LINHAS_POR_TELA = 11;
 async function carregarPainelGeral(forcar){
   const cont = document.getElementById('painel-tabela-cont');
   try {
