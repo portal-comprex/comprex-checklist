@@ -1309,18 +1309,20 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         <button type="button" class="rel-btn-secundario" id="painel-ver-mais" style="display:none">Ver mais equipamentos</button>
       </div>
     </div>
-    <div class="dash-card">
-      <h3>Distribuição dos equipamentos por situação</h3>
-      <div id="painel-donut"><div class="lista-vazia-dash">Carregando…</div></div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="dash-card">
+        <h3>Distribuição dos equipamentos por situação</h3>
+        <div id="painel-donut"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
+      <div class="dash-card">
+        <h3>Evolução diária — itens ruins e itens impeditivos</h3>
+        <div class="painel-evolucao-legenda">
+          <span><span class="dot" style="background:var(--ru)"></span>Itens ruins (comuns)</span>
+          <span><span class="dot" style="background:#b25e17"></span>Itens impeditivos (segurança)</span>
+        </div>
+        <div id="painel-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
     </div>
-  </div>
-  <div class="dash-card" style="margin-bottom:16px">
-    <h3>Evolução diária — itens ruins e itens impeditivos</h3>
-    <div class="painel-evolucao-legenda">
-      <span><span class="dot" style="background:var(--ru)"></span>Itens ruins (comuns)</span>
-      <span><span class="dot" style="background:#b25e17"></span>Itens impeditivos (segurança)</span>
-    </div>
-    <div id="painel-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
   </div>
   <div>
     <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:4px">🛡️ Equipamentos com itens críticos <span style="font-weight:400;text-transform:none;color:var(--cinza)">(itens impeditivos de segurança)</span></h3>
