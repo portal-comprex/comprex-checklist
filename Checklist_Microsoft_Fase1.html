@@ -943,7 +943,8 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .painel-kpi.laranja{background:linear-gradient(135deg,#b25e17,#7a3f0f)}
   .painel-kpi.neutro{background:linear-gradient(135deg,#1c2a33,#101922)}
   .painel-filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
-  .painel-filtro-campo{display:flex;flex-direction:column;min-width:170px}
+  .painel-filtro-campo{display:flex;flex-direction:column;min-width:138px;flex:1 1 138px}
+  .painel-filtro-campo:last-child{flex:0 0 auto;min-width:0}
   .painel-filtro-campo label{font-size:10px;color:var(--cinza);text-transform:uppercase;font-weight:700;margin-bottom:4px}
   .painel-filtro-campo select{border:1.5px solid #d8dee3;border-radius:9px;padding:9px 12px;font-size:13px;color:var(--tinta);background:#fff}
   .painel-tabela-wrap{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:18px;overflow-x:auto}
@@ -955,7 +956,8 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   .painel-eq-cel{display:flex;align-items:center;gap:10px}
   .painel-eq-foto{width:42px;height:42px;border-radius:9px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:19px;overflow:hidden;flex-shrink:0}
   .painel-eq-nome{font-weight:800;color:var(--navy);line-height:1.2}
-  .painel-eq-tipo{font-size:11px;color:var(--cinza)}
+  .painel-eq-tipo{font-size:10.5px;color:var(--cinza);line-height:1.3;max-width:180px;
+    overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .painel-num-badge{font-weight:800;padding:3px 11px;border-radius:8px;font-size:12px;display:inline-block;min-width:24px;text-align:center}
   .painel-num-badge.zero{background:#eef1ee;color:var(--cinza)}
   .painel-num-badge.ru{background:var(--ru);color:#fff}
@@ -990,6 +992,102 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   body.tema-escuro .painel-filtro-campo select{background:#141c24;border-color:#2a3540;color:#dbe9eb}
   @media(max-width:1200px){ .painel-kpis{grid-template-columns:repeat(3,1fr)} }
   @media(max-width:760px){ .painel-kpis{grid-template-columns:repeat(2,1fr)} .painel-criticos{grid-template-columns:1fr} }
+  /* ---- linha inferior do Painel: atenção / pendentes / ranking ---- */
+  .painel-linha-inferior{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:16px}
+  .painel-card-inferior{display:flex;flex-direction:column;height:300px;box-sizing:border-box}
+  .painel-pendentes-num{float:right;font-size:19px;font-weight:800;color:var(--navy);line-height:1}
+  .painel-link-rodape{font-size:11.5px;color:var(--ru);font-weight:700;text-decoration:none}
+  .painel-link-rodape:hover{text-decoration:underline}
+  .painel-at-tabela{width:100%;border-collapse:collapse;font-size:11.5px}
+  .painel-at-tabela th{text-align:left;font-size:9.5px;text-transform:uppercase;color:var(--cinza);
+    padding:5px 6px;border-bottom:1.5px solid var(--linha);white-space:nowrap}
+  .painel-at-tabela td{padding:7px 6px;border-bottom:1px solid var(--linha);vertical-align:middle}
+  .painel-at-eq{display:flex;align-items:center;gap:7px}
+  .painel-at-foto{width:30px;height:30px;border-radius:7px;background:var(--cream);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+  .painel-at-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .painel-at-cod{font-weight:800;color:var(--navy);font-size:11.5px;line-height:1.2}
+  .painel-at-tipo{font-size:9.5px;color:var(--cinza)}
+  .painel-at-prob{font-weight:700;font-size:10.5px}
+  .painel-at-prob.impeditivo{color:#a0522d}
+  .painel-at-prob.ruim{color:var(--ru)}
+  .painel-at-prob-sub{font-size:9.5px;color:var(--cinza);font-weight:400;
+    overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .painel-at-tempo{font-size:10.5px;color:var(--cinza);white-space:nowrap}
+  .painel-pend-local{margin-bottom:9px}
+  .painel-pend-local-topo{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px}
+  .painel-pend-local-topo b{color:var(--tinta)}
+  .painel-pend-local-topo span{color:var(--cinza)}
+  .painel-pend-barra{height:5px;border-radius:5px;background:var(--linha);overflow:hidden}
+  .painel-pend-barra i{display:block;height:100%;background:var(--navy);border-radius:5px}
+  .painel-pend-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .painel-pend-chip{font-size:10.5px;font-weight:700;color:var(--navy);background:var(--cream);
+    border-radius:20px;padding:3px 9px;cursor:pointer}
+  .painel-pend-chip:hover{background:var(--navy);color:#fff}
+  .painel-pend-sub{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--cinza);
+    font-weight:700;margin:10px 0 5px}
+  .painel-rank-item{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--linha)}
+  .painel-rank-item:last-child{border-bottom:none}
+  .painel-rank-pos{width:20px;height:20px;border-radius:50%;background:var(--cream);color:var(--navy);
+    font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .painel-rank-item:nth-child(1) .painel-rank-pos{background:var(--ru);color:#fff}
+  .painel-rank-item:nth-child(2) .painel-rank-pos{background:#b25e17;color:#fff}
+  .painel-rank-item:nth-child(3) .painel-rank-pos{background:#c79a3a;color:#fff}
+  .painel-rank-foto{width:30px;height:30px;border-radius:7px;background:var(--cream);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+  .painel-rank-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .painel-rank-info{flex:1;min-width:0}
+  .painel-rank-cod{font-weight:800;color:var(--navy);font-size:11.5px;line-height:1.2}
+  .painel-rank-sub{font-size:9.5px;color:var(--cinza);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .painel-rank-dias{font-size:10.5px;font-weight:800;white-space:nowrap;text-align:right}
+  .painel-rank-dias.grave{color:var(--ru)}
+  .painel-rank-dias.medio{color:#a06800}
+  .painel-rank-dias.leve{color:var(--cinza)}
+  body.tema-escuro .painel-at-tabela th, body.tema-escuro .painel-at-tabela td{border-color:#2a3540}
+  body.tema-escuro .painel-at-foto, body.tema-escuro .painel-rank-foto,
+  body.tema-escuro .painel-rank-pos, body.tema-escuro .painel-pend-chip{background:#22303a}
+  body.tema-escuro .painel-rank-item{border-color:#2a3540}
+  body.tema-escuro .painel-pend-barra{background:#2a3540}
+  @media(max-width:1100px){ .painel-linha-inferior{grid-template-columns:1fr} .painel-card-inferior{height:auto;max-height:340px} }
+  /* ===================== LINHA DO TEMPO DE MOVIMENTAÇÕES (painel lateral) ===================== */
+  .mov-tl{position:relative;padding-left:24px}
+  .mov-tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--linha)}
+  .mov-tl-item{position:relative;margin-bottom:14px}
+  .mov-tl-item::before{content:"";position:absolute;left:-21px;top:5px;width:12px;height:12px;
+    border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 0 0 2px var(--linha)}
+  .mov-tl-item.atual::before{background:var(--ok);box-shadow:0 0 0 3px #cde9d6}
+  .mov-tl-card{background:var(--cream);border-radius:11px;padding:11px 14px}
+  .mov-tl-data{font-size:12px;font-weight:800;color:var(--navy)}
+  .mov-tl-rota{font-size:13px;color:var(--tinta);margin-top:4px}
+  .mov-tl-rota b{color:var(--navy)}
+  .mov-tl-seta{color:var(--cinza);margin:0 5px}
+  .mov-tl-meta{font-size:11px;color:var(--cinza);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .mov-tl-obs{font-size:11.5px;color:var(--cinza);margin-top:5px;font-style:italic}
+  body.tema-escuro .mov-tl-card{background:#22303a}
+  body.tema-escuro .mov-tl-item::before{border-color:#1a222b}
+  /* ===================== FROTA (equipamentos e implementos cadastrados) ===================== */
+  .frota-secao{margin-bottom:22px}
+  .frota-secao-titulo{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta);
+    margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .frota-secao-cont{font-size:11px;font-weight:600;color:var(--cinza);background:var(--cream);
+    border-radius:20px;padding:3px 10px;text-transform:none;letter-spacing:0}
+  .frota-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .frota-item{background:#fff;border:1px solid var(--linha);border-radius:13px;overflow:hidden;
+    display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .15s,transform .15s}
+  .frota-item:hover{box-shadow:0 6px 18px rgba(0,0,0,.10);transform:translateY(-2px)}
+  .frota-item-foto{height:126px;background:var(--cream);display:flex;align-items:center;
+    justify-content:center;font-size:34px;overflow:hidden}
+  .frota-item-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .frota-item-corpo{padding:11px 13px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .frota-item-topo{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .frota-item-cod{font-weight:800;color:var(--navy);font-size:14.5px}
+  .frota-item-desc{font-size:11px;color:var(--cinza);line-height:1.35;min-height:15px}
+  .frota-item-meta{font-size:10.5px;color:var(--cinza);margin-top:2px;display:flex;align-items:center;gap:5px}
+  .frota-item-vinc{font-size:10px;color:#a06800;background:#fdf3e3;border-radius:20px;padding:2px 8px;
+    align-self:flex-start;margin-top:2px}
+  body.tema-escuro .frota-item{background:#1a222b;border-color:#2a3540}
+  body.tema-escuro .frota-item-foto{background:#0f1720}
+  body.tema-escuro .frota-secao-cont{background:#22303a;color:#9fb0b8}
   .modal-preview-foto{margin-top:8px;width:70px;height:70px;border-radius:10px;overflow:hidden;background:var(--cream)}
   .modal-preview-foto img{width:100%;height:100%;object-fit:cover;display:block}
   .mli-desc{font-size:11px;color:var(--cinza);margin-left:2px;margin-right:auto}
@@ -1061,6 +1159,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sidebar-item" data-view="historico-mov" data-secao="rastreamento"><i>🕒</i> Histórico de Movimentações</div>
       <div class="sidebar-item" data-view="dashboard-mov" data-secao="rastreamento"><i>📊</i> Dashboard</div>
       <div class="sidebar-item" data-view="status-equipamentos" data-secao="rastreamento"><i>🖥️</i> Status dos Equipamentos</div>
+      <div class="sidebar-item" data-view="frota" data-secao="rastreamento"><i>🚚</i> Frota</div>
       <div class="sidebar-item acao" id="btn-toggle-cadastrar"><i>🛠️</i> CADASTRAR <span id="seta-cadastrar" style="margin-left:auto">▾</span></div>
       <div id="submenu-cadastrar">
         <div class="sidebar-item acao" id="btn-abrir-cadastro-local" style="padding-left:32px"><i>📍</i> Local</div>
@@ -1308,6 +1407,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
             <option value="verde">Ok</option>
           </select>
         </div>
+        <div class="painel-filtro-campo" style="min-width:0;justify-content:flex-end">
+          <label>&nbsp;</label>
+          <button type="button" class="rel-btn-secundario" id="painel-limpar-filtros">🔽 Limpar filtros</button>
+        </div>
       </div>
       <div id="painel-tabela-cont" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
       <div style="text-align:center;margin-top:12px">
@@ -1329,10 +1432,22 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
   </div>
-  <div>
-    <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:4px">🛡️ Equipamentos com itens críticos <span style="font-weight:400;text-transform:none;color:var(--cinza)">(itens impeditivos de segurança)</span></h3>
-    <div class="painel-criticos" id="painel-criticos"><div class="lista-vazia-dash">Carregando…</div></div>
-    <div class="painel-criticos-aviso"><span>🛡️</span> Itens impeditivos devem ser corrigidos <b>antes da operação do equipamento.</b></div>
+  <div class="painel-linha-inferior">
+    <div class="dash-card painel-card-inferior">
+      <h3>⚠️ Atenção necessária <span style="font-weight:400;text-transform:none;color:var(--cinza)">(ação imediata)</span></h3>
+      <div id="painel-atencao" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div style="text-align:center;margin-top:8px">
+        <a href="#" id="painel-atencao-ver-todos" class="painel-link-rodape" style="display:none"></a>
+      </div>
+    </div>
+    <div class="dash-card painel-card-inferior">
+      <h3>📋 Checklists pendentes hoje <span class="painel-pendentes-num" id="painel-pendentes-num">—</span></h3>
+      <div id="painel-pendentes" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
+    <div class="dash-card painel-card-inferior">
+      <h3>🏁 Operacionais sem checklist <span style="font-weight:400;text-transform:none;color:var(--cinza)">(ranking)</span></h3>
+      <div id="painel-ranking-sem-checklist" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
+    </div>
   </div>
 </div>
 <div class="view" id="view-partediaria">
@@ -1876,6 +1991,59 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
 </div>
+<div class="view" id="view-frota">
+  <div class="hist-filtros">
+    <div class="hist-filtro-campo" style="min-width:230px">
+      <label>Buscar</label>
+      <input type="text" id="frota-busca" placeholder="Código ou descrição…" autocomplete="off">
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Local</label>
+      <select id="frota-filtro-local"><option value="">Todos os locais</option></select>
+    </div>
+    <div class="hist-filtro-campo">
+      <label>Status</label>
+      <select id="frota-filtro-status">
+        <option value="">Todos</option>
+        <option value="OPERACIONAL">OPERACIONAL</option>
+        <option value="EM MANUTENÇÃO">EM MANUTENÇÃO</option>
+        <option value="EM DISPONIBILIDADE">EM DISPONIBILIDADE</option>
+      </select>
+    </div>
+    <div class="hist-filtro-campo" style="justify-content:flex-end">
+      <label>&nbsp;</label>
+      <button type="button" class="rel-btn-secundario" id="frota-limpar-filtros">Limpar filtros</button>
+    </div>
+  </div>
+  <div class="dash-kpis" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone azul">🚜</div>
+        <div><div class="kpi-num" id="frota-kpi-equip">—</div><div class="kpi-lbl">Equipamentos</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone tan">🔧</div>
+        <div><div class="kpi-num" id="frota-kpi-impl">—</div><div class="kpi-lbl">Implementos</div></div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icone ok">📦</div>
+        <div><div class="kpi-num" id="frota-kpi-total">—</div><div class="kpi-lbl">Total cadastrado</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="frota-secao">
+    <h3 class="frota-secao-titulo">🚜 Equipamentos <span id="frota-cont-equip" class="frota-secao-cont"></span></h3>
+    <div class="frota-grade" id="frota-lista-equip"><div class="lista-vazia-dash">Carregando…</div></div>
+  </div>
+  <div class="frota-secao">
+    <h3 class="frota-secao-titulo">🔧 Implementos <span id="frota-cont-impl" class="frota-secao-cont"></span></h3>
+    <div class="frota-grade" id="frota-lista-impl"><div class="lista-vazia-dash">Carregando…</div></div>
+  </div>
+</div>
 <div class="view" id="view-historico">
   <div class="hist-info" id="hist-info">Carregando histórico…</div>
   <div class="hist-filtros">
@@ -2193,6 +2361,15 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
     </div>
     <div class="hist-detalhe-corpo" id="oc-equip-corpo"></div>
+  </div>
+</div>
+<div class="hist-detalhe-overlay oc-painel-lateral" id="mov-equip-overlay">
+  <div class="hist-detalhe-modal oc-painel-modal">
+    <div class="hist-detalhe-header">
+      <h3>📦 Histórico de Movimentações — <span id="mov-equip-titulo"></span></h3>
+      <button class="modal-fechar" id="mov-equip-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo" id="mov-equip-corpo"></div>
   </div>
 </div>
 <div class="hist-detalhe-overlay" id="acessos-overlay">
@@ -3633,7 +3810,8 @@ const MENUS_POR_SECAO = {
     { view: 'localizacao-atual', label: 'Localização Atual' },
     { view: 'historico-mov', label: 'Histórico de Movimentações' },
     { view: 'dashboard-mov', label: 'Dashboard' },
-    { view: 'status-equipamentos', label: 'Status dos Equipamentos' }
+    { view: 'status-equipamentos', label: 'Status dos Equipamentos' },
+    { view: 'frota', label: 'Frota' }
   ]
 };
 function acessosRenderizar(){
@@ -4578,9 +4756,9 @@ function movRenderizarTabelaHistorico(itensCompletos){
   } else {
     tbody.innerHTML = filtrados.map(function(m){
       const dias = (typeof m.diasNoLocal !== 'number') ? '—' : (m.diasNoLocal + (m.diasNoLocal === 1 ? ' dia' : ' dias') + (m.aindaNoLocal ? ' (até hoje)' : ''));
-      return '<tr>' +
+      return '<tr class="oc-linha-clicavel" data-mov-equip="' + m.equipamento + '" title="Ver histórico completo deste equipamento">' +
         '<td>' + formatarDataHist(m.criado) + '</td>' +
-        '<td>' + m.equipamento + '</td>' +
+        '<td><b style="color:var(--navy)">' + m.equipamento + '</b></td>' +
         '<td>' + (m.itemVinculado || '—') + '</td>' +
         '<td>' + m.localOrigem + '</td>' +
         '<td><b>' + m.localDestino + '</b></td>' +
@@ -4589,6 +4767,9 @@ function movRenderizarTabelaHistorico(itensCompletos){
         '<td>' + m.usuario + '</td>' +
       '</tr>';
     }).join('');
+    tbody.querySelectorAll('[data-mov-equip]').forEach(function(tr){
+      tr.onclick = function(){ abrirHistoricoMovimentacaoEquipamento(tr.dataset.movEquip); };
+    });
   }
   movAtualizarExtratoEquipamento(itensCompletos);
 }
@@ -5721,7 +5902,7 @@ const INFO_PAGINA = {
   historico: { icone: '🕒', sub: 'Todas as inspeções já registradas', secao: 'Checklists' },
   dashboard: { icone: '📊', sub: 'Visão geral do dia', secao: 'Checklists' },
   ocorrencias: { icone: '⚠️', sub: 'Apontamentos críticos', secao: 'Checklists' },
-  frota: { icone: '🚚', sub: 'Equipamentos cadastrados', secao: 'Checklists' },
+  frota: { icone: '🚚', sub: 'Equipamentos e implementos cadastrados', secao: 'Movimentações' },
   operadores: { icone: '👷', sub: 'Ranking de operadores', secao: 'Checklists' },
   indicadores: { icone: '📈', sub: 'Indicadores de conformidade', secao: 'Checklists' },
   partediaria: { icone: '🕐', sub: 'Registro de atividades e paradas do dia', secao: 'Parte Diária' },
@@ -5737,7 +5918,7 @@ const INFO_PAGINA = {
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
   const VIEWS_POR_SECAO = {
     partediaria: ['partediaria', 'historico-pd', 'dashboard-pd', 'indicadores-pd'],
-    rastreamento: ['rastreamento', 'localizacao-atual', 'historico-mov', 'dashboard-mov', 'status-equipamentos']
+    rastreamento: ['rastreamento', 'localizacao-atual', 'historico-mov', 'dashboard-mov', 'status-equipamentos', 'frota']
   };
   const secaoAtiva = VIEWS_POR_SECAO.partediaria.indexOf(nome) !== -1 ? 'partediaria'
     : VIEWS_POR_SECAO.rastreamento.indexOf(nome) !== -1 ? 'rastreamento'
@@ -5767,6 +5948,7 @@ const INFO_PAGINA = {
   if (nome === 'historico-mov') carregarHistoricoMovimentacoes();
   if (nome === 'dashboard-mov') carregarDashboardMov();
   if (nome === 'status-equipamentos') carregarStatusEquipamentos();
+  if (nome === 'frota') carregarViewFrota();
 }
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
   item.onclick = function(){ mostrarView(item.dataset.view); };
@@ -6341,6 +6523,197 @@ function atualizarGraficosComFiltroDeData(){
   renderDonutApontamentos(itensNoIntervalo);
 }
   /* =====================================================================
+   PAINEL LATERAL DE MOVIMENTAÇÕES — abre ao clicar num equipamento no
+   Histórico de Movimentações (ou num card da Frota). Mesma pegada visual
+   do painel de Ocorrências: foto grande, KPIs, extratos e linha do tempo.
+   ===================================================================== */
+async function abrirHistoricoMovimentacaoEquipamento(equip){
+  const corpo = document.getElementById('mov-equip-corpo');
+  document.getElementById('mov-equip-titulo').textContent = equip;
+  corpo.innerHTML = '<div class="lista-vazia-dash">Carregando…</div>';
+  document.getElementById('mov-equip-overlay').classList.add('aberto');
+  try {
+    await Promise.all([garantirDadosMovimentacoes(), garantirDadosFrotaExtra()]);
+  } catch(err) {
+    corpo.innerHTML = '<div class="lista-vazia-dash">⚠️ Erro ao carregar: ' + frotaEsc(err.message) + '</div>';
+    return;
+  }
+  // Aqui usamos TODOS os registros (inclusive os marcados como correção de
+  // cadastro), porque eles contam para dias/local — mas a linha do tempo
+  // visível esconde os de correção, igual à tabela do Histórico.
+  const todos = movimentacoesItens.filter(function(m){ return m.equipamento === equip; })
+    .sort(function(a, b){ return new Date(b.criado) - new Date(a.criado); });
+  const visiveis = todos.filter(function(m){ return (m.observacao || '').indexOf(MARCADOR_SEM_HISTORICO) === -1; });
+  const periodosLocal  = agruparPeriodos(todos, 'localDestino');
+  const periodosStatus = agruparPeriodos(todos.filter(function(m){ return m.status; }), 'status');
+  const locaisDistintos = new Set(todos.map(function(m){ return m.localDestino; }).filter(Boolean)).size;
+  const diasNoLocalAtual = (function(){
+    const atual = periodosLocal[periodosLocal.length - 1];
+    return atual ? atual.dias : 0;
+  })();
+  function montarExtrato(periodos, vazio){
+    if (!periodos.length) return '<div class="lista-vazia-dash">' + vazio + '</div>';
+    const totalDias = periodos.reduce(function(s, p){ return s + p.dias; }, 0) || 1;
+    // Soma os dias por valor (um mesmo local pode ter várias passagens).
+    const porValor = {};
+    periodos.forEach(function(p){ porValor[p.valor] = (porValor[p.valor] || 0) + p.dias; });
+    return Object.keys(porValor)
+      .sort(function(a, b){ return porValor[b] - porValor[a]; })
+      .map(function(valor){
+        const dias = porValor[valor];
+        const pct = Math.round(dias / totalDias * 100);
+        return '<div class="hist-detalhe-linha">' +
+          '<span class="hist-detalhe-pergunta">' + frotaEsc(valor) + '</span>' +
+          '<span class="hist-detalhe-resposta">' + dias + (dias === 1 ? ' dia' : ' dias') + ' (' + pct + '%)</span>' +
+        '</div>';
+      }).join('');
+  }
+  const linhaDoTempo = visiveis.length ? visiveis.map(function(m, indice){
+    const dias = (typeof m.diasNoLocal !== 'number') ? '—'
+      : (m.diasNoLocal + (m.diasNoLocal === 1 ? ' dia' : ' dias') + (m.aindaNoLocal ? ' (até hoje)' : ''));
+    const obs = (m.observacao || '').replace(MARCADOR_SEM_HISTORICO, '').trim();
+    return '<div class="mov-tl-item' + (indice === 0 ? ' atual' : '') + '">' +
+      '<div class="mov-tl-card">' +
+        '<div class="mov-tl-data">' + formatarDataHist(m.criado) + (indice === 0 ? ' · movimentação mais recente' : '') + '</div>' +
+        '<div class="mov-tl-rota">' + frotaEsc(m.localOrigem || '—') +
+          '<span class="mov-tl-seta">→</span><b>' + frotaEsc(m.localDestino || '—') + '</b></div>' +
+        '<div class="mov-tl-meta">' +
+          '<span>👤 ' + frotaEsc(m.usuario || 'Não informado') + '</span>' +
+          '<span>⏱️ ' + dias + '</span>' +
+          (m.status ? '<span>' + locBadgeStatus(m.status) + '</span>' : '') +
+          (m.itemVinculado ? '<span>🔗 ' + frotaEsc(m.itemVinculado) + '</span>' : '') +
+        '</div>' +
+        (obs ? '<div class="mov-tl-obs">📝 ' + frotaEsc(obs) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('') : '';
+  const descricao = frotaDescricao[equip] || '';
+  corpo.innerHTML =
+    '<div class="oc-equip-header">' +
+      '<div class="oc-equip-foto" id="mov-equip-foto">🚜</div>' +
+      '<div class="oc-equip-header-info">' +
+        '<div class="oc-equip-nome-grande">' + frotaEsc(equip) + '</div>' +
+        (descricao ? '<div style="font-size:12.5px;color:var(--cinza);margin-top:-6px">' + frotaEsc(descricao) + '</div>' : '') +
+        '<div class="oc-equip-header-meta">' + statusEqBadge(frotaStatusAtual[equip]) +
+          ' &nbsp; 📍 ' + frotaEsc(frotaLocalAtual[equip] || '—') +
+          '<br>Última movimentação: ' + (visiveis.length ? formatarDataHist(visiveis[0].criado) : '—') + '</div>' +
+        '<div class="oc-equip-kpi-mini">' +
+          '<div class="caixa"><div class="num">' + visiveis.length + '</div><div class="lbl">Movimentações</div></div>' +
+          '<div class="caixa"><div class="num">' + diasNoLocalAtual + '</div><div class="lbl">Dias no local atual</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="oc-equip-secao">' +
+      '<h4>📍 Tempo por local <span style="font-weight:400;font-size:12px;color:var(--cinza)">(' + locaisDistintos + ' local(is) diferentes)</span></h4>' +
+      montarExtrato(periodosLocal, 'Nenhum local registrado ainda.') +
+    '</div>' +
+    '<div class="oc-equip-secao">' +
+      '<h4>⚙️ Tempo por status</h4>' +
+      montarExtrato(periodosStatus, 'Sem dados de status registrados.') +
+    '</div>' +
+    '<div class="oc-equip-secao">' +
+      '<h4>🕒 Linha do tempo</h4>' +
+      (linhaDoTempo ? '<div class="mov-tl">' + linhaDoTempo + '</div>'
+                    : '<div class="lista-vazia-dash">Nenhuma movimentação registrada para este item.</div>') +
+    '</div>';
+  const fotoEl = document.getElementById('mov-equip-foto');
+  buscarUrlFotoEquipamento(equip).then(function(url){
+    if (url) fotoEl.innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:16px">';
+  }).catch(function(){});
+}
+document.getElementById('mov-equip-fechar').onclick = function(){ document.getElementById('mov-equip-overlay').classList.remove('aberto'); };
+document.getElementById('mov-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+  /* =====================================================================
+   FROTA — lista dos equipamentos e implementos já cadastrados, com foto
+   e descrição, separados em duas seções pra não misturar os dois tipos.
+   ===================================================================== */
+/** Escapa texto que veio do SharePoint antes de jogar em innerHTML. */
+function frotaEsc(txt){
+  return String(txt == null ? '' : txt)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+let frotaViewCarregada = false;
+async function carregarViewFrota(){
+  const alvoEquip = document.getElementById('frota-lista-equip');
+  try {
+    await garantirDadosFrotaExtra();
+    if (!frotaViewCarregada) {
+      preencherFiltroSelectComLista('frota-filtro-local', locais);
+      ['frota-busca', 'frota-filtro-local', 'frota-filtro-status'].forEach(function(id){
+        ['input', 'change'].forEach(function(ev){
+          document.getElementById(id).addEventListener(ev, renderizarViewFrota);
+        });
+      });
+      document.getElementById('frota-limpar-filtros').onclick = function(){
+        document.getElementById('frota-busca').value = '';
+        document.getElementById('frota-filtro-local').value = '';
+        document.getElementById('frota-filtro-status').value = '';
+        renderizarViewFrota();
+      };
+      frotaViewCarregada = true;
+    }
+    renderizarViewFrota();
+  } catch(err) {
+    alvoEquip.innerHTML = '<div class="lista-vazia-dash">⚠️ Erro ao carregar a frota: ' + frotaEsc(err.message) + '</div>';
+  }
+}
+function renderizarViewFrota(){
+  const busca = document.getElementById('frota-busca').value.trim().toUpperCase();
+  const filtroLocal = document.getElementById('frota-filtro-local').value;
+  const filtroStatus = document.getElementById('frota-filtro-status').value;
+  const visiveis = frotas.filter(function(nome){
+    const descricao = (frotaDescricao[nome] || '').toUpperCase();
+    if (busca && nome.toUpperCase().indexOf(busca) === -1 && descricao.indexOf(busca) === -1) return false;
+    if (filtroLocal && (frotaLocalAtual[nome] || '') !== filtroLocal) return false;
+    if (filtroStatus && (frotaStatusAtual[nome] || 'OPERACIONAL') !== filtroStatus) return false;
+    return true;
+  });
+  const equipamentos = visiveis.filter(function(n){ return frotaTipoItem[n] !== 'implemento'; }).sort();
+  const implementos  = visiveis.filter(function(n){ return frotaTipoItem[n] === 'implemento'; }).sort();
+  document.getElementById('frota-kpi-equip').textContent = equipamentos.length;
+  document.getElementById('frota-kpi-impl').textContent = implementos.length;
+  document.getElementById('frota-kpi-total').textContent = visiveis.length;
+  document.getElementById('frota-cont-equip').textContent = equipamentos.length + ' item(ns)';
+  document.getElementById('frota-cont-impl').textContent = implementos.length + ' item(ns)';
+  desenharGradeFrota('frota-lista-equip', equipamentos, 'equipamento');
+  desenharGradeFrota('frota-lista-impl', implementos, 'implemento');
+}
+function desenharGradeFrota(idContainer, lista, tipo){
+  const cont = document.getElementById(idContainer);
+  if (!lista.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Nenhum ' + tipo + ' encontrado com esses filtros.</div>';
+    return;
+  }
+  const icone = tipo === 'implemento' ? '🔧' : '🚜';
+  cont.innerHTML = lista.map(function(nome){
+    const descricao = frotaDescricao[nome] || '';
+    const local = frotaLocalAtual[nome] || '—';
+    const vinculado = frotaItemVinculado[nome] || '';
+    return '<div class="frota-item" data-frota-item="' + frotaEsc(nome) + '">' +
+      '<div class="frota-item-foto" data-frota-foto="' + frotaEsc(nome) + '">' + icone + '</div>' +
+      '<div class="frota-item-corpo">' +
+        '<div class="frota-item-topo">' +
+          '<span class="frota-item-cod">' + frotaEsc(nome) + '</span>' +
+          statusEqBadge(frotaStatusAtual[nome]) +
+        '</div>' +
+        '<div class="frota-item-desc">' + (descricao ? frotaEsc(descricao) : '<i style="opacity:.6">Sem descrição cadastrada</i>') + '</div>' +
+        '<div class="frota-item-meta">📍 ' + frotaEsc(local) + '</div>' +
+        (vinculado ? '<span class="frota-item-vinc">🔗 ' + frotaEsc(vinculado) + '</span>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  // Foto de cada item (carrega em paralelo, cada uma cai no seu card).
+  cont.querySelectorAll('[data-frota-foto]').forEach(function(box){
+    buscarUrlFotoEquipamento(box.dataset.frotaFoto).then(function(url){
+      if (url) box.innerHTML = '<img src="' + url + '" alt="">';
+    }).catch(function(){});
+  });
+  // Clicar no card abre o painel lateral de movimentações daquele item.
+  cont.querySelectorAll('[data-frota-item]').forEach(function(card){
+    card.onclick = function(){ abrirHistoricoMovimentacaoEquipamento(card.dataset.frotaItem); };
+  });
+}
+  /* =====================================================================
    PAINEL — visão geral (KPIs, tabela por equipamento, gráficos, críticos)
    ===================================================================== */
 /** Heurística só pra exibir uma "categoria" amigável abaixo do código do
@@ -6407,6 +6780,12 @@ async function carregarPainelGeral(forcar){
         document.getElementById(id).addEventListener('change', function(){ painelTabelaExpandida = false; renderizarPainelTabela(); });
       });
       document.getElementById('painel-ver-mais').onclick = function(){ painelTabelaExpandida = true; renderizarPainelTabela(); };
+      document.getElementById('painel-limpar-filtros').onclick = function(){
+        ['painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-tipo', 'painel-filtro-situacao']
+          .forEach(function(id){ document.getElementById(id).value = ''; });
+        painelTabelaExpandida = false;
+        renderizarPainelTabela();
+      };
       painelCarregado = true;
     }
     const frotasEquip = frotas.filter(function(f){ return frotaTipoItem[f] !== 'implemento'; });
@@ -6420,14 +6799,17 @@ async function carregarPainelGeral(forcar){
         ultimo: ultimo,
         situacao: painelClassificarSituacao(ultimo),
         itensRuins: painelContarItensRuins(ultimo),
-        itensImpeditivos: ultimo ? itensImpeditivosDe(ultimo).length : 0
+        itensImpeditivos: ultimo ? itensImpeditivosDe(ultimo).length : 0,
+        precisaParalisar: !!(ultimo && ultimo.campos[LABEL_ITEM_PARADA] === 'SIM')
       };
     });
     renderizarPainelKPIs(frotasEquip);
     renderizarPainelTabela();
     renderizarPainelDonut(frotasEquip);
     renderizarPainelEvolucao();
-    renderizarPainelCriticos();
+    renderizarPainelAtencao();
+    renderizarPainelPendentes(frotasEquip);
+    renderizarPainelRankingSemChecklist();
   } catch(err) {
     cont.innerHTML = '<div class="lista-vazia-dash">⚠️ Erro ao carregar o painel: ' + err.message + '</div>';
   }
@@ -6482,7 +6864,10 @@ function renderizarPainelTabela(){
   }
   cont.innerHTML =
     '<table class="painel-tabela"><thead><tr>' +
-      '<th>Equipamento</th><th>Local</th><th>Checklist</th><th>Itens ruins</th><th>Itens impeditivos</th><th>Situação</th>' +
+      '<th>Equipamento</th><th>Local</th><th>Checklist<br><span style="font-weight:400;text-transform:none">última realização</span></th>' +
+      '<th>Itens ruins<br><span style="font-weight:400;text-transform:none">(comuns)</span></th>' +
+      '<th>Itens impeditivos<br><span style="font-weight:400;text-transform:none">(segurança)</span></th>' +
+      '<th>Necessita<br>paralisar</th><th>Situação</th>' +
     '</tr></thead><tbody>' +
     linhasVisiveis.map(function(l){
       const sit = l.situacao || 'verde';
@@ -6490,6 +6875,8 @@ function renderizarPainelTabela(){
       const chkTxt = l.ultimo
         ? formatarDataHist(l.ultimo.criado) + '<br><span style="color:var(--cinza);font-size:11px">' + (l.ultimo.operador || '—') + '</span>'
         : '<span style="color:var(--cinza)">Sem checklist</span>';
+      const paralisarTxt = !l.ultimo ? '<span style="color:var(--cinza)">—</span>'
+        : (l.precisaParalisar ? '<b style="color:var(--ru)">SIM</b>' : '<span style="color:var(--cinza);font-weight:700">NÃO</span>');
       return '<tr class="painel-linha-clicavel" data-painel-equip="' + l.equipamento + '">' +
         '<td><div class="painel-eq-cel"><div class="painel-eq-foto" id="painel-foto-' + l.equipamento + '">🚜</div>' +
           '<div><div class="painel-eq-nome">' + l.equipamento + '</div><div class="painel-eq-tipo">' + painelTipoDoEquipamento(l.equipamento) + '</div></div></div></td>' +
@@ -6497,6 +6884,7 @@ function renderizarPainelTabela(){
         '<td>' + chkTxt + '</td>' +
         '<td><span class="painel-num-badge ' + (l.itensRuins > 0 ? 'ru' : 'zero') + '">' + l.itensRuins + '</span></td>' +
         '<td><span class="painel-num-badge ' + (l.itensImpeditivos > 0 ? 'la' : 'zero') + '">' + l.itensImpeditivos + '</span></td>' +
+        '<td>' + paralisarTxt + '</td>' +
         '<td><span class="painel-badge ' + sit + '">' + info.icone + ' ' + info.texto + '</span></td>' +
       '</tr>';
     }).join('') +
@@ -6586,35 +6974,175 @@ function renderizarPainelEvolucao(){
   }
   cont.innerHTML = gerarGraficoEvolucaoPainelSVG(dias);
 }
-function renderizarPainelCriticos(){
-  const cont = document.getElementById('painel-criticos');
-  const criticos = painelLinhasAtual.filter(function(l){ return l.ultimo && l.itensImpeditivos > 0; });
-  if (!criticos.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento com item impeditivo de segurança no momento. ✅</div>'; return; }
-  cont.innerHTML = criticos.map(function(l){
-    const nomesItens = itensImpeditivosDe(l.ultimo);
-    return '<div class="painel-crit-card">' +
-      '<div class="painel-crit-foto" id="painel-crit-foto-' + l.equipamento + '">🚜</div>' +
-      '<div class="painel-crit-body">' +
-        '<div class="painel-crit-topo">' +
-          '<div><div class="painel-crit-nome">' + l.equipamento + '</div><div class="painel-crit-tipo">' + painelTipoDoEquipamento(l.equipamento) + '</div></div>' +
-          '<div class="painel-crit-tag">' + nomesItens.length + ' item' + (nomesItens.length > 1 ? 'ns' : '') + ' impeditivo' + (nomesItens.length > 1 ? 's' : '') + '</div>' +
-        '</div>' +
-        '<div class="painel-crit-item">' + nomesItens.join('; ') + '</div>' +
-        '<div class="painel-crit-meta">📍 ' + l.local + '</div>' +
-        '<div class="painel-crit-rodape">' +
-          '<div class="painel-crit-meta">Checklist ' + formatarDataHist(l.ultimo.criado) + ' · ' + (l.ultimo.operador || '—') + '</div>' +
-          '<button type="button" class="painel-btn-detalhe" data-painel-crit-equip="' + l.equipamento + '">Ver detalhes</button>' +
-        '</div>' +
-      '</div>' +
+/** Lista de "ação imediata": equipamentos que precisam paralisar ou que têm
+ *  item impeditivo de segurança, ordenados do problema mais grave e mais
+ *  antigo (quanto mais tempo parado com o problema, mais no topo). */
+function painelLinhasDeAtencao(){
+  return painelLinhasAtual
+    .filter(function(l){ return l.ultimo && (l.precisaParalisar || l.itensImpeditivos > 0 || l.itensRuins > 0); })
+    .map(function(l){
+      const diasDesde = Math.max(0, Math.floor((Date.now() - new Date(l.ultimo.criado)) / 86400000));
+      // peso: paralisar > impeditivo > só itens ruins
+      const peso = l.precisaParalisar ? 3 : (l.itensImpeditivos > 0 ? 2 : 1);
+      return Object.assign({}, l, { diasDesde: diasDesde, peso: peso });
+    })
+    .sort(function(a, b){ return (b.peso - a.peso) || (b.diasDesde - a.diasDesde); });
+}
+const PAINEL_ATENCAO_VISIVEIS = 4;
+let painelAtencaoExpandida = false;
+function renderizarPainelAtencao(){
+  const cont = document.getElementById('painel-atencao');
+  const link = document.getElementById('painel-atencao-ver-todos');
+  const todas = painelLinhasDeAtencao();
+  if (!todas.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento precisando de ação imediata. ✅</div>';
+    link.style.display = 'none';
+    return;
+  }
+  const visiveis = painelAtencaoExpandida ? todas : todas.slice(0, PAINEL_ATENCAO_VISIVEIS);
+  cont.innerHTML =
+    '<table class="painel-at-tabela"><thead><tr>' +
+      '<th>Equipamento</th><th>Local</th><th>Problema principal</th><th>Itens</th><th>Paralisar</th><th>Há quanto tempo</th>' +
+    '</tr></thead><tbody>' +
+    visiveis.map(function(l){
+      const impeditivos = itensImpeditivosDe(l.ultimo);
+      const ehImpeditivo = impeditivos.length > 0;
+      const rotulo = l.precisaParalisar ? 'Necessita paralisar'
+        : (ehImpeditivo ? impeditivos.length + (impeditivos.length > 1 ? ' itens impeditivos' : ' item impeditivo')
+                        : l.itensRuins + (l.itensRuins > 1 ? ' itens ruins (comuns)' : ' item ruim (comum)'));
+      const detalhe = ehImpeditivo ? impeditivos.join(', ')
+        : ITENS.filter(function(it){
+            return it[0] !== LABEL_ITEM_PARADA && severidadeDaResposta(it[0], l.ultimo.campos[it[0]]) === 'ru';
+          }).map(function(it){ return prettify(it[0]); }).join(', ');
+      return '<tr class="painel-linha-clicavel" data-painel-at-equip="' + l.equipamento + '">' +
+        '<td><div class="painel-at-eq"><div class="painel-at-foto" data-painel-at-foto="' + l.equipamento + '">🚜</div>' +
+          '<div><div class="painel-at-cod">' + l.equipamento + '</div>' +
+          '<div class="painel-at-tipo">' + painelTipoDoEquipamento(l.equipamento) + '</div></div></div></td>' +
+        '<td style="font-size:10.5px">' + l.local + '</td>' +
+        '<td><div class="painel-at-prob ' + (ehImpeditivo || l.precisaParalisar ? 'impeditivo' : 'ruim') + '">' + rotulo + '</div>' +
+          '<div class="painel-at-prob-sub">' + (detalhe || '—') + '</div></td>' +
+        '<td><span class="painel-num-badge ' + (l.itensRuins > 0 ? 'ru' : 'zero') + '">' + l.itensRuins + '</span></td>' +
+        '<td><span class="painel-num-badge ' + (l.itensImpeditivos > 0 ? 'la' : 'zero') + '">' + l.itensImpeditivos + '</span></td>' +
+        '<td class="painel-at-tempo">🕐 ' + (l.diasDesde === 0 ? 'hoje' : l.diasDesde + (l.diasDesde === 1 ? ' dia' : ' dias')) + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>';
+  cont.querySelectorAll('[data-painel-at-equip]').forEach(function(tr){
+    tr.onclick = function(){ painelIrParaHistoricoDoEquip(tr.dataset.painelAtEquip); };
+  });
+  cont.querySelectorAll('[data-painel-at-foto]').forEach(function(box){
+    buscarUrlFotoEquipamento(box.dataset.painelAtFoto).then(function(url){
+      if (url) box.innerHTML = '<img src="' + url + '" alt="">';
+    }).catch(function(){});
+  });
+  if (todas.length > PAINEL_ATENCAO_VISIVEIS) {
+    link.style.display = 'inline-block';
+    link.textContent = painelAtencaoExpandida ? 'Mostrar menos' : 'Ver todos com atenção (' + todas.length + ')';
+    link.onclick = function(e){ e.preventDefault(); painelAtencaoExpandida = !painelAtencaoExpandida; renderizarPainelAtencao(); };
+  } else {
+    link.style.display = 'none';
+  }
+}
+/** Checklists pendentes hoje: equipamentos (não implementos) que ainda não
+ *  tiveram checklist registrado no dia de hoje, agrupados por local. */
+function painelEquipamentosPendentesHoje(frotasEquip){
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const amanha = new Date(hoje.getTime() + 86400000);
+  const feitosHoje = new Set(
+    historicoItens.filter(function(h){ const d = new Date(h.criado); return d >= hoje && d < amanha; })
+      .map(function(h){ return h.equipamento; })
+  );
+  return frotasEquip.filter(function(eq){ return !feitosHoje.has(eq); });
+}
+function renderizarPainelPendentes(frotasEquip){
+  const cont = document.getElementById('painel-pendentes');
+  const pendentes = painelEquipamentosPendentesHoje(frotasEquip);
+  document.getElementById('painel-pendentes-num').textContent = pendentes.length;
+  if (!pendentes.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Todos os checklists de hoje já foram feitos. ✅</div>';
+    return;
+  }
+  // Agrupa por "grupo" do local (o prefixo antes do primeiro hífen: AMT, AMB, VALE…).
+  const porGrupo = {};
+  pendentes.forEach(function(eq){
+    const local = frotaLocalAtual[eq] || '';
+    const grupo = local ? (typeof statusEqGrupoDoLocal === 'function' ? statusEqGrupoDoLocal(local) : local.split('-')[0].trim()) : 'SEM LOCAL';
+    porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
+  });
+  const grupos = Object.keys(porGrupo).sort(function(a, b){ return porGrupo[b] - porGrupo[a]; });
+  const maiorGrupo = porGrupo[grupos[0]] || 1;
+  const barras = grupos.slice(0, 5).map(function(g){
+    return '<div class="painel-pend-local">' +
+      '<div class="painel-pend-local-topo"><b>' + frotaEsc(g) + '</b><span>' + porGrupo[g] + ' pendentes</span></div>' +
+      '<div class="painel-pend-barra"><i style="width:' + Math.round(porGrupo[g] / maiorGrupo * 100) + '%"></i></div>' +
     '</div>';
   }).join('');
-  cont.querySelectorAll('[data-painel-crit-equip]').forEach(function(btn){
-    btn.onclick = function(e){ e.stopPropagation(); painelIrParaHistoricoDoEquip(btn.dataset.painelCritEquip); };
-    const foto = document.getElementById('painel-crit-foto-' + btn.dataset.painelCritEquip);
-    buscarUrlFotoEquipamento(btn.dataset.painelCritEquip).then(function(url){
-      if (!foto) return;
-      foto.innerHTML = url ? '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover">' : '🚜';
+  const amostra = pendentes.slice(0, 8);
+  const chips = amostra.map(function(eq){
+    return '<span class="painel-pend-chip" data-painel-pend-chip="' + frotaEsc(eq) + '">' + frotaEsc(eq) + '</span>';
+  }).join('');
+  const restantes = pendentes.length - amostra.length;
+  cont.innerHTML =
+    '<div class="painel-pend-sub">Por local</div>' + barras +
+    '<div class="painel-pend-sub">Alguns equipamentos pendentes</div>' +
+    '<div class="painel-pend-chips">' + chips +
+      (restantes > 0 ? '<span class="painel-pend-chip" style="cursor:default;opacity:.7">+ ' + restantes + ' outros</span>' : '') +
+    '</div>';
+  cont.querySelectorAll('[data-painel-pend-chip]').forEach(function(chip){
+    chip.onclick = function(){ painelIrParaHistoricoDoEquip(chip.dataset.painelPendChip); };
+  });
+}
+/** Ranking dos equipamentos que estão OPERACIONAIS mas estão sem checklist —
+ *  ou nunca tiveram nenhum, ou o último é muito antigo. Quem está há mais
+ *  tempo sem checklist fica no topo. */
+function renderizarPainelRankingSemChecklist(){
+  const cont = document.getElementById('painel-ranking-sem-checklist');
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const ranking = painelLinhasAtual
+    .filter(function(l){
+      if (l.tipoItem === 'implemento') return false;
+      if ((frotaStatusAtual[l.equipamento] || 'OPERACIONAL') !== 'OPERACIONAL') return false;
+      if (!l.ultimo) return true; // nunca fez checklist
+      const dataUltimo = new Date(l.ultimo.criado); dataUltimo.setHours(0, 0, 0, 0);
+      return dataUltimo < hoje; // não fez o de hoje
+    })
+    .map(function(l){
+      const dias = l.ultimo
+        ? Math.floor((hoje - new Date(new Date(l.ultimo.criado).setHours(0, 0, 0, 0))) / 86400000)
+        : null; // null = nunca fez
+      return Object.assign({}, l, { diasSemChecklist: dias });
+    })
+    .sort(function(a, b){
+      if (a.diasSemChecklist === null && b.diasSemChecklist === null) return a.equipamento.localeCompare(b.equipamento);
+      if (a.diasSemChecklist === null) return -1; // nunca fez vem primeiro
+      if (b.diasSemChecklist === null) return 1;
+      return b.diasSemChecklist - a.diasSemChecklist;
     });
+  if (!ranking.length) {
+    cont.innerHTML = '<div class="lista-vazia-dash">Todos os equipamentos operacionais estão com o checklist de hoje em dia. ✅</div>';
+    return;
+  }
+  cont.innerHTML = ranking.slice(0, 15).map(function(l, i){
+    const nunca = l.diasSemChecklist === null;
+    const dias = nunca ? 'Nunca' : (l.diasSemChecklist + (l.diasSemChecklist === 1 ? ' dia' : ' dias'));
+    const gravidade = nunca || l.diasSemChecklist >= 7 ? 'grave' : (l.diasSemChecklist >= 3 ? 'medio' : 'leve');
+    return '<div class="painel-rank-item" data-painel-rank-equip="' + frotaEsc(l.equipamento) + '" style="cursor:pointer">' +
+      '<div class="painel-rank-pos">' + (i + 1) + '</div>' +
+      '<div class="painel-rank-foto" data-painel-rank-foto="' + frotaEsc(l.equipamento) + '">🚜</div>' +
+      '<div class="painel-rank-info">' +
+        '<div class="painel-rank-cod">' + frotaEsc(l.equipamento) + '</div>' +
+        '<div class="painel-rank-sub">📍 ' + frotaEsc(l.local) + '</div>' +
+      '</div>' +
+      '<div class="painel-rank-dias ' + gravidade + '">' + dias + (nunca ? '' : '<br><span style="font-weight:400;color:var(--cinza);font-size:9px">sem checklist</span>') + '</div>' +
+    '</div>';
+  }).join('');
+  cont.querySelectorAll('[data-painel-rank-equip]').forEach(function(item){
+    item.onclick = function(){ painelIrParaHistoricoDoEquip(item.dataset.painelRankEquip); };
+  });
+  cont.querySelectorAll('[data-painel-rank-foto]').forEach(function(box){
+    buscarUrlFotoEquipamento(box.dataset.painelRankFoto).then(function(url){
+      if (url) box.innerHTML = '<img src="' + url + '" alt="">';
+    }).catch(function(){});
   });
 }
   /* =====================================================================
