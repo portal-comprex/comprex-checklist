@@ -1278,8 +1278,8 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sub" id="painel-kpi-total-sub">100% da frota</div>
     </div>
   </div>
-  <div class="dash-row" style="grid-template-columns:1.7fr 1fr;align-items:stretch">
-    <div class="painel-tabela-wrap" style="display:flex;flex-direction:column">
+  <div class="dash-row" style="grid-template-columns:1.7fr 1fr;align-items:start">
+    <div class="painel-tabela-wrap" style="display:flex;flex-direction:column;max-height:416px">
       <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:12px">Equipamentos — situação do checklist diário</h3>
       <div class="painel-filtros">
         <div class="painel-filtro-campo">
@@ -1309,23 +1309,23 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           </select>
         </div>
       </div>
-      <div id="painel-tabela-cont" style="flex:1"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div id="painel-tabela-cont" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
       <div style="text-align:center;margin-top:12px">
         <button type="button" class="rel-btn-secundario" id="painel-ver-mais" style="display:none">Ver mais equipamentos</button>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:16px;height:100%">
-      <div class="dash-card" style="flex:1;display:flex;flex-direction:column">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="dash-card" style="height:200px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column">
         <h3>Distribuição dos equipamentos por situação</h3>
-        <div id="painel-donut" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="lista-vazia-dash">Carregando…</div></div>
+        <div id="painel-donut" style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0"><div class="lista-vazia-dash">Carregando…</div></div>
       </div>
-      <div class="dash-card" style="flex:1;display:flex;flex-direction:column">
+      <div class="dash-card" style="height:200px;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column">
         <h3>Evolução diária — itens ruins e itens impeditivos</h3>
         <div class="painel-evolucao-legenda">
           <span><span class="dot" style="background:var(--ru)"></span>Itens ruins (comuns)</span>
           <span><span class="dot" style="background:#b25e17"></span>Itens impeditivos (segurança)</span>
         </div>
-        <div id="painel-evolucao" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="lista-vazia-dash">Carregando…</div></div>
+        <div id="painel-evolucao" style="flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0"><div class="lista-vazia-dash">Carregando…</div></div>
       </div>
     </div>
   </div>
