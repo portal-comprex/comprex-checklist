@@ -17,6 +17,7 @@
     --tan:#2e7d46; --cream:#e8f5e9;
     --ok:#2e7d46; --at:#c79a3a; --ru:#c0392b; --na:#8a94a0;
     --linha:#e2e0d8; --tinta:#1a2430; --cinza:#5b6570;
+    --impl:#7a4fb5;
     --sidebar-w:230px;
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Roboto,Arial,sans-serif}
@@ -550,6 +551,11 @@
   .arv-folha:last-child{border-bottom:none}
   .arv-cab-tabela{display:grid;grid-template-columns:1fr 140px 100px 130px 140px;gap:10px;
     padding:0 10px 8px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;border-bottom:2px solid var(--linha);margin-bottom:6px}
+  /* Distinção visual entre equipamento e implemento na árvore: o código do
+     implemento fica em minúsculas e na cor --impl (roxo), sem selo nem
+     fundo extra — o equipamento continua igual (maiúsculo/negrito/preto). */
+  .arv-cod-equip{color:var(--tinta)}
+  .arv-cod-impl{color:var(--impl);text-transform:lowercase;font-weight:600}
   .btn-salvar{
     width:100%;margin-top:16px;padding:13px;border:none;border-radius:9px;
     background:var(--navy);color:#fff;font-size:14px;font-weight:700;
@@ -856,6 +862,7 @@
   body.tema-escuro{
     background:#0f1720;color:#e5e7eb;
     --tinta:#e5e7eb; --cinza:#9ca3af; --linha:#2c3a4a; --card:#1a2430; --cream:#16261c;
+    --impl:#b39ddb;
   }
   body.tema-escuro .content{background:#0f1720}
   body.tema-escuro .sidebar-logo .logo-sub{color:#8fc4cc}
@@ -5157,7 +5164,16 @@ function statusEqRenderizar(){
   const filtroStatus = document.getElementById('status-eq-filtro-status').value;
   const filtroChegadaDe = document.getElementById('status-eq-filtro-chegada-de').value;
   const filtroChegadaAte = document.getElementById('status-eq-filtro-chegada-ate').value;
+  // Implementos que já estão vinculados a um equipamento não aparecem como
+  // folha própria na árvore — eles já saem juntos, na mesma linha do
+  // equipamento principal (ex.: "ESC0057 + ROM01"). Só implementos soltos
+  // (sem equipamento vinculado) ganham linha própria na árvore.
+  const implementosVinculados = new Set(
+    frotas.filter(function(f){ return frotaTipoItem[f] !== 'implemento' && frotaItemVinculado[f]; })
+          .map(function(f){ return frotaItemVinculado[f]; })
+  );
   const equipsFiltrados = frotas.filter(function(eq){
+    if (frotaTipoItem[eq] === 'implemento' && implementosVinculados.has(eq)) return false;
     if (filtroLocal && frotaLocalAtual[eq] !== filtroLocal) return false;
     if (filtroStatus && (frotaStatusAtual[eq] || 'OPERACIONAL') !== filtroStatus) return false;
     if (filtroBusca && eq.toUpperCase().indexOf(filtroBusca) === -1 && (frotaItemVinculado[eq]||'').toUpperCase().indexOf(filtroBusca) === -1) return false;
@@ -5215,7 +5231,9 @@ function statusEqRenderizar(){
   const gruposOrdenados = Object.keys(porGrupo).sort();
   function linhaFolha(eq, local){
     const vinc = frotaItemVinculado[eq];
-    const nome = eq + (vinc ? (' + ' + vinc) : '');
+    const ehImplemento = frotaTipoItem[eq] === 'implemento';
+    const codigoPrincipal = '<span class="' + (ehImplemento ? 'arv-cod-impl' : 'arv-cod-equip') + '">' + eq + '</span>';
+    const nome = codigoPrincipal + (vinc ? (' + <span class="arv-cod-impl">' + vinc + '</span>') : '');
     const dias = frotaDiasNoLocal[eq];
     const diasTxt = (typeof dias === 'number') ? (dias + 'd') : '—';
     const chegada = statusEqDataChegada(eq);
@@ -5225,8 +5243,9 @@ function statusEqRenderizar(){
     const podeEditar = usuarioPodeEditarLocal(frotaLocalAtual[eq] || '');
     const estiloFolha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
     const dicaFolha = podeEditar ? 'Clique para mudar o status ou mover este equipamento' : 'Somente leitura — fora da sua localidade';
+    const iconeFolha = frotaTipoItem[eq] === 'implemento' ? '🔧' : '🚜';
     return '<div class="arv-folha" data-equip="'+eq+'" style="'+estiloFolha+'" title="'+dicaFolha+'">' +
-      '<div class="arv-no-nome">🚜 '+nome+(podeEditar?'':' 🔒')+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
+      '<div class="arv-no-nome">'+iconeFolha+' '+nome+(podeEditar?'':' 🔒')+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
       '<div>'+diasTxt+'</div>' +
       '<div class="arv-sub">'+chegadaTxt+'</div>' +
       '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
@@ -5252,7 +5271,14 @@ function statusEqRenderizar(){
     html += '<div class="arv-filhos'+(statusEqColapsados.has(idGrupo)?' colapsado':'')+'" data-filhos-de="'+idGrupo+'">';
     porGrupo[grupo].forEach(function(local){
       const idLocal = 'l:' + local;
-      const eqs = porLocal[local];
+      // Dentro de cada local, equipamentos sempre vêm primeiro, implementos
+      // soltos (sem vínculo) ficam depois — mais fácil de escanear a lista.
+      const eqs = porLocal[local].slice().sort(function(a, b){
+        const pesoA = frotaTipoItem[a] === 'implemento' ? 1 : 0;
+        const pesoB = frotaTipoItem[b] === 'implemento' ? 1 : 0;
+        if (pesoA !== pesoB) return pesoA - pesoB;
+        return a.localeCompare(b, 'pt-BR');
+      });
       html += noExpansor(idLocal, 2, '📍', statusEqLocalSemPrefixo(local), eqs.length + ' equipamento(s)');
       html += '<div class="arv-filhos'+(statusEqColapsados.has(idLocal)?' colapsado':'')+'" data-filhos-de="'+idLocal+'">';
       eqs.forEach(function(eq){ html += linhaFolha(eq, local); });
