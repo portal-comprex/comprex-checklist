@@ -1273,10 +1273,27 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <div class="sub" id="painel-kpi-total-sub">100% da frota</div>
     </div>
   </div>
+  <div class="dash-card" style="margin-bottom:16px">
+    <h3>Evolução diária — itens ruins e itens impeditivos</h3>
+    <div class="painel-evolucao-legenda">
+      <span><span class="dot" style="background:var(--ru)"></span>Itens ruins (comuns)</span>
+      <span><span class="dot" style="background:#b25e17"></span>Itens impeditivos (segurança)</span>
+    </div>
+    <div id="painel-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
+  </div>
+  <div style="margin-bottom:16px">
+    <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:4px">🛡️ Equipamentos com itens críticos <span style="font-weight:400;text-transform:none;color:var(--cinza)">(itens impeditivos de segurança)</span></h3>
+    <div class="painel-criticos" id="painel-criticos"><div class="lista-vazia-dash">Carregando…</div></div>
+    <div class="painel-criticos-aviso"><span>🛡️</span> Itens impeditivos devem ser corrigidos <b>antes da operação do equipamento.</b></div>
+  </div>
   <div class="dash-row" style="grid-template-columns:1.7fr 1fr;align-items:start">
     <div class="painel-tabela-wrap">
       <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:12px">Equipamentos — situação do checklist diário</h3>
       <div class="painel-filtros">
+        <div class="painel-filtro-campo">
+          <label>Equipamento/Implemento</label>
+          <select id="painel-filtro-equip"><option value="">Todos</option></select>
+        </div>
         <div class="painel-filtro-campo">
           <label>Local</label>
           <select id="painel-filtro-local"><option value="">Todos os locais</option></select>
@@ -1301,24 +1318,14 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
       <div id="painel-tabela-cont"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div style="text-align:center;margin-top:12px">
+        <button type="button" class="rel-btn-secundario" id="painel-ver-mais" style="display:none">Ver mais equipamentos</button>
+      </div>
     </div>
     <div class="dash-card">
       <h3>Distribuição dos equipamentos por situação</h3>
       <div id="painel-donut"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
-  </div>
-  <div class="dash-card" style="margin-bottom:16px">
-    <h3>Evolução diária — itens ruins e itens impeditivos</h3>
-    <div class="painel-evolucao-legenda">
-      <span><span class="dot" style="background:var(--ru)"></span>Itens ruins (comuns)</span>
-      <span><span class="dot" style="background:#b25e17"></span>Itens impeditivos (segurança)</span>
-    </div>
-    <div id="painel-evolucao"><div class="lista-vazia-dash">Carregando…</div></div>
-  </div>
-  <div>
-    <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:4px">🛡️ Equipamentos com itens críticos <span style="font-weight:400;text-transform:none;color:var(--cinza)">(itens impeditivos de segurança)</span></h3>
-    <div class="painel-criticos" id="painel-criticos"><div class="lista-vazia-dash">Carregando…</div></div>
-    <div class="painel-criticos-aviso"><span>🛡️</span> Itens impeditivos devem ser corrigidos <b>antes da operação do equipamento.</b></div>
   </div>
 </div>
 <div class="view" id="view-partediaria">
@@ -6308,15 +6315,19 @@ const PAINEL_SITUACAO_INFO = {
 };
 let painelLinhasAtual = [];
 let painelCarregado = false;
+let painelTabelaExpandida = false;
+const PAINEL_LINHAS_POR_TELA = 8;
 async function carregarPainelGeral(forcar){
   const cont = document.getElementById('painel-tabela-cont');
   try {
     await Promise.all([garantirDadosHistorico(forcar), garantirDadosFrotaExtra(forcar)]);
     if (!painelCarregado) {
       preencherFiltroSelectComLista('painel-filtro-local', locais);
-      ['painel-filtro-local', 'painel-filtro-tipo', 'painel-filtro-situacao'].forEach(function(id){
-        document.getElementById(id).addEventListener('change', renderizarPainelTabela);
+      preencherFiltroSelectComLista('painel-filtro-equip', frotas);
+      ['painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-tipo', 'painel-filtro-situacao'].forEach(function(id){
+        document.getElementById(id).addEventListener('change', function(){ painelTabelaExpandida = false; renderizarPainelTabela(); });
       });
+      document.getElementById('painel-ver-mais').onclick = function(){ painelTabelaExpandida = true; renderizarPainelTabela(); };
       painelCarregado = true;
     }
     const frotasEquip = frotas.filter(function(f){ return frotaTipoItem[f] !== 'implemento'; });
@@ -6371,21 +6382,30 @@ function painelIrParaHistoricoDoEquip(eq){
 }
 function renderizarPainelTabela(){
   const cont = document.getElementById('painel-tabela-cont');
+  const botaoVerMais = document.getElementById('painel-ver-mais');
+  const equipFiltro = document.getElementById('painel-filtro-equip').value;
   const localFiltro = document.getElementById('painel-filtro-local').value;
   const tipoFiltro = document.getElementById('painel-filtro-tipo').value;
   const situacaoFiltro = document.getElementById('painel-filtro-situacao').value;
   let linhas = painelLinhasAtual.filter(function(l){
+    if (equipFiltro && l.equipamento !== equipFiltro) return false;
     if (localFiltro && l.local !== localFiltro) return false;
     if (tipoFiltro && l.tipoItem !== tipoFiltro) return false;
     if (situacaoFiltro && (l.situacao || 'verde') !== situacaoFiltro) return false;
     return true;
   });
-  if (!linhas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento encontrado com esses filtros.</div>'; return; }
+  if (!linhas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento encontrado com esses filtros.</div>'; botaoVerMais.style.display = 'none'; return; }
+  const totalEncontrado = linhas.length;
+  const linhasVisiveis = painelTabelaExpandida ? linhas : linhas.slice(0, PAINEL_LINHAS_POR_TELA);
+  botaoVerMais.style.display = (!painelTabelaExpandida && totalEncontrado > linhasVisiveis.length) ? 'inline-block' : 'none';
+  if (botaoVerMais.style.display === 'inline-block') {
+    botaoVerMais.textContent = 'Ver mais equipamentos (' + (totalEncontrado - linhasVisiveis.length) + ' restante' + ((totalEncontrado - linhasVisiveis.length) > 1 ? 's' : '') + ')';
+  }
   cont.innerHTML =
     '<table class="painel-tabela"><thead><tr>' +
       '<th>Equipamento</th><th>Local</th><th>Checklist</th><th>Itens ruins</th><th>Itens impeditivos</th><th>Situação</th>' +
     '</tr></thead><tbody>' +
-    linhas.map(function(l){
+    linhasVisiveis.map(function(l){
       const sit = l.situacao || 'verde';
       const info = PAINEL_SITUACAO_INFO[sit];
       const chkTxt = l.ultimo
