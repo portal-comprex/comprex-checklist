@@ -1437,13 +1437,12 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
             <option value="verde">Ok</option>
           </select>
         </div>
-        <div class="painel-filtro-campo" style="min-width:0;justify-content:flex-end">
+        <div class="painel-filtro-campo" style="min-width:0;flex:0 0 auto;justify-content:flex-end">
           <label>&nbsp;</label>
-          <button type="button" class="rel-btn-secundario" id="painel-limpar-filtros">🔽 Limpar filtros</button>
-        </div>
-        <div class="painel-filtro-campo" style="min-width:0;justify-content:flex-end;flex:0">
-          <label>&nbsp;</label>
-          <button type="button" class="arv-btn-detalhe" id="painel-imprimir" style="font-size:15px;padding:8px 11px" title="Imprimir / Salvar em PDF">🖨️</button>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="rel-btn-secundario" id="painel-limpar-filtros" style="padding:8px 12px;font-size:11.5px;white-space:nowrap">Limpar filtros</button>
+            <button type="button" class="arv-btn-detalhe" id="painel-imprimir" style="font-size:14px;padding:8px 10px;flex-shrink:0" title="Imprimir / Salvar em PDF (histórico dos equipamentos filtrados)">🖨️</button>
+          </div>
         </div>
       </div>
       <div id="painel-tabela-cont" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
@@ -7005,25 +7004,22 @@ async function carregarPainelGeral(forcar){
         const equipFiltro = document.getElementById('painel-filtro-equip').value;
         const localFiltro = document.getElementById('painel-filtro-local').value;
         const situacaoFiltro = document.getElementById('painel-filtro-situacao').value;
-        const linhas = painelLinhasAtual.filter(function(l){
-          if (equipFiltro && l.equipamento !== equipFiltro) return false;
-          if (localFiltro && l.local !== localFiltro) return false;
-          if (situacaoFiltro && (l.situacao || 'verde') !== situacaoFiltro) return false;
-          return true;
-        });
-        if (!linhas.length) { alert('Nenhum equipamento encontrado para imprimir com esses filtros.'); return; }
-        const corpo = linhas.map(function(l){
-          const sit = l.situacao || 'verde';
-          const info = PAINEL_SITUACAO_INFO[sit];
-          const chkTxt = l.ultimo ? formatarDataHist(l.ultimo.criado) : 'Sem checklist';
-          const paralisarTxt = !l.ultimo ? '—' : (l.precisaParalisar ? 'SIM' : 'NÃO');
-          return '<tr><td>' + l.equipamento + '</td><td>' + l.local + '</td><td>' + chkTxt + '</td>' +
-            '<td>' + l.itensRuins + '</td><td>' + l.itensImpeditivos + '</td><td>' + paralisarTxt + '</td>' +
-            '<td>' + info.icone + ' ' + info.texto + '</td></tr>';
-        }).join('');
-        document.getElementById('hist-print-area').innerHTML =
-          '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Painel — Situação do Checklist Diário<small>' + linhas.length + ' equipamento(s) — Comprex Máquinas e Serviços</small></div></div>' +
-          '<table class="hist-tabela"><thead><tr><th>Equipamento</th><th>Local</th><th>Última realização</th><th>Itens ruins</th><th>Itens impeditivos</th><th>Necessita paralisar</th><th>Situação</th></tr></thead><tbody>' + corpo + '</tbody></table>';
+        // Não imprime só a "foto" da tela (situação atual) — imprime o
+        // HISTÓRICO de checklists (todos os registros já feitos) de todos os
+        // equipamentos que atendem ao filtro. Se o filtro de equipamento
+        // estiver em "Todos", sai o histórico de mais de um equipamento junto.
+        const equipsFiltrados = new Set(
+          painelLinhasAtual.filter(function(l){
+            if (equipFiltro && l.equipamento !== equipFiltro) return false;
+            if (localFiltro && l.local !== localFiltro) return false;
+            if (situacaoFiltro && (l.situacao || 'verde') !== situacaoFiltro) return false;
+            return true;
+          }).map(function(l){ return l.equipamento; })
+        );
+        if (!equipsFiltrados.size) { alert('Nenhum equipamento encontrado para imprimir com esses filtros.'); return; }
+        const registros = historicoItens.filter(function(h){ return equipsFiltrados.has(h.equipamento); })
+          .sort(function(a, b){ return new Date(b.criado) - new Date(a.criado); });
+        document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico(registros);
         window.print();
       };
       painelCarregado = true;
