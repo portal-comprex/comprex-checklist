@@ -389,6 +389,13 @@
     cursor:pointer;line-height:1;opacity:.7;padding:0 4px
   }
   .modal-fechar:hover{opacity:1}
+  /* Botão discreto de imprimir/salvar em PDF no canto do painel lateral de
+     histórico do equipamento — só o ícone, sem texto, ao lado do ✕. O
+     cabeçalho do painel lateral tem fundo claro (mesma cor do ✕ ao lado,
+     que também é escuro), então o ícone usa cor escura, não branca. */
+  .painel-lateral-imprimir{background:none;border:none;color:#1a2430;font-size:15px;
+    cursor:pointer;line-height:1;opacity:.65;padding:2px 5px;border-radius:6px}
+  .painel-lateral-imprimir:hover{opacity:1;background:rgba(0,0,0,.06)}
   /* tabs */
   .modal-tabs{display:flex;border-bottom:2px solid #eef0f1}
   .tab{
@@ -1434,6 +1441,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
           <label>&nbsp;</label>
           <button type="button" class="rel-btn-secundario" id="painel-limpar-filtros">🔽 Limpar filtros</button>
         </div>
+        <div class="painel-filtro-campo" style="min-width:0;justify-content:flex-end;flex:0">
+          <label>&nbsp;</label>
+          <button type="button" class="arv-btn-detalhe" id="painel-imprimir" style="font-size:15px;padding:8px 11px" title="Imprimir / Salvar em PDF">🖨️</button>
+        </div>
       </div>
       <div id="painel-tabela-cont" style="flex:1;min-height:0;overflow-y:auto"><div class="lista-vazia-dash">Carregando…</div></div>
       <div style="text-align:center;margin-top:12px">
@@ -2390,7 +2401,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-detalhe-modal oc-painel-modal">
     <div class="hist-detalhe-header">
       <h3>🚜 Histórico do Equipamento — <span id="oc-equip-titulo"></span></h3>
-      <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="painel-lateral-imprimir" id="oc-equip-imprimir" title="Imprimir / Salvar em PDF">🖨️</button>
+        <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
+      </div>
     </div>
     <div class="hist-detalhe-corpo" id="oc-equip-corpo"></div>
   </div>
@@ -6987,6 +7001,31 @@ async function carregarPainelGeral(forcar){
         painelTabelaExpandida = false;
         renderizarPainelTabela();
       };
+      document.getElementById('painel-imprimir').onclick = function(){
+        const equipFiltro = document.getElementById('painel-filtro-equip').value;
+        const localFiltro = document.getElementById('painel-filtro-local').value;
+        const situacaoFiltro = document.getElementById('painel-filtro-situacao').value;
+        const linhas = painelLinhasAtual.filter(function(l){
+          if (equipFiltro && l.equipamento !== equipFiltro) return false;
+          if (localFiltro && l.local !== localFiltro) return false;
+          if (situacaoFiltro && (l.situacao || 'verde') !== situacaoFiltro) return false;
+          return true;
+        });
+        if (!linhas.length) { alert('Nenhum equipamento encontrado para imprimir com esses filtros.'); return; }
+        const corpo = linhas.map(function(l){
+          const sit = l.situacao || 'verde';
+          const info = PAINEL_SITUACAO_INFO[sit];
+          const chkTxt = l.ultimo ? formatarDataHist(l.ultimo.criado) : 'Sem checklist';
+          const paralisarTxt = !l.ultimo ? '—' : (l.precisaParalisar ? 'SIM' : 'NÃO');
+          return '<tr><td>' + l.equipamento + '</td><td>' + l.local + '</td><td>' + chkTxt + '</td>' +
+            '<td>' + l.itensRuins + '</td><td>' + l.itensImpeditivos + '</td><td>' + paralisarTxt + '</td>' +
+            '<td>' + info.icone + ' ' + info.texto + '</td></tr>';
+        }).join('');
+        document.getElementById('hist-print-area').innerHTML =
+          '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Painel — Situação do Checklist Diário<small>' + linhas.length + ' equipamento(s) — Comprex Máquinas e Serviços</small></div></div>' +
+          '<table class="hist-tabela"><thead><tr><th>Equipamento</th><th>Local</th><th>Última realização</th><th>Itens ruins</th><th>Itens impeditivos</th><th>Necessita paralisar</th><th>Situação</th></tr></thead><tbody>' + corpo + '</tbody></table>';
+        window.print();
+      };
       painelCarregado = true;
     }
     // IMPLEMENTOS não entram nas listas/telas de checklist (não fazem checklist
@@ -7528,6 +7567,16 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
 }
 document.getElementById('oc-equip-fechar').onclick = function(){ document.getElementById('oc-equip-overlay').classList.remove('aberto'); };
 document.getElementById('oc-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+/** Relatório completo do equipamento (foto, conformidade, trajetória e
+ *  histórico) pronto pra imprimir ou salvar em PDF — direto do painel
+ *  lateral que abre ao clicar no equipamento (inclusive vindo do Painel). */
+document.getElementById('oc-equip-imprimir').onclick = function(){
+  if (!ocEquipAtual) return;
+  document.getElementById('hist-print-area').innerHTML =
+    '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Relatório do Equipamento — ' + ocEquipAtual + '<small>Histórico e conformidade — Comprex Máquinas e Serviços</small></div></div>' +
+    '<div class="hist-detalhe-print">' + document.getElementById('oc-equip-corpo').innerHTML + '</div>';
+  window.print();
+};
 /** Igual ao hover do "Total de Ocorrências", só que aqui só lista equipamentos
  *  que têm pelo menos uma ocorrência com item impeditivo (NÃO/NÃO POSSUI). */
 /** Tooltip genérico e reaproveitável — mostra uma lista (chips) ao passar o
