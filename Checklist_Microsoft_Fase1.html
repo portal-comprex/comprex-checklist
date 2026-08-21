@@ -389,6 +389,12 @@
     cursor:pointer;line-height:1;opacity:.7;padding:0 4px
   }
   .modal-fechar:hover{opacity:1}
+  /* Botão discreto de imprimir/salvar em PDF nos painéis laterais de
+     histórico (equipamento/movimentações) — de propósito bem pequeno e sem
+     texto, só um ícone, pra não poluir o cabeçalho do painel. */
+  .painel-lateral-imprimir{background:none;border:none;color:#fff;font-size:15px;
+    cursor:pointer;line-height:1;opacity:.6;padding:2px 5px;border-radius:6px}
+  .painel-lateral-imprimir:hover{opacity:1;background:rgba(255,255,255,.15)}
   /* tabs */
   .modal-tabs{display:flex;border-bottom:2px solid #eef0f1}
   .tab{
@@ -604,6 +610,9 @@
     .hist-filtros, .hist-wrap, .hist-info, .hist-dica, .hist-detalhe-overlay{display:none !important}
     #hist-print-area{display:block !important}
     .hist-detalhe-print .hist-detalhe-linha{break-inside:avoid}
+    .hist-detalhe-print .oc-equip-secao, .hist-detalhe-print .oc-equip-hist-card,
+    .hist-detalhe-print .mov-tl-item{break-inside:avoid}
+    .hist-detalhe-print .oc-equip-header{break-after:avoid}
   }
   .ind-card{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px 18px}
   .ind-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--tinta);
@@ -2383,7 +2392,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-detalhe-modal oc-painel-modal">
     <div class="hist-detalhe-header">
       <h3>🚜 Histórico do Equipamento — <span id="oc-equip-titulo"></span></h3>
-      <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="painel-lateral-imprimir" id="oc-equip-imprimir" title="Imprimir / Salvar em PDF">🖨️</button>
+        <button class="modal-fechar" id="oc-equip-fechar" style="color:#1a2430">✕</button>
+      </div>
     </div>
     <div class="hist-detalhe-corpo" id="oc-equip-corpo"></div>
   </div>
@@ -2392,7 +2404,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
   <div class="hist-detalhe-modal oc-painel-modal">
     <div class="hist-detalhe-header">
       <h3>📦 Histórico de Movimentações — <span id="mov-equip-titulo"></span></h3>
-      <button class="modal-fechar" id="mov-equip-fechar" style="color:#1a2430">✕</button>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="painel-lateral-imprimir" id="mov-equip-imprimir" title="Imprimir / Salvar em PDF">🖨️</button>
+        <button class="modal-fechar" id="mov-equip-fechar" style="color:#1a2430">✕</button>
+      </div>
     </div>
     <div class="hist-detalhe-corpo" id="mov-equip-corpo"></div>
   </div>
@@ -6803,6 +6818,16 @@ function renderizarSecaoCadastroEquip(){
 }
 document.getElementById('mov-equip-fechar').onclick = function(){ document.getElementById('mov-equip-overlay').classList.remove('aberto'); };
 document.getElementById('mov-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+/** Relatório de movimentações/local do item (Frota) pronto pra imprimir ou
+ *  salvar em PDF — mesmo conteúdo do painel lateral (dados cadastrais,
+ *  tempo por local/status e linha do tempo). */
+document.getElementById('mov-equip-imprimir').onclick = function(){
+  if (!movEquipAtual) return;
+  document.getElementById('hist-print-area').innerHTML =
+    '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Relatório de Movimentações — ' + movEquipAtual + '<small>Comprex Máquinas e Serviços</small></div></div>' +
+    '<div class="hist-detalhe-print">' + document.getElementById('mov-equip-corpo').innerHTML + '</div>';
+  window.print();
+};
   /* =====================================================================
    FROTA — lista dos equipamentos e implementos já cadastrados, com foto
    e descrição, separados em duas seções pra não misturar os dois tipos.
@@ -7428,7 +7453,9 @@ function temItemImpeditivo(h){
 let ocorrenciasFiltradasAtual = [];
 /** Liga o hover no card "Total de Ocorrências" — mostra um tooltip com os
  *  equipamentos únicos das ocorrências filtradas, cada um clicável. */
+let ocEquipAtual = null;
 function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
+  ocEquipAtual = equip;
   document.getElementById('oc-equip-titulo').textContent = equip + (soImpeditivos ? ' — itens impeditivos' : '');
   let todasDoEquip = ocorrenciasItens.filter(function(h){ return h.equipamento === equip; })
     .sort(function(a,b){ return new Date(b.criado) - new Date(a.criado); });
@@ -7519,6 +7546,16 @@ function abrirHistoricoEquipamentoOcorrencias(equip, soImpeditivos){
 }
 document.getElementById('oc-equip-fechar').onclick = function(){ document.getElementById('oc-equip-overlay').classList.remove('aberto'); };
 document.getElementById('oc-equip-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+/** Relatório completo do equipamento (histórico/ocorrências, conformidade,
+ *  trajetória e foto) pronto pra imprimir ou salvar em PDF — pra mandar
+ *  pra gestores. Reaproveita o mesmo conteúdo já montado no painel lateral. */
+document.getElementById('oc-equip-imprimir').onclick = function(){
+  if (!ocEquipAtual) return;
+  document.getElementById('hist-print-area').innerHTML =
+    '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Relatório do Equipamento — ' + ocEquipAtual + '<small>Histórico e conformidade — Comprex Máquinas e Serviços</small></div></div>' +
+    '<div class="hist-detalhe-print">' + document.getElementById('oc-equip-corpo').innerHTML + '</div>';
+  window.print();
+};
 /** Igual ao hover do "Total de Ocorrências", só que aqui só lista equipamentos
  *  que têm pelo menos uma ocorrência com item impeditivo (NÃO/NÃO POSSUI). */
 /** Tooltip genérico e reaproveitável — mostra uma lista (chips) ao passar o
