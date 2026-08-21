@@ -6228,11 +6228,11 @@ document.getElementById('hist-exportar-excel').onclick = function(){
   XLSX.utils.book_append_sheet(wb, ws, 'Histórico Checklist');
   XLSX.writeFile(wb, 'Historico_Checklist_' + new Date().toISOString().slice(0,10) + '.xlsx');
 };
-function abrirDetalheHistorico(id){
-  const h = historicoItens.find(function(x){ return String(x.id) === String(id); });
-  if (!h) return;
-  detalheHistoricoAberto = h;
-  document.getElementById('hist-detalhe-titulo').textContent = h.equipamento + ' — ' + formatarDataHist(h.criado);
+/** Monta o corpo detalhado de UM checklist (meta + cada item respondido,
+ *  colorido por gravidade, + observação) — usado tanto pelo painel de
+ *  detalhe (clique numa linha do Histórico) quanto pelo relatório
+ *  detalhado de impressão (que empilha isso pra vários checklists). */
+function montarLinhasDetalheChecklist(h){
   let linhas = '<div class="hist-detalhe-meta">Operador: <b>' + h.operador + '</b> · Horímetro: <b>' + formatarHorimetro(h.horimetro) + '</b> · Local: <b>' + (h.local||'—') + '</b></div>';
   ITENS.forEach(function(item){
     const valor = h.campos[item[0]];
@@ -6243,8 +6243,43 @@ function abrirDetalheHistorico(id){
       '<span class="hist-detalhe-resposta ' + classeResp + '">' + valor + '</span></div>';
   });
   if (h.observacao) linhas += '<div class="hist-detalhe-obs">Observação: ' + h.observacao + '</div>';
-  document.getElementById('hist-detalhe-corpo').innerHTML = linhas;
+  return linhas;
+}
+function abrirDetalheHistorico(id){
+  const h = historicoItens.find(function(x){ return String(x.id) === String(id); });
+  if (!h) return;
+  detalheHistoricoAberto = h;
+  document.getElementById('hist-detalhe-titulo').textContent = h.equipamento + ' — ' + formatarDataHist(h.criado);
+  document.getElementById('hist-detalhe-corpo').innerHTML = montarLinhasDetalheChecklist(h);
   document.getElementById('hist-detalhe-overlay').classList.add('aberto');
+}
+/** Relatório DETALHADO — em vez de uma linha-resumo por checklist, mostra
+ *  o cartão completo de cada checklist (todos os itens respondidos,
+ *  coloridos por gravidade, e a observação), um atrás do outro, agrupado
+ *  por equipamento. Usado no relatório do Painel — pra mandar pra gestor
+ *  já com todo o detalhe, sem precisar abrir um por um na tela. */
+function montarConteudoImpressaoHistoricoDetalhado(filtrados){
+  if (!filtrados.length) return '<div class="rel-vazio">Nenhum checklist encontrado para este filtro.</div>';
+  const porEquip = {};
+  filtrados.forEach(function(h){ (porEquip[h.equipamento] = porEquip[h.equipamento] || []).push(h); });
+  const equipsOrdenados = Object.keys(porEquip).sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); });
+  const cartoes = equipsOrdenados.map(function(eq){
+    const registros = porEquip[eq];
+    const descricao = (typeof frotaDescricao !== 'undefined' && frotaDescricao[eq]) ? frotaDescricao[eq] : '';
+    const corpo = registros.map(function(h){
+      return '<div class="oc-equip-hist-card" style="background:none;border:1px solid var(--linha);padding:12px 16px;margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+          '<span class="data" style="font-size:14px">' + formatarDataHist(h.criado) + '</span>' +
+          '<span class="hist-st ' + h.status.classe + '">' + h.status.texto + '</span>' +
+        '</div>' +
+        montarLinhasDetalheChecklist(h) +
+      '</div>';
+    }).join('');
+    return '<div class="rel-grupo-resultado-titulo" style="break-after:avoid">🚜 ' + eq + (descricao ? ' <span style="font-weight:400;font-size:12px;color:#555">— ' + descricao + '</span>' : '') + ' <span style="font-weight:400;font-size:12px;color:#555">(' + registros.length + ' checklist' + (registros.length > 1 ? 's' : '') + ')</span></div>' +
+      corpo;
+  }).join('');
+  return '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">Relatório Detalhado — Histórico de Checklists<small>' + filtrados.length + ' registro(s), ' + equipsOrdenados.length + ' equipamento(s) — Comprex Máquinas e Serviços</small></div></div>' +
+    '<div class="hist-detalhe-print">' + cartoes + '</div>';
 }
 function montarConteudoImpressaoDetalhe(h){
   const titulo = h.equipamento + ' — ' + formatarDataHist(h.criado);
@@ -7046,7 +7081,7 @@ async function carregarPainelGeral(forcar){
           if (ateFiltro && h.criado > (ateFiltro + 'T23:59:59')) return false;
           return true;
         }).sort(function(a, b){ return new Date(b.criado) - new Date(a.criado); });
-        document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico(registros);
+        document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistoricoDetalhado(registros);
         window.print();
       };
       painelCarregado = true;
