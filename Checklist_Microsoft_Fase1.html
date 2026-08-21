@@ -596,8 +596,12 @@
     .rel-busca, .rel-seletor-painel, #alerta-config{display:none !important}
     .main{width:100%}
     .content{padding:0}
+    /* Toda a impressão do sistema hoje passa por #hist-print-area (monta o
+       conteúdo ali e chama window.print()) — então SEMPRE esconde as telas
+       normais, não só as inativas. Sem isso, a tela que estiver aberta no
+       momento (Painel, Ocorrências etc.) aparece inteira impressa junto
+       com o relatório, em vez de aparecer só o relatório. */
     .view{display:none !important}
-    .view.ativo{display:block !important}
     .rel-print-titulo{
       display:flex !important;align-items:center;gap:12px;font-size:16px;font-weight:800;color:#000;
       margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #132436
@@ -1420,6 +1424,14 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <h3 style="text-transform:uppercase;font-size:12px;letter-spacing:.5px;color:var(--tinta);margin-bottom:12px">Equipamentos — situação do checklist diário</h3>
       <div class="painel-filtros">
         <div class="painel-filtro-campo">
+          <label>De</label>
+          <input type="date" id="painel-filtro-de">
+        </div>
+        <div class="painel-filtro-campo">
+          <label>Até</label>
+          <input type="date" id="painel-filtro-ate">
+        </div>
+        <div class="painel-filtro-campo">
           <label>Equipamento/Implemento</label>
           <select id="painel-filtro-equip"><option value="">Todos</option></select>
         </div>
@@ -2127,7 +2139,6 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <button type="button" class="rel-btn-secundario" id="hist-exportar-excel">📊 Exportar Excel</button>
     </div>
   </div>
-  <div id="hist-print-area" style="display:none"></div>
   <div class="hist-wrap">
     <table class="hist-tabela" id="hist-tabela">
       <thead>
@@ -2372,6 +2383,14 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
 </div>
+<!-- Fora de qualquer .view de propósito: em impressão, cada .view vira
+     display:none (menos a ativa) — se essa área ficasse dentro de uma
+     .view específica (como era antes, dentro do Histórico), imprimir a
+     partir de qualquer outra tela (Painel, Ocorrências etc.) mostraria a
+     tela inteira em vez do relatório, porque um filho não escapa do
+     display:none do pai mesmo com !important. Ficando fora, funciona
+     igual independente de qual .view estiver ativa no momento do print. -->
+<div id="hist-print-area" style="display:none"></div>
 <div class="hist-detalhe-overlay" id="hist-detalhe-overlay">
   <div class="hist-detalhe-modal">
     <div class="hist-detalhe-header">
@@ -6990,17 +7009,19 @@ async function carregarPainelGeral(forcar){
     if (!painelCarregado) {
       preencherFiltroSelectComLista('painel-filtro-local', locais);
       preencherFiltroSelectComLista('painel-filtro-equip', frotas.filter(function(f){ return frotaTipoItem[f] !== 'implemento'; }));
-      ['painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-situacao'].forEach(function(id){
+      ['painel-filtro-de', 'painel-filtro-ate', 'painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-situacao'].forEach(function(id){
         document.getElementById(id).addEventListener('change', function(){ painelTabelaExpandida = false; renderizarPainelTabela(); });
       });
       document.getElementById('painel-ver-mais').onclick = function(){ painelTabelaExpandida = true; renderizarPainelTabela(); };
       document.getElementById('painel-limpar-filtros').onclick = function(){
-        ['painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-situacao']
+        ['painel-filtro-de', 'painel-filtro-ate', 'painel-filtro-equip', 'painel-filtro-local', 'painel-filtro-situacao']
           .forEach(function(id){ document.getElementById(id).value = ''; });
         painelTabelaExpandida = false;
         renderizarPainelTabela();
       };
       document.getElementById('painel-imprimir').onclick = function(){
+        const deFiltro = document.getElementById('painel-filtro-de').value;
+        const ateFiltro = document.getElementById('painel-filtro-ate').value;
         const equipFiltro = document.getElementById('painel-filtro-equip').value;
         const localFiltro = document.getElementById('painel-filtro-local').value;
         const situacaoFiltro = document.getElementById('painel-filtro-situacao').value;
@@ -7008,6 +7029,8 @@ async function carregarPainelGeral(forcar){
         // HISTÓRICO de checklists (todos os registros já feitos) de todos os
         // equipamentos que atendem ao filtro. Se o filtro de equipamento
         // estiver em "Todos", sai o histórico de mais de um equipamento junto.
+        // O período (De/Até) filtra os REGISTROS do histórico, não só quais
+        // equipamentos entram — por isso é aplicado de novo mais abaixo.
         const equipsFiltrados = new Set(
           painelLinhasAtual.filter(function(l){
             if (equipFiltro && l.equipamento !== equipFiltro) return false;
@@ -7017,8 +7040,12 @@ async function carregarPainelGeral(forcar){
           }).map(function(l){ return l.equipamento; })
         );
         if (!equipsFiltrados.size) { alert('Nenhum equipamento encontrado para imprimir com esses filtros.'); return; }
-        const registros = historicoItens.filter(function(h){ return equipsFiltrados.has(h.equipamento); })
-          .sort(function(a, b){ return new Date(b.criado) - new Date(a.criado); });
+        const registros = historicoItens.filter(function(h){
+          if (!equipsFiltrados.has(h.equipamento)) return false;
+          if (deFiltro && h.criado < (deFiltro + 'T00:00:00')) return false;
+          if (ateFiltro && h.criado > (ateFiltro + 'T23:59:59')) return false;
+          return true;
+        }).sort(function(a, b){ return new Date(b.criado) - new Date(a.criado); });
         document.getElementById('hist-print-area').innerHTML = montarConteudoImpressaoHistorico(registros);
         window.print();
       };
@@ -7082,6 +7109,8 @@ function painelIrParaHistoricoDoEquip(eq){
 function renderizarPainelTabela(){
   const cont = document.getElementById('painel-tabela-cont');
   const botaoVerMais = document.getElementById('painel-ver-mais');
+  const deFiltro = document.getElementById('painel-filtro-de').value;
+  const ateFiltro = document.getElementById('painel-filtro-ate').value;
   const equipFiltro = document.getElementById('painel-filtro-equip').value;
   const localFiltro = document.getElementById('painel-filtro-local').value;
   const situacaoFiltro = document.getElementById('painel-filtro-situacao').value;
@@ -7089,6 +7118,11 @@ function renderizarPainelTabela(){
     if (equipFiltro && l.equipamento !== equipFiltro) return false;
     if (localFiltro && l.local !== localFiltro) return false;
     if (situacaoFiltro && (l.situacao || 'verde') !== situacaoFiltro) return false;
+    // Com filtro de período, só entra quem tem o último checklist dentro
+    // do período — quem nunca fez checklist sai da lista (não tem o que mostrar).
+    if ((deFiltro || ateFiltro) && !l.ultimo) return false;
+    if (deFiltro && l.ultimo && l.ultimo.criado < (deFiltro + 'T00:00:00')) return false;
+    if (ateFiltro && l.ultimo && l.ultimo.criado > (ateFiltro + 'T23:59:59')) return false;
     return true;
   });
   if (!linhas.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento encontrado com esses filtros.</div>'; botaoVerMais.style.display = 'none'; return; }
