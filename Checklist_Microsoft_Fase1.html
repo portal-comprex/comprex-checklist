@@ -563,6 +563,27 @@
      fundo extra — o equipamento continua igual (maiúsculo/negrito/preto). */
   .arv-cod-equip{color:var(--tinta)}
   .arv-cod-impl{color:var(--impl);text-transform:lowercase;font-weight:600}
+  /* ---- Modo "somente em manutenção": colunas extras de Observação / Previsão de reparo ---- */
+  #status-eq-arvore.arv-modo-manut .arv-cab-tabela,
+  #status-eq-arvore.arv-modo-manut .arv-folha,
+  #status-eq-arvore.arv-modo-manut .arv-no{grid-template-columns:1fr 140px 100px 130px 140px 1.3fr 120px 34px}
+  .arv-manut-obs{font-size:12px;color:var(--tinta);line-height:1.35;padding-right:6px;white-space:normal}
+  .arv-manut-editar-btn{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
+    width:28px;height:28px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .arv-manut-editar-btn:hover{background:var(--impl-bg,#f1eafb)}
+  .arv-folha-edit-manut{padding:12px 10px 14px 54px;border-bottom:1px solid var(--linha);background:var(--cream)}
+  .arv-folha-edit-manut .aem-titulo{font-size:11.5px;font-weight:800;color:var(--navy);margin-bottom:8px}
+  .arv-folha-edit-manut .aem-campo{margin-bottom:8px}
+  .arv-folha-edit-manut .aem-campo label{display:block;font-size:10.5px;font-weight:700;color:var(--cinza);margin-bottom:3px;letter-spacing:.3px}
+  .arv-folha-edit-manut textarea, .arv-folha-edit-manut input[type=date]{
+    width:100%;padding:8px 10px;border:1px solid var(--linha);border-radius:7px;font-size:12.5px;font-family:inherit;resize:vertical}
+  .arv-folha-edit-manut .aem-acoes{display:flex;gap:8px;margin-top:6px}
+  .aem-salvar{padding:8px 16px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer}
+  .aem-cancelar{padding:8px 16px;border:1px solid var(--linha);border-radius:7px;background:#fff;color:var(--cinza);font-size:12.5px;font-weight:700;cursor:pointer}
+  .aem-feedback{font-size:11.5px;margin-top:6px;font-weight:600}
+  .arv-ver-fora-manut{display:block;width:100%;margin-top:10px;padding:11px;border:1px dashed var(--linha);
+    border-radius:8px;background:#fff;color:var(--navy);font-size:12.5px;font-weight:700;cursor:pointer;text-align:center}
+  .arv-ver-fora-manut:hover{background:var(--cream)}
   .btn-salvar{
     width:100%;margin-top:16px;padding:13px;border:none;border-radius:9px;
     background:var(--navy);color:#fff;font-size:14px;font-weight:700;
@@ -4405,6 +4426,8 @@ let frotaRegimeTrabalho = {}; // equipamento -> 8h / 12h / 24h
 let frotaTipoItem = {};      // nome -> 'equipamento' ou 'implemento'
 let frotaIdsExtra = {};      // equipamento -> id do item na lista Frota
 let frotaDescricao = {};     // nome -> descrição curta (ex.: "ESCAVADEIRA HIDRA. DOOSAN DX530LC")
+let frotaObservacaoManutencao = {}; // equipamento -> motivo da manutenção (texto livre)
+let frotaPrevisaoReparo = {};       // equipamento -> data prevista de reparo (AAAA-MM-DD)
 const STATUS_EQUIPAMENTO = ['OPERACIONAL', 'EM MANUTENÇÃO', 'EM DISPONIBILIDADE'];
 const REGIMES_TRABALHO = ['8h', '12h', '24h'];
 async function garantirDadosFrotaExtra(forcar){
@@ -4423,6 +4446,8 @@ async function garantirDadosFrotaExtra(forcar){
     frotaTipoItem[nome] = (f.TipoItem === 'implemento') ? 'implemento' : 'equipamento';
     frotaIdsExtra[nome] = item.id;
     frotaDescricao[nome] = f.Descricao || '';
+    frotaObservacaoManutencao[nome] = f.ObservacaoManutencao || '';
+    frotaPrevisaoReparo[nome] = f.PrevisaoReparo ? String(f.PrevisaoReparo).split('T')[0] : '';
   });
   frotaExtraCarregada = true;
 }
@@ -5121,6 +5146,7 @@ document.getElementById('dash-mov-limpar').onclick = function(){
 let statusEqInicializado = false;
 let statusEqLocalSelecionado = null;
 let statusEqColapsados = new Set(); // guarda quais nós da árvore estão fechados
+let statusEqEditandoManut = null; // código do equip. cuja obs./previsão de reparo está em edição na árvore
 /** Extrai o "grupo" (prefixo) de um local, ex: "AMT - Sucata/Bobina - 500010" -> "AMT".
  *  Não depende de nenhum cadastro novo — é só o primeiro pedaço do nome do local. */
 function statusEqGrupoDoLocal(local){
@@ -5268,6 +5294,29 @@ function statusEqRenderizar(){
     (porGrupo[grupo] = porGrupo[grupo] || []).push(local);
   });
   const gruposOrdenados = Object.keys(porGrupo).sort();
+  const modoManutencao = filtroStatus === 'EM MANUTENÇÃO';
+  const isAdminArvore = usuarioEhAdmin(contaAtual);
+  function formatarDataBR(iso){
+    if (!iso) return '';
+    const p = iso.split('-');
+    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+  }
+  function linhaEdicaoManut(eq){
+    const obsAtual = frotaObservacaoManutencao[eq] || '';
+    const prevAtual = frotaPrevisaoReparo[eq] || '';
+    return '<div class="arv-folha-edit-manut" data-equip-edit="'+eq+'">' +
+      '<div class="aem-titulo">Editar manutenção — '+eq+'</div>' +
+      '<div class="aem-campo"><label>Observação (motivo da manutenção)</label>' +
+        '<textarea id="aem-obs-'+eq+'" rows="2" placeholder="Ex: Troca de bomba hidráulica">'+frotaEsc(obsAtual)+'</textarea></div>' +
+      '<div class="aem-campo" style="max-width:220px"><label>Previsão de reparo</label>' +
+        '<input type="date" id="aem-prev-'+eq+'" value="'+prevAtual+'"></div>' +
+      '<div class="aem-acoes">' +
+        '<button type="button" class="aem-salvar" data-salvar-manut="'+eq+'">Salvar</button>' +
+        '<button type="button" class="aem-cancelar" data-cancelar-manut="'+eq+'">Cancelar</button>' +
+      '</div>' +
+      '<div class="aem-feedback" id="aem-feedback-'+eq+'"></div>' +
+    '</div>';
+  }
   function linhaFolha(eq, local){
     const vinc = frotaItemVinculado[eq];
     const ehImplemento = frotaTipoItem[eq] === 'implemento';
@@ -5283,6 +5332,12 @@ function statusEqRenderizar(){
     const estiloFolha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
     const dicaFolha = podeEditar ? 'Clique para mudar o status ou mover este equipamento' : 'Somente leitura — fora da sua localidade';
     const iconeFolha = frotaTipoItem[eq] === 'implemento' ? '🔧' : '🚜';
+    if (statusEqEditandoManut === eq) return linhaEdicaoManut(eq);
+    const colunasManut = modoManutencao ?
+      '<div class="arv-manut-obs">'+(frotaObservacaoManutencao[eq] ? frotaEsc(frotaObservacaoManutencao[eq]) : '<i style="opacity:.55">Sem observação</i>')+'</div>' +
+      '<div class="arv-sub">'+(frotaPrevisaoReparo[eq] ? formatarDataBR(frotaPrevisaoReparo[eq]) : '—')+'</div>' +
+      '<div>'+(isAdminArvore ? '<button type="button" class="arv-manut-editar-btn" data-editar-manut="'+eq+'" title="Editar observação / previsão de reparo">✏️</button>' : '')+'</div>'
+      : '';
     return '<div class="arv-folha" data-equip="'+eq+'" style="'+estiloFolha+'" title="'+dicaFolha+'">' +
       '<div class="arv-no-nome">'+iconeFolha+' '+nome+(podeEditar?'':' 🔒')+'<br><span class="arv-sub" style="font-weight:400;margin-left:20px">'+local+'</span></div>' +
       '<div>'+diasTxt+'</div>' +
@@ -5291,6 +5346,7 @@ function statusEqRenderizar(){
       '<div class="arv-sub" style="display:flex;align-items:center;justify-content:space-between;gap:6px">'+subTxt+
         '<button type="button" class="arv-btn-detalhe" data-ver-detalhe="'+eq+'" title="Ver histórico detalhado com gráfico">📊</button>' +
       '</div>' +
+      colunasManut +
     '</div>';
   }
   function noExpansor(id, nivel, icone, nome, col2, extraClasse){
@@ -5300,7 +5356,9 @@ function statusEqRenderizar(){
       '<div>'+(col2||'—')+'</div><div>—</div><div>—</div><div>—</div>' +
     '</div>';
   }
-  let html = '<div class="arv-cab-tabela"><span>EQUIPAMENTO / ACESSÓRIO</span><span>DIAS NO LOCAL</span><span></span><span>DATA DE CHEGADA</span><span>STATUS</span></div>';
+  arv.classList.toggle('arv-modo-manut', modoManutencao);
+  let html = '<div class="arv-cab-tabela"><span>EQUIPAMENTO / ACESSÓRIO</span><span>DIAS NO LOCAL</span><span></span><span>DATA DE CHEGADA</span><span>STATUS</span>' +
+    (modoManutencao ? '<span>OBSERVAÇÃO</span><span>PREVISÃO DE REPARO</span><span></span>' : '') + '</div>';
   html += noExpansor('root', 0, '🏢', 'COMPREX', null, 'arv-nivel-0');
   html += '<div class="arv-filhos'+(statusEqColapsados.has('root')?' colapsado':'')+'" data-filhos-de="root">';
   gruposOrdenados.forEach(function(grupo){
@@ -5347,8 +5405,73 @@ function statusEqRenderizar(){
       garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); });
     };
   });
+  arv.querySelectorAll('[data-editar-manut]').forEach(function(btn){
+    btn.onclick = function(e){
+      e.stopPropagation();
+      statusEqEditandoManut = btn.dataset.editarManut;
+      statusEqRenderizar();
+    };
+  });
+  arv.querySelectorAll('[data-cancelar-manut]').forEach(function(btn){
+    btn.onclick = function(e){
+      e.stopPropagation();
+      statusEqEditandoManut = null;
+      statusEqRenderizar();
+    };
+  });
+  arv.querySelectorAll('[data-salvar-manut]').forEach(function(btn){
+    btn.onclick = function(e){
+      e.stopPropagation();
+      const eq = btn.dataset.salvarManut;
+      const obsInput = document.getElementById('aem-obs-'+eq);
+      const prevInput = document.getElementById('aem-prev-'+eq);
+      const feedback = document.getElementById('aem-feedback-'+eq);
+      const novaObs = obsInput.value.trim();
+      const novaPrev = prevInput.value;
+      const itemId = frotaIdsExtra[eq] || frotasIds[eq];
+      const campos = {};
+      if (novaObs !== (frotaObservacaoManutencao[eq] || '')) campos.ObservacaoManutencao = novaObs;
+      if (novaPrev !== (frotaPrevisaoReparo[eq] || '')) campos.PrevisaoReparo = novaPrev || null;
+      if (!Object.keys(campos).length) { statusEqEditandoManut = null; statusEqRenderizar(); return; }
+      btn.disabled = true;
+      feedback.style.color = 'var(--cinza)';
+      feedback.textContent = 'Salvando...';
+      atualizarCamposItem(LISTA_FROTA_ID, itemId, campos).then(function(){
+        frotaObservacaoManutencao[eq] = novaObs;
+        frotaPrevisaoReparo[eq] = novaPrev;
+        statusEqEditandoManut = null;
+        statusEqRenderizar();
+      }).catch(function(err){
+        btn.disabled = false;
+        feedback.style.color = 'var(--ru)';
+        feedback.textContent = 'Erro ao salvar: ' + err.message;
+      });
+    };
+  });
   statusEqRenderizarResumoTodos(locaisOrdenados);
   statusEqRenderizarAlertaParados();
+  let btnFora = document.getElementById('status-eq-ver-fora-manut');
+  if (modoManutencao) {
+    const foraCount = frotas.filter(function(eq){
+      if (frotaTipoItem[eq] === 'implemento' && implementosVinculados.has(eq)) return false;
+      return (frotaStatusAtual[eq] || 'OPERACIONAL') !== 'EM MANUTENÇÃO';
+    }).length;
+    if (!btnFora) {
+      btnFora = document.createElement('button');
+      btnFora.type = 'button';
+      btnFora.id = 'status-eq-ver-fora-manut';
+      btnFora.className = 'arv-ver-fora-manut';
+      arv.insertAdjacentElement('afterend', btnFora);
+    }
+    btnFora.style.display = 'block';
+    btnFora.textContent = 'Ver equipamentos fora de manutenção (' + foraCount + ')';
+    btnFora.onclick = function(){
+      document.getElementById('status-eq-filtro-status').value = '';
+      statusEqRenderizar();
+    };
+  } else if (btnFora) {
+    btnFora.style.display = 'none';
+  }
 }
 /** Mostra, no painel da direita, um cartão de resumo PARA CADA LOCAL visível
  *  na árvore — sem precisar clicar, igual ao modelo de referência. */
