@@ -584,6 +584,38 @@
   .arv-ver-fora-manut{display:block;width:100%;margin-top:10px;padding:11px;border:1px dashed var(--linha);
     border-radius:8px;background:#fff;color:var(--navy);font-size:12.5px;font-weight:700;cursor:pointer;text-align:center}
   .arv-ver-fora-manut:hover{background:var(--cream)}
+  /* ---- Status dos Equipamentos: visualização alternativa "Dashboard" ---- */
+  .deq-tabela-cab{display:grid;grid-template-columns:1.4fr 1fr 100px 130px 1.4fr 110px 30px;gap:10px;
+    padding:0 10px 8px;font-size:10px;font-weight:700;color:var(--cinza);letter-spacing:.4px;border-bottom:2px solid var(--linha);margin-bottom:4px}
+  .deq-linha{display:grid;grid-template-columns:1.4fr 1fr 100px 130px 1.4fr 110px 30px;gap:10px;align-items:center;
+    padding:9px 10px;border-bottom:1px solid var(--linha);font-size:12px}
+  .deq-linha:last-child{border-bottom:none}
+  .deq-linha.deq-critico{border-left:3px solid var(--ru);background:#fdf4f3;margin-left:-3px;padding-left:8px}
+  .deq-linha .deq-obs{color:var(--tinta);line-height:1.3}
+  .deq-linha .deq-abrir{background:none;border:1px solid var(--linha);border-radius:6px;width:26px;height:26px;
+    cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--navy)}
+  .deq-linha .deq-abrir:hover{background:var(--cream)}
+  .deq-stat-linha{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--linha);font-size:12.5px}
+  .deq-stat-linha:last-child{border-bottom:none}
+  .deq-stat-linha b{font-size:14px;color:var(--tinta)}
+  .deq-stat-media{text-align:center;padding:10px 0 18px}
+  .deq-stat-media .num{font-size:32px;font-weight:800;color:var(--navy)}
+  .deq-stat-media .lbl{font-size:11px;color:var(--cinza);text-transform:uppercase;letter-spacing:.4px}
+  .hist-h-linha{margin-bottom:12px}
+  .hist-h-linha:last-child{margin-bottom:0}
+  .hist-h-topo{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .hist-h-topo b{color:var(--tinta)}
+  .hist-h-bar-wrap{height:9px;background:#eef0f1;border-radius:5px;overflow:hidden}
+  .hist-h-bar{height:100%;background:var(--navy);border-radius:5px}
+  .deq-mov-linha{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--linha);font-size:12.5px}
+  .deq-mov-linha:last-child{border-bottom:none}
+  .deq-mov-rota{flex:1;color:var(--cinza)}
+  .deq-mov-rota b{color:var(--tinta)}
+  @media (max-width:1100px){
+    .deq-tabela-cab, .deq-linha{grid-template-columns:1fr 1fr 90px 90px}
+    .deq-tabela-cab span:nth-child(5), .deq-tabela-cab span:nth-child(6), .deq-tabela-cab span:nth-child(7),
+    .deq-linha .deq-obs, .deq-linha .deq-prev, .deq-linha .deq-abrir{display:none}
+  }
   .btn-salvar{
     width:100%;margin-top:16px;padding:13px;border:none;border-radius:9px;
     background:var(--navy);color:#fff;font-size:14px;font-weight:700;
@@ -2041,19 +2073,56 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
     </div>
   </div>
-  <div class="dash-kpis" id="status-eq-kpis"></div>
-  <div class="dash-card" id="status-eq-alerta-wrap" style="display:none;margin-bottom:16px;border-left:4px solid #c79a3a">
-    <h3>⏰ Parados há muito tempo no mesmo status</h3>
-    <div id="status-eq-alerta"></div>
+  <div class="frota-toggle" id="status-eq-visao-toggle" style="margin-bottom:14px">
+    <button type="button" class="topo-toggle-opt ativo" data-status-eq-visao="arvore">🌳 Árvore</button>
+    <button type="button" class="topo-toggle-opt" data-status-eq-visao="dashboard">📊 Dashboard</button>
   </div>
-  <div class="dash-row" style="align-items:flex-start">
-    <div class="dash-card" style="flex:2">
-      <h3>🌳 Árvore de Equipamentos</h3>
-      <div id="status-eq-arvore"><div class="lista-vazia-dash">Carregando…</div></div>
+  <div id="status-eq-visao-arvore">
+    <div class="dash-kpis" id="status-eq-kpis"></div>
+    <div class="dash-card" id="status-eq-alerta-wrap" style="display:none;margin-bottom:16px;border-left:4px solid #c79a3a">
+      <h3>⏰ Parados há muito tempo no mesmo status</h3>
+      <div id="status-eq-alerta"></div>
     </div>
-    <div class="dash-card" style="flex:1;position:sticky;top:16px">
-      <h3>📍 Resumo da localização</h3>
-      <div id="status-eq-resumo"><div class="lista-vazia-dash">Selecione um local na árvore para ver o resumo.</div></div>
+    <div class="dash-row" style="align-items:flex-start">
+      <div class="dash-card" style="flex:2">
+        <h3>🌳 Árvore de Equipamentos</h3>
+        <div id="status-eq-arvore"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
+      <div class="dash-card" style="flex:1;position:sticky;top:16px">
+        <h3>📍 Resumo da localização</h3>
+        <div id="status-eq-resumo"><div class="lista-vazia-dash">Selecione um local na árvore para ver o resumo.</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="status-eq-visao-dashboard" style="display:none">
+    <div class="dash-kpis" id="status-eq-dash-kpis"></div>
+    <div class="dash-row" style="align-items:flex-start">
+      <div class="dash-card" style="flex:2">
+        <h3>🔧 Equipamentos em manutenção <span id="status-eq-dash-manut-titulo" style="font-weight:400;text-transform:none;color:var(--cinza)"></span></h3>
+        <div class="deq-tabela-cab">
+          <span>EQUIPAMENTO / ACESSÓRIO</span><span>LOCAL</span><span>DATA DE CHEGADA</span><span>STATUS</span><span>OBSERVAÇÃO (MOTIVO)</span><span>PREVISÃO DE REPARO</span><span></span>
+        </div>
+        <div id="status-eq-dash-manut-tabela"><div class="lista-vazia-dash">Carregando…</div></div>
+        <button type="button" class="rel-btn-secundario" id="status-eq-dash-manut-ver-todos" style="width:100%;margin-top:10px;display:none"></button>
+      </div>
+      <div class="dash-card" style="flex:1;position:sticky;top:16px">
+        <h3>📍 Distribuição por local</h3>
+        <div id="status-eq-dash-donut"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
+    </div>
+    <div class="dash-row" style="align-items:flex-start">
+      <div class="dash-card" style="flex:1">
+        <h3>⏱️ Tempo em manutenção (média)</h3>
+        <div id="status-eq-dash-tempo-stats"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
+      <div class="dash-card" style="flex:1.6">
+        <h3>📊 Equipamentos em manutenção por tempo</h3>
+        <div id="status-eq-dash-tempo-hist"><div class="lista-vazia-dash">Carregando…</div></div>
+      </div>
+    </div>
+    <div class="dash-card">
+      <h3>🕓 Movimentações recentes <span style="font-weight:400;text-transform:none;color:var(--cinza)">Últimas entradas registradas</span></h3>
+      <div id="status-eq-dash-mov-recentes"><div class="lista-vazia-dash">Carregando…</div></div>
     </div>
   </div>
 </div>
@@ -5160,6 +5229,7 @@ function statusEqLocalSemPrefixo(local){
   const partes = String(local).split(/\s*-\s*/);
   return partes.length > 1 ? partes.slice(1).join(' - ') : local;
 }
+let statusEqVisualizacao = 'arvore'; // 'arvore' ou 'dashboard' — alternável pelo usuário, sem alterar a árvore original
 async function carregarStatusEquipamentos(){
   await garantirDadosFrotaExtra();
   await garantirDadosMovimentacoes();
@@ -5167,6 +5237,17 @@ async function carregarStatusEquipamentos(){
     statusEqInicializado = true;
     const selLocal = document.getElementById('status-eq-filtro-local');
     selLocal.innerHTML = '<option value="">Todos os locais</option>' + locais.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+    document.querySelectorAll('#status-eq-visao-toggle [data-status-eq-visao]').forEach(function(btn){
+      btn.onclick = function(){
+        statusEqVisualizacao = btn.dataset.statusEqVisao;
+        document.querySelectorAll('#status-eq-visao-toggle [data-status-eq-visao]').forEach(function(b){
+          b.classList.toggle('ativo', b === btn);
+        });
+        document.getElementById('status-eq-visao-arvore').style.display = statusEqVisualizacao === 'arvore' ? '' : 'none';
+        document.getElementById('status-eq-visao-dashboard').style.display = statusEqVisualizacao === 'dashboard' ? '' : 'none';
+        statusEqRenderizar();
+      };
+    });
   }
   statusEqRenderizar();
 }
@@ -5222,6 +5303,11 @@ function statusEqRenderizarAlertaParados(){
   cont.querySelectorAll('[data-ver-parado]').forEach(function(el){
     el.onclick = function(){ locAbrirModalMover(el.dataset.verParado); };
   });
+}
+function formatarDataBR(iso){
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
 }
 function statusEqRenderizar(){
   const filtroLocal = document.getElementById('status-eq-filtro-local').value;
@@ -5296,11 +5382,6 @@ function statusEqRenderizar(){
   const gruposOrdenados = Object.keys(porGrupo).sort();
   const modoManutencao = filtroStatus === 'EM MANUTENÇÃO';
   const isAdminArvore = usuarioEhAdmin(contaAtual);
-  function formatarDataBR(iso){
-    if (!iso) return '';
-    const p = iso.split('-');
-    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
-  }
   function linhaEdicaoManut(eq){
     const obsAtual = frotaObservacaoManutencao[eq] || '';
     const prevAtual = frotaPrevisaoReparo[eq] || '';
@@ -5471,6 +5552,160 @@ function statusEqRenderizar(){
     };
   } else if (btnFora) {
     btnFora.style.display = 'none';
+  }
+  if (statusEqVisualizacao === 'dashboard') statusEqRenderizarDashboard(equipsFiltrados);
+}
+let statusEqDashManutTodos = false; // controla se a tabela de manutenção mostra tudo ou só os primeiros
+const DEQ_CORES_LOCAL = ['var(--navy)', '#c79a3a', '#378ade', 'var(--ru)', '#7a4fb5', '#1b7a43', '#b25e17', '#5b6570'];
+/** Visualização alternativa "Dashboard" da tela Status dos Equipamentos —
+ *  não mexe em nada da árvore original, só lê os mesmos equipsFiltrados. */
+function statusEqRenderizarDashboard(equipsFiltrados){
+  const isAdmin = usuarioEhAdmin(contaAtual);
+  const total = equipsFiltrados.length;
+  const cont = { 'OPERACIONAL': 0, 'EM MANUTENÇÃO': 0, 'EM DISPONIBILIDADE': 0 };
+  equipsFiltrados.forEach(function(eq){ const s = frotaStatusAtual[eq] || 'OPERACIONAL'; if (cont.hasOwnProperty(s)) cont[s]++; });
+  const pct = function(n){ return total > 0 ? Math.round(n/total*100) : 0; };
+  document.getElementById('status-eq-dash-kpis').innerHTML = [
+    ['📦', 'TOTAL DE EQUIPAMENTOS', total, '100% do total', 'azul'],
+    ['🔧', 'EM MANUTENÇÃO', cont['EM MANUTENÇÃO'], pct(cont['EM MANUTENÇÃO'])+'% do total', 'tan'],
+    ['🅿️', 'DISPONÍVEIS', cont['EM DISPONIBILIDADE'], pct(cont['EM DISPONIBILIDADE'])+'% do total', null],
+    ['✅', 'FORA DE MANUTENÇÃO', cont['OPERACIONAL'], pct(cont['OPERACIONAL'])+'% do total', null]
+  ].map(function(k){
+    return '<div class="kpi-card"><div class="kpi-top"><div class="kpi-icone '+(k[4]||'')+'" '+(k[4]?'':'style="background:#e9f4ee;color:var(--ok)"')+'>'+k[0]+'</div>' +
+      '<div><div class="kpi-num">'+k[2]+'</div><div class="kpi-lbl">'+k[1]+'</div></div></div>' +
+      '<div style="font-size:11px;color:var(--cinza);margin-top:4px">'+k[3]+'</div></div>';
+  }).join('');
+  // ---- Tabela de equipamentos em manutenção (com observação / previsão de reparo) ----
+  const emManut = equipsFiltrados.filter(function(eq){ return (frotaStatusAtual[eq] || 'OPERACIONAL') === 'EM MANUTENÇÃO'; })
+    .sort(function(a, b){ return (frotaDiasNoLocal[b] || 0) - (frotaDiasNoLocal[a] || 0); });
+  document.getElementById('status-eq-dash-manut-titulo').textContent = '(' + emManut.length + ')';
+  const limiteVisivel = 8;
+  const visiveis = statusEqDashManutTodos ? emManut : emManut.slice(0, limiteVisivel);
+  const tabelaCont = document.getElementById('status-eq-dash-manut-tabela');
+  if (!emManut.length) {
+    tabelaCont.innerHTML = '<div class="lista-vazia-dash">Nenhum equipamento em manutenção com esses filtros. 🎉</div>';
+  } else {
+    tabelaCont.innerHTML = visiveis.map(function(eq, i){
+      const vinc = frotaItemVinculado[eq];
+      const ehImplemento = frotaTipoItem[eq] === 'implemento';
+      const nome = '<span class="'+(ehImplemento?'arv-cod-impl':'arv-cod-equip')+'">'+eq+'</span>' + (vinc ? (' + <span class="arv-cod-impl">'+vinc+'</span>') : '');
+      const chegada = statusEqDataChegada(eq);
+      const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
+      const obs = frotaObservacaoManutencao[eq] ? frotaEsc(frotaObservacaoManutencao[eq]) : '<i style="opacity:.55">Sem observação</i>';
+      const prev = frotaPrevisaoReparo[eq] ? formatarDataBR(frotaPrevisaoReparo[eq]) : '—';
+      const dias = frotaDiasNoLocal[eq];
+      const critico = (typeof dias === 'number' && dias >= CONFIG.diasReincidencia);
+      return '<div class="deq-linha'+(critico?' deq-critico':'')+'" data-deq-equip="'+eq+'">' +
+        '<div>'+(ehImplemento?'🔧':'🚜')+' '+nome+'</div>' +
+        '<div class="arv-sub">'+(frotaLocalAtual[eq] || 'Sem local registrado')+'</div>' +
+        '<div class="arv-sub">'+chegadaTxt+'</div>' +
+        '<div>'+statusEqBadge(frotaStatusAtual[eq])+'</div>' +
+        '<div class="deq-obs">'+obs+'</div>' +
+        '<div class="arv-sub deq-prev">'+prev+'</div>' +
+        '<div><button type="button" class="deq-abrir" data-deq-abrir="'+eq+'" title="Ver histórico detalhado">→</button></div>' +
+      '</div>';
+    }).join('');
+    tabelaCont.querySelectorAll('[data-deq-abrir]').forEach(function(btn){
+      btn.onclick = function(){
+        const eq = btn.dataset.deqAbrir;
+        garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); });
+      };
+    });
+  }
+  const btnVerTodos = document.getElementById('status-eq-dash-manut-ver-todos');
+  if (emManut.length > limiteVisivel) {
+    btnVerTodos.style.display = 'block';
+    btnVerTodos.textContent = statusEqDashManutTodos ? 'Ver menos' : 'Ver todos os equipamentos (' + emManut.length + ')';
+    btnVerTodos.onclick = function(){
+      statusEqDashManutTodos = !statusEqDashManutTodos;
+      statusEqRenderizarDashboard(equipsFiltrados);
+    };
+  } else {
+    btnVerTodos.style.display = 'none';
+  }
+  // ---- Donut: distribuição por local ----
+  const porLocalCont = {};
+  equipsFiltrados.forEach(function(eq){
+    const l = frotaLocalAtual[eq] || 'Sem local registrado';
+    porLocalCont[l] = (porLocalCont[l] || 0) + 1;
+  });
+  const locaisOrd = Object.keys(porLocalCont).sort(function(a, b){ return porLocalCont[b] - porLocalCont[a]; });
+  const donutCont = document.getElementById('status-eq-dash-donut');
+  if (!total || !locaisOrd.length) {
+    donutCont.innerHTML = '<div class="lista-vazia-dash">Sem dados para exibir.</div>';
+  } else {
+    const TOP_N = 6;
+    const principais = locaisOrd.slice(0, TOP_N);
+    const outros = locaisOrd.slice(TOP_N).reduce(function(s, l){ return s + porLocalCont[l]; }, 0);
+    const fatias = principais.map(function(l, i){ return { label: l, valor: porLocalCont[l], cor: DEQ_CORES_LOCAL[i % DEQ_CORES_LOCAL.length] }; });
+    if (outros > 0) fatias.push({ label: 'Outros locais', valor: outros, cor: '#c3c8cc' });
+    let acc = 0;
+    const stops = fatias.map(function(f){
+      const p = f.valor / total * 100;
+      const trecho = f.cor + ' ' + acc.toFixed(1) + '%, ' + f.cor + ' ' + (acc + p).toFixed(1) + '%';
+      acc += p;
+      return trecho;
+    }).join(', ');
+    const legenda = fatias.map(function(f){
+      const p = Math.round(f.valor / total * 100);
+      return '<div class="donut-item"><span><span class="donut-cor" style="background:'+f.cor+'"></span>'+f.label+'</span><b>'+f.valor+' ('+p+'%)</b></div>';
+    }).join('');
+    donutCont.innerHTML =
+      '<div class="donut-wrap">' +
+        '<div style="width:130px;height:130px;border-radius:50%;background:conic-gradient('+stops+');flex-shrink:0;display:flex;align-items:center;justify-content:center">' +
+          '<div style="width:64px;height:64px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center">' +
+            '<b style="font-size:18px">'+total+'</b><span style="font-size:9px;color:var(--cinza)">TOTAL</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="donut-legenda">'+legenda+'</div>' +
+      '</div>';
+  }
+  // ---- Tempo em manutenção: média / maior / menor / mediana + histograma ----
+  const diasManut = emManut.map(function(eq){ return frotaDiasNoLocal[eq]; }).filter(function(d){ return typeof d === 'number'; });
+  const statsCont = document.getElementById('status-eq-dash-tempo-stats');
+  const histCont = document.getElementById('status-eq-dash-tempo-hist');
+  if (!diasManut.length) {
+    statsCont.innerHTML = '<div class="lista-vazia-dash">Sem equipamentos em manutenção.</div>';
+    histCont.innerHTML = '<div class="lista-vazia-dash">Sem dados para exibir.</div>';
+  } else {
+    const soma = diasManut.reduce(function(a, b){ return a + b; }, 0);
+    const media = soma / diasManut.length;
+    const ordenados = diasManut.slice().sort(function(a, b){ return a - b; });
+    const maior = ordenados[ordenados.length - 1];
+    const menor = ordenados[0];
+    const meio = Math.floor(ordenados.length / 2);
+    const mediana = ordenados.length % 2 ? ordenados[meio] : (ordenados[meio - 1] + ordenados[meio]) / 2;
+    statsCont.innerHTML =
+      '<div class="deq-stat-media"><div class="num">'+media.toFixed(1).replace('.', ',')+'</div><div class="lbl">dias (média)</div></div>' +
+      '<div class="deq-stat-linha"><span>Maior tempo</span><b>'+maior+' dias</b></div>' +
+      '<div class="deq-stat-linha"><span>Menor tempo</span><b>'+menor+' dias</b></div>' +
+      '<div class="deq-stat-linha"><span>Mediana</span><b>'+mediana+' dias</b></div>';
+    const faixas = [
+      { lbl: 'Até 3 dias', min: 0, max: 3 },
+      { lbl: 'De 4 a 7 dias', min: 4, max: 7 },
+      { lbl: 'De 8 a 15 dias', min: 8, max: 15 },
+      { lbl: 'De 16 a 30 dias', min: 16, max: 30 },
+      { lbl: 'Acima de 30 dias', min: 31, max: Infinity }
+    ].map(function(f){ return { lbl: f.lbl, n: diasManut.filter(function(d){ return d >= f.min && d <= f.max; }).length }; });
+    const maxN = Math.max.apply(null, faixas.map(function(f){ return f.n; })) || 1;
+    histCont.innerHTML = faixas.map(function(f){
+      return '<div class="hist-h-linha"><div class="hist-h-topo"><span>'+f.lbl+'</span><b>'+f.n+'</b></div>' +
+        '<div class="hist-h-bar-wrap"><div class="hist-h-bar" style="width:'+(f.n/maxN*100)+'%"></div></div></div>';
+    }).join('');
+  }
+  // ---- Movimentações recentes (últimas entradas registradas) ----
+  const movCont = document.getElementById('status-eq-dash-mov-recentes');
+  const recentes = movimentacoesItens.slice(0, 8);
+  if (!recentes.length) {
+    movCont.innerHTML = '<div class="lista-vazia-dash">Nenhuma movimentação registrada ainda.</div>';
+  } else {
+    movCont.innerHTML = recentes.map(function(m){
+      return '<div class="deq-mov-linha">' +
+        '<span style="font-weight:700">'+(m.equipamento || '—')+'</span>' +
+        '<span class="deq-mov-rota">'+(m.localOrigem ? frotaEsc(m.localOrigem) + ' → ' : '')+'<b>'+frotaEsc(m.localDestino || '—')+'</b></span>' +
+        '<span class="arv-sub">'+formatarDataHist(m.criado)+'</span>' +
+      '</div>';
+    }).join('');
   }
 }
 /** Mostra, no painel da direita, um cartão de resumo PARA CADA LOCAL visível
