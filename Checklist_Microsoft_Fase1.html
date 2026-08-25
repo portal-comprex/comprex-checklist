@@ -4699,9 +4699,9 @@ function locRenderizarTabela(){
   tbody.innerHTML = linhas.map(function(eq){
     const dias = frotaDiasNoLocal[eq];
     const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
-    const podeEditar = usuarioPodeEditarLocal(frotaLocalAtual[eq] || '');
+    const podeEditar = usuarioEhAdmin(contaAtual);
     const estiloLinha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
-    const dica = podeEditar ? 'Clique para mover este equipamento' : 'Somente leitura — fora da sua localidade';
+    const dica = podeEditar ? 'Clique para mover este equipamento' : 'Somente leitura — apenas administradores podem mover por aqui';
     return '<tr class="hist-linha-clicavel" data-equip="'+eq+'" style="'+estiloLinha+'" title="'+dica+'"><td>' + eq + (podeEditar?'':' 🔒') + '</td><td>' + (frotaItemVinculado[eq] || '—') + '</td>' +
       '<td>' + (frotaLocalAtual[eq] ? '<span class="hist-st ok">' + frotaLocalAtual[eq] + '</span>' : '<span style="color:var(--cinza)">Sem registro</span>') + '</td>' +
       '<td>' + locBadgeStatus(frotaStatusAtual[eq]) + '</td>' +
@@ -4764,8 +4764,10 @@ let locMoverEquipAlvo = null;
 const MARCADOR_SEM_HISTORICO = '[[SEM_HISTORICO]]';
 function locAbrirModalMover(eq){
   const localDoEquip = frotaLocalAtual[eq] || '';
-  if (!usuarioPodeEditarLocal(localDoEquip)) {
-    alert('Você só pode editar equipamentos da sua localidade. "' + (localDoEquip || 'Sem local registrado') + '" é somente leitura para você.');
+  // Fora do menu "Mover Equip./Implemento", mover/editar por aqui (Localização Atual,
+  // Status dos Equipamentos, etc.) é uma ação de admin — usuário comum só visualiza.
+  if (!usuarioEhAdmin(contaAtual)) {
+    alert('Somente administradores podem mover ou editar o status por aqui. Para mover um equipamento, use "Mover Equip./Implemento".');
     return;
   }
   locMoverEquipAlvo = eq;
@@ -5409,9 +5411,9 @@ function statusEqRenderizar(){
     const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
     const totais = statusEqTotaisPorStatus(eq);
     const subTxt = totais['OPERACIONAL'] + 'd op. / ' + totais['EM MANUTENÇÃO'] + 'd manut. / ' + totais['EM DISPONIBILIDADE'] + 'd disp.';
-    const podeEditar = usuarioPodeEditarLocal(frotaLocalAtual[eq] || '');
+    const podeEditar = usuarioEhAdmin(contaAtual);
     const estiloFolha = podeEditar ? 'cursor:pointer' : 'cursor:default;opacity:.6';
-    const dicaFolha = podeEditar ? 'Clique para mudar o status ou mover este equipamento' : 'Somente leitura — fora da sua localidade';
+    const dicaFolha = podeEditar ? 'Clique para mudar o status ou mover este equipamento' : 'Somente leitura — apenas administradores podem mover por aqui';
     const iconeFolha = frotaTipoItem[eq] === 'implemento' ? '🔧' : '🚜';
     if (statusEqEditandoManut === eq) return linhaEdicaoManut(eq);
     const colunasManut = modoManutencao ?
