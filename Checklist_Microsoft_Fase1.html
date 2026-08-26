@@ -1262,6 +1262,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         <div class="sidebar-item acao" id="btn-abrir-cadastro-implemento" style="padding-left:32px"><i>🔧</i> Implemento</div>
       </div>
       <div class="sidebar-item acao" id="btn-abrir-acessos"><i>🔐</i> Gerenciar Acessos</div>
+      <div class="sidebar-item acao" id="btn-abrir-tablet-login"><i>📱</i> Login Tablet (Operadores)</div>
     </nav>
     <div class="sidebar-sair">
       <div class="sidebar-item" id="sidebar-sair"><i>↩️</i> Sair do sistema</div>
@@ -2560,6 +2561,45 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
 </div>
+<div class="hist-detalhe-overlay" id="tablet-login-overlay">
+  <div class="hist-detalhe-modal" style="max-width:600px">
+    <div class="hist-detalhe-header">
+      <h3>📱 Login Tablet (Operadores)</h3>
+      <button class="modal-fechar" id="tablet-login-fechar" style="color:#1a2430">✕</button>
+    </div>
+    <div class="hist-detalhe-corpo">
+      <div style="font-size:12px;color:var(--cinza);margin-bottom:16px">
+        Login e senha próprios (fora do Microsoft) pra operadores preencherem Checklist e Parte Diária direto do tablet, offline se preciso.
+        Requer o backend configurado — veja o <b>DEPLOY.md</b> do pacote enviado. Essa tela fala com esse backend usando uma chave de administração,
+        pedida uma vez por sessão do navegador (não fica salva no app).
+      </div>
+      <div class="campo" style="margin-bottom:16px">
+        <label>Endereço do backend (API)</label>
+        <input type="text" id="tablet-api-base" placeholder="https://seu-function-app.azurewebsites.net/api">
+      </div>
+      <h4 style="margin:0 0 10px">Operadores cadastrados</h4>
+      <div id="tablet-login-lista"><div class="lista-vazia-dash">Carregando…</div></div>
+      <div style="border:1px dashed var(--linha);border-radius:8px;padding:12px;margin-top:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">+ Criar novo login de tablet</div>
+        <div class="campo" style="margin-bottom:10px">
+          <label>Nome completo</label>
+          <input type="text" id="tablet-novo-nome" placeholder="Ex: João da Silva">
+        </div>
+        <div class="campo" style="margin-bottom:10px">
+          <label>Usuário (login)</label>
+          <input type="text" id="tablet-novo-usuario" placeholder="Ex: joao.silva" autocomplete="off">
+        </div>
+        <div class="campo" style="margin-bottom:10px">
+          <label>Senha</label>
+          <input type="text" id="tablet-novo-senha" placeholder="Mínimo 6 caracteres" autocomplete="off">
+        </div>
+        <button type="button" class="rel-btn-secundario" id="tablet-novo-criar" style="width:100%">Criar login</button>
+      </div>
+      <div class="erro-msg" id="tablet-login-erro"></div>
+      <div id="tablet-login-ok" style="display:none;color:var(--ok);font-weight:700;margin-top:10px;text-align:center">✔ Feito!</div>
+    </div>
+  </div>
+</div>
 <div class="hist-detalhe-overlay" id="loc-mover-overlay">
   <div class="hist-detalhe-modal" style="max-width:480px">
     <div class="hist-detalhe-header">
@@ -2843,7 +2883,9 @@ const CONFIG = {
   tiposParada: ['ALMOÇO', 'REVISÃO PREVENTIVA', 'MANUTENÇÃO CORRETIVA', 'PARADA TÉCNICA', 'EM DISPONIBILIDADE'],
   diasReincidencia: 30,
   observacaoObrigatoriaChecklist: false,
-  observacaoObrigatoriaParteDiaria: false
+  observacaoObrigatoriaParteDiaria: false,
+  // Endereço do backend do app de tablet (login/senha + offline). Ver DEPLOY.md.
+  apiTabletBase: ''
 };
 let configuracoesIds = {}; // chave (Título) -> id do item na lista Configuracoes
 async function carregarConfiguracoes(){
@@ -2860,6 +2902,9 @@ async function carregarConfiguracoes(){
     });
     if (porChave['EMAILS_ADMIN']) {
       CONFIG.emailsAdmin = porChave['EMAILS_ADMIN'].split(',').map(function(e){ return e.trim().toLowerCase(); }).filter(Boolean);
+    }
+    if (porChave['API_TABLET_BASE']) {
+      CONFIG.apiTabletBase = porChave['API_TABLET_BASE'];
     }
     if (porChave['ACESSOS_LIMITADOS']) {
       // Formato esperado: "email1:secao1,secao2;email2:secao3"
@@ -3037,6 +3082,7 @@ async function entrarComoLogado(conta){
     document.getElementById('btn-toggle-cadastrar').style.display = 'none';
     document.getElementById('submenu-cadastrar').style.display = 'none';
     document.getElementById('btn-abrir-acessos').style.display = 'none';
+    document.getElementById('btn-abrir-tablet-login').style.display = 'none';
   }
   iniciarAplicacao();
   aplicarRestricaoDeSecoes(secoesPermitidasPara(conta));
@@ -3236,6 +3282,7 @@ async function iniciarAplicacao(){
     document.getElementById('btn-toggle-cadastrar').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     document.getElementById('submenu-cadastrar').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     document.getElementById('btn-abrir-acessos').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
+    document.getElementById('btn-abrir-tablet-login').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     pdRenderizarParadas();
     atualizarTextosJanelaReincidencia();
   } catch(err) {
@@ -4115,6 +4162,118 @@ document.getElementById('acessos-salvar').onclick = async function(){
     erroEl.style.display = 'block';
   } finally {
     btn.disabled = false; btn.textContent = '💾 Salvar alterações no SharePoint';
+  }
+};
+/* =====================================================================
+   LOGIN TABLET (OPERADORES) — painel admin que fala com o backend próprio
+   (fora do Microsoft) usado pelos tablets em campo. Ver DEPLOY.md.
+   ===================================================================== */
+function tabletAdminChave(){
+  let chave = sessionStorage.getItem('tabletAdminKey') || '';
+  if (!chave) {
+    chave = prompt('Chave de administração do backend do tablet (X-Admin-Key).\nFica guardada só nesta aba do navegador, nunca no arquivo do app.') || '';
+    if (chave) sessionStorage.setItem('tabletAdminKey', chave);
+  }
+  return chave;
+}
+async function tabletFetchAdmin(caminho, opcoes){
+  const base = (document.getElementById('tablet-api-base').value || CONFIG.apiTabletBase || '').replace(/\/$/, '');
+  if (!base) throw new Error('Informe o endereço do backend (API) antes.');
+  const chave = tabletAdminChave();
+  if (!chave) throw new Error('Chave de administração não informada.');
+  const r = await fetch(base + caminho, Object.assign({}, opcoes, {
+    headers: Object.assign({ 'Content-Type': 'application/json', 'X-Admin-Key': chave }, (opcoes && opcoes.headers) || {})
+  }));
+  const dados = await r.json().catch(function(){ return {}; });
+  if (!r.ok) {
+    if (r.status === 401) sessionStorage.removeItem('tabletAdminKey'); // chave errada — pede de novo na próxima
+    throw new Error(dados.erro || ('Erro ' + r.status));
+  }
+  return dados;
+}
+async function tabletLoginCarregarLista(){
+  const cont = document.getElementById('tablet-login-lista');
+  cont.innerHTML = '<div class="lista-vazia-dash">Carregando…</div>';
+  try {
+    const dados = await tabletFetchAdmin('/admin/operadores');
+    const lista = dados.operadores || [];
+    if (!lista.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum operador com login de tablet ainda.</div>'; return; }
+    cont.innerHTML = lista.map(function(op){
+      return '<div class="acessos-linha" style="align-items:center">' +
+        '<span><b>' + frotaEsc(op.nome) + '</b> <span style="color:var(--cinza);font-size:11.5px">— usuário: ' + frotaEsc(op.usuario) + '</span>' +
+        (op.ativo ? '' : ' <span style="color:var(--ru);font-weight:700;font-size:11px">(desativado)</span>') + '</span>' +
+        '<span style="display:flex;gap:6px">' +
+          '<button type="button" class="rel-btn-secundario" data-tablet-redefinir="' + op.id + '" style="padding:6px 10px;font-size:11.5px">Redefinir senha</button>' +
+          '<button type="button" class="rel-btn-secundario" data-tablet-toggle="' + op.id + '" data-ativo="' + op.ativo + '" style="padding:6px 10px;font-size:11.5px">' + (op.ativo ? 'Desativar' : 'Ativar') + '</button>' +
+        '</span></div>';
+    }).join('');
+    cont.querySelectorAll('[data-tablet-redefinir]').forEach(function(btn){
+      btn.onclick = async function(){
+        const novaSenha = prompt('Nova senha (mínimo 6 caracteres):');
+        if (!novaSenha) return;
+        try {
+          await tabletFetchAdmin('/admin/operadores/' + btn.dataset.tabletRedefinir, { method: 'PATCH', body: JSON.stringify({ senha: novaSenha }) });
+          alert('Senha redefinida com sucesso.');
+        } catch (err) { alert('Erro: ' + err.message); }
+      };
+    });
+    cont.querySelectorAll('[data-tablet-toggle]').forEach(function(btn){
+      btn.onclick = async function(){
+        const ativoAtual = btn.dataset.ativo === 'true';
+        try {
+          await tabletFetchAdmin('/admin/operadores/' + btn.dataset.tabletToggle, { method: 'PATCH', body: JSON.stringify({ ativo: !ativoAtual }) });
+          tabletLoginCarregarLista();
+        } catch (err) { alert('Erro: ' + err.message); }
+      };
+    });
+  } catch (err) {
+    cont.innerHTML = '<div class="lista-vazia-dash">⚠️ ' + frotaEsc(err.message) + '</div>';
+  }
+}
+document.getElementById('btn-abrir-tablet-login').onclick = function(){
+  document.getElementById('tablet-api-base').value = CONFIG.apiTabletBase || '';
+  document.getElementById('tablet-login-erro').style.display = 'none';
+  document.getElementById('tablet-login-ok').style.display = 'none';
+  document.getElementById('tablet-login-overlay').classList.add('aberto');
+  tabletLoginCarregarLista();
+};
+document.getElementById('tablet-login-fechar').onclick = function(){ document.getElementById('tablet-login-overlay').classList.remove('aberto'); };
+document.getElementById('tablet-login-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+document.getElementById('tablet-api-base').onchange = async function(){
+  const valor = this.value.trim();
+  const mudou = valor && valor !== CONFIG.apiTabletBase;
+  if (LISTA_CONFIGURACOES_ID && mudou) {
+    try { await salvarConfiguracaoChave('API_TABLET_BASE', valor); } catch (e) { /* silencioso — tenta de novo no próximo salvamento */ }
+  }
+  if (mudou) { CONFIG.apiTabletBase = valor; tabletLoginCarregarLista(); }
+};
+document.getElementById('tablet-novo-criar').onclick = async function(){
+  const erroEl = document.getElementById('tablet-login-erro');
+  const okEl = document.getElementById('tablet-login-ok');
+  erroEl.style.display = 'none'; okEl.style.display = 'none';
+  const nome = document.getElementById('tablet-novo-nome').value.trim();
+  const usuario = document.getElementById('tablet-novo-usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('tablet-novo-senha').value;
+  if (!nome || !usuario || !senha) { erroEl.textContent = 'Preencha nome, usuário e senha.'; erroEl.style.display = 'block'; return; }
+  if (senha.length < 6) { erroEl.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; erroEl.style.display = 'block'; return; }
+  if (operadores.indexOf(nome) !== -1) {
+    if (!confirm('Já existe um operador chamado "' + nome + '" na lista de Operadores (sem login). Criar mesmo assim pode duplicar o nome nessa lista. Continuar?')) return;
+  }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Criando…';
+  try {
+    await tabletFetchAdmin('/admin/operadores', { method: 'POST', body: JSON.stringify({ nome: nome, usuario: usuario, senha: senha }) });
+    document.getElementById('tablet-novo-nome').value = '';
+    document.getElementById('tablet-novo-usuario').value = '';
+    document.getElementById('tablet-novo-senha').value = '';
+    okEl.style.display = 'block';
+    setTimeout(function(){ okEl.style.display = 'none'; }, 4000);
+    tabletLoginCarregarLista();
+  } catch (err) {
+    erroEl.textContent = '⚠️ ' + err.message;
+    erroEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Criar login';
   }
 };
 overlay.onclick = function(e){ if (e.target === overlay) overlay.classList.remove('aberto'); };
