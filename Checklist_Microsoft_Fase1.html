@@ -1611,7 +1611,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
       <div class="pd-tabela-cab ativ">
-        <span>HORÍM. INICIAL</span><span>HORÍM. FINAL</span><span>DESCRIÇÃO DA ATIVIDADE</span><span>DE</span><span>ATÉ</span><span>TOTAL</span><span></span>
+        <span>HORÍM. INICIAL <span class="obrig">*</span></span><span>HORÍM. FINAL <span class="obrig">*</span></span><span>DESCRIÇÃO DA ATIVIDADE</span><span>DE</span><span>ATÉ</span><span>TOTAL</span><span></span>
       </div>
       <div id="pd-lista-atividades"></div>
       <button type="button" class="pd-add-btn" id="pd-add-atividade">+ Adicionar atividade</button>
@@ -1626,7 +1626,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         </div>
       </div>
       <div class="pd-tabela-cab par">
-        <span>TIPO DE PARADA</span><span>HORÍM. INICIAL</span><span>HORÍM. FINAL</span><span>INÍCIO</span><span>FIM</span><span>TOTAL</span><span></span>
+        <span>TIPO DE PARADA</span><span>HORÍM. INICIAL <span class="obrig">*</span></span><span>HORÍM. FINAL <span class="obrig">*</span></span><span>INÍCIO</span><span>FIM</span><span>TOTAL</span><span></span>
       </div>
       <div id="pd-lista-paradas"></div>
       <button type="button" class="pd-add-btn" id="pd-add-parada">+ Adicionar parada</button>
@@ -2499,6 +2499,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <div class="hist-detalhe-header">
       <h3 id="pd-detalhe-titulo">Detalhes da parte diária</h3>
       <div style="display:flex;align-items:center;gap:10px">
+        <button type="button" class="rel-btn-secundario" id="pd-detalhe-editar" style="padding:6px 12px;font-size:12px">✏️ Editar</button>
         <button type="button" class="rel-btn-primario" id="pd-detalhe-imprimir" style="padding:6px 12px;font-size:12px">🖨️ Imprimir</button>
         <button class="modal-fechar" id="pd-detalhe-fechar" style="color:#1a2430">✕</button>
       </div>
@@ -3122,6 +3123,23 @@ async function graphPost(url, body){
   const token = await graphToken();
   const r = await fetch(url, {
     method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const texto = await r.text();
+    throw new Error('Erro ' + r.status + ': ' + texto);
+  }
+  return r.json();
+}
+/** Atualiza um item já existente (usado, por exemplo, pra editar uma Parte
+ *  Diária já salva em vez de criar uma nova). `body` aqui é só o objeto de
+ *  fields, não {fields: ...} — a própria função já embrulha isso, porque o
+ *  endpoint de PATCH de fields do Graph é /items/{id}/fields direto. */
+async function graphPatch(url, body){
+  const token = await graphToken();
+  const r = await fetch(url, {
+    method: 'PATCH',
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
@@ -4191,6 +4209,17 @@ async function tabletFetchAdmin(caminho, opcoes){
   }
   return dados;
 }
+/** Formata um timestamp (ms) como "há 3 min", "há 2h", etc. — usado só pra
+ *  mostrar quando cada operador foi visto pela última vez no tablet. */
+function tabletFormatarHaQuanto(ts){
+  if (!ts) return 'nunca acessou (desde que o backend subiu)';
+  const diffMin = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (diffMin < 1) return 'agora mesmo';
+  if (diffMin < 60) return 'há ' + diffMin + ' min';
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return 'há ' + diffH + 'h';
+  return 'há ' + Math.round(diffH / 24) + ' dia(s)';
+}
 async function tabletLoginCarregarLista(){
   const cont = document.getElementById('tablet-login-lista');
   cont.innerHTML = '<div class="lista-vazia-dash">Carregando…</div>';
@@ -4199,9 +4228,13 @@ async function tabletLoginCarregarLista(){
     const lista = dados.operadores || [];
     if (!lista.length) { cont.innerHTML = '<div class="lista-vazia-dash">Nenhum operador com login de tablet ainda.</div>'; return; }
     cont.innerHTML = lista.map(function(op){
+      const presenca = op.online
+        ? '<span style="color:var(--ok);font-weight:700;font-size:11px">🟢 Online agora</span>'
+        : '<span style="color:var(--cinza);font-size:11px">⚪ ' + tabletFormatarHaQuanto(op.ultimoAcesso) + '</span>';
       return '<div class="acessos-linha" style="align-items:center">' +
         '<span><b>' + frotaEsc(op.nome) + '</b> <span style="color:var(--cinza);font-size:11.5px">— usuário: ' + frotaEsc(op.usuario) + '</span>' +
-        (op.ativo ? '' : ' <span style="color:var(--ru);font-weight:700;font-size:11px">(desativado)</span>') + '</span>' +
+        (op.ativo ? '' : ' <span style="color:var(--ru);font-weight:700;font-size:11px">(desativado)</span>') +
+        '<br>' + presenca + '</span>' +
         '<span style="display:flex;gap:6px">' +
           '<button type="button" class="rel-btn-secundario" data-tablet-redefinir="' + op.id + '" style="padding:6px 10px;font-size:11.5px">Redefinir senha</button>' +
           '<button type="button" class="rel-btn-secundario" data-tablet-toggle="' + op.id + '" data-ativo="' + op.ativo + '" style="padding:6px 10px;font-size:11.5px">' + (op.ativo ? 'Desativar' : 'Ativar') + '</button>' +
@@ -4230,15 +4263,22 @@ async function tabletLoginCarregarLista(){
     cont.innerHTML = '<div class="lista-vazia-dash">⚠️ ' + frotaEsc(err.message) + '</div>';
   }
 }
+let tabletLoginIntervaloAtualizacao = null;
 document.getElementById('btn-abrir-tablet-login').onclick = function(){
   document.getElementById('tablet-api-base').value = CONFIG.apiTabletBase || '';
   document.getElementById('tablet-login-erro').style.display = 'none';
   document.getElementById('tablet-login-ok').style.display = 'none';
   document.getElementById('tablet-login-overlay').classList.add('aberto');
   tabletLoginCarregarLista();
+  if (tabletLoginIntervaloAtualizacao) clearInterval(tabletLoginIntervaloAtualizacao);
+  tabletLoginIntervaloAtualizacao = setInterval(tabletLoginCarregarLista, 20000); // mantém "online agora" atualizado enquanto a tela está aberta
 };
-document.getElementById('tablet-login-fechar').onclick = function(){ document.getElementById('tablet-login-overlay').classList.remove('aberto'); };
-document.getElementById('tablet-login-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
+function tabletLoginFecharModal(){
+  document.getElementById('tablet-login-overlay').classList.remove('aberto');
+  if (tabletLoginIntervaloAtualizacao) { clearInterval(tabletLoginIntervaloAtualizacao); tabletLoginIntervaloAtualizacao = null; }
+}
+document.getElementById('tablet-login-fechar').onclick = tabletLoginFecharModal;
+document.getElementById('tablet-login-overlay').onclick = function(e){ if (e.target === this) tabletLoginFecharModal(); };
 document.getElementById('tablet-api-base').onchange = async function(){
   const valor = this.value.trim();
   const mudou = valor && valor !== CONFIG.apiTabletBase;
@@ -5919,6 +5959,7 @@ function pdAplicarMascaraHorario(campo){
 }
 let pdAtividades = [];
 let pdParadas = [];
+let pdEditandoId = null; // id do item do SharePoint sendo editado (null = criando um novo)
 function inicializarTelaParteDiariaSeNecessario(){
   if (pdInicializada) return;
   pdInicializada = true;
@@ -6044,6 +6085,23 @@ function pdCalcularTotais(){
  *  sequência (o horímetro nunca deveria diminuir ao longo do dia). Não bloqueia
  *  o salvamento — só avisa, porque pode ser um erro de digitação legítimo que
  *  o operador quer corrigir depois. */
+/** Diferença máxima tolerada (em horas) entre o quanto o horímetro avançou
+ *  num trecho e o tempo real que esse trecho durou (pelos horários de
+ *  início/fim digitados). Só avisa, não bloqueia — motor em marcha lenta ou
+ *  rotação variável faz o horímetro andar num ritmo levemente diferente do
+ *  relógio, então uma pequena folga é esperada. */
+const LIMITE_DIVERGENCIA_HORIMETRO_HORAS = 1;
+function pdChecarDivergenciaSegmento(avisos, label, horIniStr, horFimStr, horaIni, horaFim){
+  if (!horaIni || !horaFim) return; // sem os dois horários preenchidos não dá pra comparar
+  const hi = horimetroFloat(horIniStr), hf = horimetroFloat(horFimStr);
+  if (isNaN(hi) || isNaN(hf)) return;
+  const horasReais = pdCalcularHoras(horaIni, horaFim);
+  const horasHorimetro = hf - hi;
+  const diff = Math.abs(horasHorimetro - horasReais);
+  if (diff > LIMITE_DIVERGENCIA_HORIMETRO_HORAS) {
+    avisos.push('Em <b>' + label + '</b>, o horímetro avançou ' + horasHorimetro.toFixed(2).replace('.', ',') + 'h, mas o horário registrado foi de ' + horasReais.toFixed(2).replace('.', ',') + 'h (diferença de ' + diff.toFixed(2).replace('.', ',') + 'h) — confira se o horímetro foi digitado certo.');
+  }
+}
 function pdVerificarDivergenciaHorimetro(){
   const alerta = document.getElementById('pd-alerta-horimetro');
   const avisos = [];
@@ -6056,6 +6114,7 @@ function pdVerificarDivergenciaHorimetro(){
     if (!isNaN(vIni) && !isNaN(vFim) && vFim < vIni) {
       avisos.push('Na <b>Atividade ' + (i+1) + '</b>, o horímetro final (' + a.horFim + ') é menor que o inicial (' + a.horIni + ').');
     }
+    pdChecarDivergenciaSegmento(avisos, 'Atividade ' + (i+1), a.horIni, a.horFim, a.de, a.ate);
   });
   pdParadas.forEach(function(p, i){
     const vIni = horimetroFloat(p.horIni);
@@ -6065,6 +6124,7 @@ function pdVerificarDivergenciaHorimetro(){
     if (!isNaN(vIni) && !isNaN(vFim) && vFim < vIni) {
       avisos.push('Na <b>Parada ' + (i+1) + '</b>, o horímetro final (' + p.horFim + ') é menor que o inicial (' + p.horIni + ').');
     }
+    pdChecarDivergenciaSegmento(avisos, 'Parada ' + (i+1), p.horIni, p.horFim, p.ini, p.fim);
   });
   for (let i = 1; i < sequencia.length; i++) {
     if (sequencia[i].valor < sequencia[i-1].valor) {
@@ -6127,7 +6187,11 @@ function pdLimparCampos(limparEquipamento){
   pdAtualizarTotais();
 }
 document.getElementById('pd-limpar').onclick = function(){
-  if (confirm('Limpar todos os campos da parte diária atual?')) pdLimparCampos(true);
+  const msg = pdEditandoId ? 'Cancelar a edição desta parte diária e limpar os campos?' : 'Limpar todos os campos da parte diária atual?';
+  if (!confirm(msg)) return;
+  pdEditandoId = null;
+  document.getElementById('pd-salvar').textContent = '💾 Salvar parte diária';
+  pdLimparCampos(true);
 };
 /* ---- Cadastro/consulta das partes diárias já salvas ---- */
 let partesDiariasCarregadas = false;
@@ -6289,6 +6353,35 @@ document.getElementById('pd-detalhe-imprimir').onclick = function(){
     '<div class="rel-print-titulo"><img class="rel-print-logo" src="' + LOGO_COMPREX_B64 + '" alt="Comprex"><div class="rel-print-titulo-texto">' + titulo + '<small>Parte Diária — Comprex Máquinas e Serviços</small></div></div>' +
     '<div class="hist-detalhe-print">' + pdMontarConteudoDetalhe(pdDetalheAberto) + '</div>';
   window.print();
+};
+/** "Editar" — joga os dados dessa parte diária já salva de volta no
+ *  formulário de criação (aba "Parte Diária"), pra reaproveitar toda a
+ *  mesma tela/validação. O botão Salvar detecta pdEditandoId != null e faz
+ *  um PATCH no item existente em vez de criar um item novo. */
+document.getElementById('pd-detalhe-editar').onclick = function(){
+  if (!pdDetalheAberto) return;
+  const p = pdDetalheAberto;
+  pdEditandoId = p.id;
+  document.getElementById('pd-detalhe-overlay').classList.remove('aberto');
+  mostrarView('partediaria');
+  ['pd-equipamento','pd-local','pd-operador'].forEach(function(id, i){
+    const valor = [p.equipamento || '', p.local || '', p.operador || ''][i];
+    const input = document.getElementById(id);
+    input.value = valor;
+    const btnLimpar = input.closest('.busca-wrap').querySelector('.busca-limpar');
+    if (btnLimpar) btnLimpar.style.display = valor ? 'inline' : 'none';
+  });
+  document.getElementById('pd-data').value = String(p.data || '').slice(0, 10);
+  document.getElementById('pd-observacoes').value = p.observacoes || '';
+  document.getElementById('pd-obs-contador').textContent = (p.observacoes || '').length + ' / 500';
+  pdAtividades = JSON.parse(JSON.stringify(p.atividadesDetalhe || []));
+  pdParadas = JSON.parse(JSON.stringify(p.paradasDetalhe || []));
+  pdRenderizarAtividades();
+  pdRenderizarParadas();
+  pdAtualizarTotais();
+  document.getElementById('pd-equipamento').dispatchEvent(new Event('change')); // carrega foto/últimos registros
+  document.getElementById('pd-salvar').textContent = '💾 Atualizar parte diária';
+  document.getElementById('pd-salvar').scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 ['hist-pd-filtro-de','hist-pd-filtro-ate','hist-pd-filtro-equip','hist-pd-filtro-operador','hist-pd-filtro-local'].forEach(function(id){
   document.getElementById(id).addEventListener('input', function(){
@@ -6469,6 +6562,23 @@ document.getElementById('pd-salvar').onclick = async function(){
     pdMostrarErro('Informe o horímetro inicial na primeira atividade.');
     return;
   }
+  // Horímetro (início e fim) agora é obrigatório em TODA atividade e TODA
+  // parada — não só na primeira — pra garantir que dá pra checar a
+  // divergência de horímetro em qualquer trecho do dia.
+  for (let i = 0; i < pdAtividades.length; i++) {
+    const a = pdAtividades[i];
+    if (!(a.horIni || '').trim() || !(a.horFim || '').trim()) {
+      pdMostrarErro('Informe o horímetro inicial e final da Atividade ' + (i + 1) + ' antes de salvar.');
+      return;
+    }
+  }
+  for (let i = 0; i < pdParadas.length; i++) {
+    const p = pdParadas[i];
+    if (!(p.horIni || '').trim() || !(p.horFim || '').trim()) {
+      pdMostrarErro('Informe o horímetro inicial e final da Parada ' + (i + 1) + ' antes de salvar.');
+      return;
+    }
+  }
   const totais = pdCalcularTotais();
   const fields = {
     Equipamento: equipamento,
@@ -6484,19 +6594,26 @@ document.getElementById('pd-salvar').onclick = async function(){
     HorasLiquidas: totais.liquidas.toFixed(2).replace('.', ',')
   };
   const btn = this;
-  btn.disabled = true; btn.textContent = 'Salvando…';
+  const editando = !!pdEditandoId;
+  btn.disabled = true; btn.textContent = editando ? 'Atualizando…' : 'Salvando…';
   try {
-    await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_PARTE_DIARIA_ID + '/items', { fields: fields });
+    if (editando) {
+      await graphPatch(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_PARTE_DIARIA_ID + '/items/' + pdEditandoId + '/fields', fields);
+    } else {
+      await graphPost(GRAPH + '/sites/' + SITE_ID + '/lists/' + LISTA_PARTE_DIARIA_ID + '/items', { fields: fields });
+    }
     const ok = document.getElementById('pd-ok-msg');
+    ok.textContent = editando ? '✔ Parte diária atualizada com sucesso!' : '✔ Parte diária salva com sucesso!';
     ok.style.display = 'block';
     setTimeout(function(){ ok.style.display = 'none'; }, 5000);
     partesDiariasCarregadas = false; // força reconsulta na próxima vez
+    pdEditandoId = null;
     pdLimparCampos(false);
     pdCarregarUltimas(equipamento);
   } catch(err) {
-    pdMostrarErro('Falha ao enviar. Tente novamente. ' + err.message);
+    pdMostrarErro('Falha ao ' + (editando ? 'atualizar' : 'enviar') + '. Tente novamente. ' + err.message);
   } finally {
-    btn.disabled = false; btn.textContent = '💾 Salvar parte diária';
+    btn.disabled = false; btn.textContent = pdEditandoId ? '💾 Atualizar parte diária' : '💾 Salvar parte diária';
   }
 };
   /* =====================================================================
