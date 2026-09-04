@@ -518,6 +518,18 @@
   .hover-prev-tooltip .hpt-linha span{color:#9fb0b8}
   .hover-prev-tooltip .hpt-linha b{text-align:right;font-weight:600;margin-left:auto}
   .hover-prev-tooltip .hpt-dica{margin-top:8px;font-size:10.5px;color:#9fd3ae;text-align:center}
+  /* ---- Controladoria (sistema externo embutido) ---- */
+  .ctrl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:var(--card);border:1px solid var(--linha);border-radius:12px;padding:12px 16px;margin-bottom:14px}
+  .ctrl-toolbar-info{font-size:12.5px;color:var(--tinta);line-height:1.5}
+  .ctrl-abrir-nova-aba{background:var(--navy);color:#fff;text-decoration:none;font-size:12.5px;font-weight:700;
+    padding:9px 16px;border-radius:8px;white-space:nowrap}
+  .ctrl-abrir-nova-aba:hover{opacity:.9}
+  .ctrl-iframe-wrap{position:relative;height:calc(100vh - 210px);min-height:420px;border:1px solid var(--linha);
+    border-radius:12px;overflow:hidden;background:#fff}
+  #ctrl-iframe{width:100%;height:100%;border:none;display:block}
+  .ctrl-erro{display:none;position:absolute;inset:0;background:var(--card);color:var(--tinta);
+    align-items:center;justify-content:center;text-align:center;font-size:13px;padding:24px;flex-direction:column;gap:10px}
   .arv-btn-detalhe{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
     font-size:12px;padding:2px 6px;cursor:pointer;flex-shrink:0}
   .arv-btn-detalhe:hover{background:var(--navy);color:#fff}
@@ -1285,6 +1297,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
         <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
         <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
         <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Movimentações</button>
+        <button type="button" class="topo-toggle-opt" data-ir="controladoria" id="topo-toggle-controladoria">Controladoria</button>
       </div>
       <div class="topbar-right">
         <button class="tema-toggle" id="btn-tema" title="Alternar tema claro/escuro">🌙</button>
@@ -2483,6 +2496,18 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
   </div>
 </div>
+<div class="view" id="view-controladoria">
+  <div class="ctrl-toolbar">
+    <div class="ctrl-toolbar-info">
+      <b>Sistema de Controladoria</b><br>
+      Este é outro sistema, com login próprio (separado do Portal Comprex), exibido aqui dentro só para facilitar o acesso.
+    </div>
+    <a href="https://sys-poc.vercel.app/" target="_blank" rel="noopener" class="ctrl-abrir-nova-aba">Abrir em nova aba ↗</a>
+  </div>
+  <div class="ctrl-iframe-wrap">
+    <iframe id="ctrl-iframe" src="about:blank" title="Sistema de Controladoria" loading="lazy"></iframe>
+  </div>
+</div>
 <!-- Fora de qualquer .view de propósito: em impressão, cada .view vira
      display:none (menos a ativa) — se essa área ficasse dentro de uma
      .view específica (como era antes, dentro do Histórico), imprimir a
@@ -3093,6 +3118,7 @@ async function entrarComoLogado(conta){
     document.getElementById('submenu-cadastrar').style.display = 'none';
     document.getElementById('btn-abrir-acessos').style.display = 'none';
     document.getElementById('btn-abrir-tablet-login').style.display = 'none';
+    document.getElementById('topo-toggle-controladoria').style.display = 'none';
   }
   iniciarAplicacao();
   aplicarRestricaoDeSecoes(secoesPermitidasPara(conta));
@@ -3310,6 +3336,7 @@ async function iniciarAplicacao(){
     document.getElementById('submenu-cadastrar').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     document.getElementById('btn-abrir-acessos').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     document.getElementById('btn-abrir-tablet-login').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
+    document.getElementById('topo-toggle-controladoria').style.display = usuarioEhAdmin(contaAtual) ? '' : 'none';
     pdRenderizarParadas();
     atualizarTextosJanelaReincidencia();
   } catch(err) {
@@ -6668,7 +6695,7 @@ function mostrarView(nome){
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { painel: 'Painel', novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos' };
+const titulos = { painel: 'Painel', novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos', controladoria: 'Controladoria' };
 const INFO_PAGINA = {
   painel: { icone: '🧭', sub: 'Visão geral dos checklists diários da frota', secao: 'Checklists' },
   novo: { icone: '📋', sub: 'Preenchimento diário de inspeção', secao: 'Checklists' },
@@ -6686,7 +6713,8 @@ const INFO_PAGINA = {
   'localizacao-atual': { icone: '📍', sub: 'Onde cada equipamento está agora', secao: 'Movimentações' },
   'historico-mov': { icone: '🕒', sub: 'Todas as movimentações já registradas', secao: 'Movimentações' },
   'dashboard-mov': { icone: '📊', sub: 'Visão geral das movimentações', secao: 'Movimentações' },
-  'status-equipamentos': { icone: '🖥️', sub: 'Acompanhamento em tempo real da localização e situação dos equipamentos', secao: 'Movimentações' }
+  'status-equipamentos': { icone: '🖥️', sub: 'Acompanhamento em tempo real da localização e situação dos equipamentos', secao: 'Movimentações' },
+  controladoria: { icone: '🧮', sub: 'Sistema de controladoria (externo)', secao: 'Movimentações' }
 };
   document.getElementById('topbar-titulo').textContent = titulos[nome] || 'Checklists';
   const VIEWS_POR_SECAO = {
@@ -6705,7 +6733,10 @@ const INFO_PAGINA = {
     });
   });
   document.querySelectorAll('.topo-toggle-opt').forEach(function(b){
-    b.classList.toggle('ativo', b.dataset.ir === secaoAtiva || (b.dataset.ir === 'novo' && secaoAtiva === 'checklist'));
+    const ativoAgora = b.dataset.ir === 'controladoria'
+      ? nome === 'controladoria'
+      : (nome !== 'controladoria' && (b.dataset.ir === secaoAtiva || (b.dataset.ir === 'novo' && secaoAtiva === 'checklist')));
+    b.classList.toggle('ativo', ativoAgora);
   });
   if (nome === 'painel') carregarPainelGeral();
   if (nome === 'historico') carregarHistorico();
@@ -6722,6 +6753,16 @@ const INFO_PAGINA = {
   if (nome === 'dashboard-mov') carregarDashboardMov();
   if (nome === 'status-equipamentos') carregarStatusEquipamentos();
   if (nome === 'frota') carregarViewFrota();
+  if (nome === 'controladoria') carregarControladoria();
+}
+/** Só carrega o iframe do sistema externo na primeira vez que a aba é
+ *  aberta (não antes) — assim não gasta login/sessão de ninguém à toa
+ *  enquanto o usuário nem visitou essa tela. */
+function carregarControladoria(){
+  const iframe = document.getElementById('ctrl-iframe');
+  if (iframe && iframe.getAttribute('src') === 'about:blank') {
+    iframe.src = 'https://sys-poc.vercel.app/';
+  }
 }
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
   item.onclick = function(){ mostrarView(item.dataset.view); };
