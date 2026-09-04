@@ -510,6 +510,14 @@
   .oc-tooltip-equip .lista{display:flex;flex-wrap:wrap;gap:6px}
   .oc-tooltip-chip{background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;cursor:pointer;font-weight:600}
   .oc-tooltip-chip:hover{background:var(--navy)}
+  .hover-prev-tooltip{position:absolute;background:#1a2430;color:#fff;border-radius:10px;padding:12px 14px;
+    font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);z-index:60;max-width:260px;pointer-events:none;
+    opacity:0;transition:opacity .12s ease}
+  .hover-prev-tooltip .hpt-titulo{font-weight:700;font-size:13px;margin-bottom:8px}
+  .hover-prev-tooltip .hpt-linha{display:flex;justify-content:space-between;gap:14px;padding:4px 0;border-top:1px solid rgba(255,255,255,.1)}
+  .hover-prev-tooltip .hpt-linha span{color:#9fb0b8}
+  .hover-prev-tooltip .hpt-linha b{text-align:right;font-weight:600;margin-left:auto}
+  .hover-prev-tooltip .hpt-dica{margin-top:8px;font-size:10.5px;color:#9fd3ae;text-align:center}
   .arv-btn-detalhe{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
     font-size:12px;padding:2px 6px;cursor:pointer;flex-shrink:0}
   .arv-btn-detalhe:hover{background:var(--navy);color:#fff}
@@ -1291,6 +1299,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     </div>
     <div class="content">
       <div class="oc-tooltip-equip" id="tooltip-global" style="display:none"></div>
+      <div class="hover-prev-tooltip" id="hover-prev-tooltip" style="display:none"></div>
       <div id="aviso-colunas-area"></div>
 <div class="view ativo" id="view-novo">
   <div class="forma-layout">
@@ -5631,6 +5640,21 @@ function statusEqRenderizar(){
       colunasManut +
     '</div>';
   }
+  function montarPreviaFrotaLinha(eq){
+    const dias = frotaDiasNoLocal[eq];
+    const diasTxt = (typeof dias === 'number') ? (dias + (dias === 1 ? ' dia' : ' dias')) : '—';
+    const chegada = statusEqDataChegada(eq);
+    const chegadaTxt = chegada ? formatarDataHist(chegada).split(' ')[0] : '—';
+    const totais = statusEqTotaisPorStatus(eq);
+    const ehImplemento = frotaTipoItem[eq] === 'implemento';
+    return '<div class="hpt-titulo">' + (ehImplemento ? '🔧' : '🚜') + ' ' + eq + '</div>' +
+      '<div class="hpt-linha"><span>Local atual</span><b>' + (frotaLocalAtual[eq] || '—') + '</b></div>' +
+      '<div class="hpt-linha"><span>Status</span><b>' + (frotaStatusAtual[eq] || 'OPERACIONAL') + '</b></div>' +
+      '<div class="hpt-linha"><span>Dias no local</span><b>' + diasTxt + '</b></div>' +
+      '<div class="hpt-linha"><span>Chegada</span><b>' + chegadaTxt + '</b></div>' +
+      '<div class="hpt-linha"><span>Histórico</span><b>' + totais['OPERACIONAL'] + 'd op / ' + totais['EM MANUTENÇÃO'] + 'd manut / ' + totais['EM DISPONIBILIDADE'] + 'd disp</b></div>' +
+      '<div class="hpt-dica">Clique para mover · use 📊 para o histórico completo</div>';
+  }
   function noExpansor(id, nivel, icone, nome, col2, extraClasse){
     const colapsado = statusEqColapsados.has(id);
     return '<div class="arv-no arv-nivel-'+nivel+' '+(extraClasse||'')+(colapsado?' colapsado':'')+'" data-no="'+id+'">' +
@@ -5679,6 +5703,7 @@ function statusEqRenderizar(){
   });
   arv.querySelectorAll('.arv-folha').forEach(function(el){
     el.onclick = function(){ locAbrirModalMover(el.dataset.equip); };
+    ativarPreviaHover(el, function(){ return montarPreviaFrotaLinha(el.dataset.equip); });
   });
   arv.querySelectorAll('[data-ver-detalhe]').forEach(function(btn){
     btn.onclick = function(e){
@@ -5758,6 +5783,17 @@ function statusEqRenderizar(){
 }
 let statusEqDashManutTodos = false; // controla se a tabela de manutenção mostra tudo ou só os primeiros
 const DEQ_CORES_LOCAL = ['var(--navy)', '#c79a3a', '#378ade', 'var(--ru)', '#7a4fb5', '#1b7a43', '#b25e17', '#5b6570'];
+function montarPreviaDeqLinha(eq){
+  const obs = frotaObservacaoManutencao[eq] ? frotaEsc(frotaObservacaoManutencao[eq]) : 'Sem observação';
+  const prev = frotaPrevisaoReparo[eq] ? formatarDataBR(frotaPrevisaoReparo[eq]) : '—';
+  const dias = frotaDiasNoLocal[eq];
+  return '<div class="hpt-titulo">🔧 ' + eq + '</div>' +
+    '<div class="hpt-linha"><span>Local</span><b>' + (frotaLocalAtual[eq] || '—') + '</b></div>' +
+    '<div class="hpt-linha"><span>Dias no local</span><b>' + (typeof dias === 'number' ? dias + 'd' : '—') + '</b></div>' +
+    '<div class="hpt-linha"><span>Observação</span><b>' + obs + '</b></div>' +
+    '<div class="hpt-linha"><span>Previsão de reparo</span><b>' + prev + '</b></div>' +
+    '<div class="hpt-dica">Clique na seta → para o histórico completo</div>';
+}
 /** Visualização alternativa "Dashboard" da tela Status dos Equipamentos —
  *  não mexe em nada da árvore original, só lê os mesmos equipsFiltrados. */
 function statusEqRenderizarDashboard(equipsFiltrados){
@@ -5811,6 +5847,9 @@ function statusEqRenderizarDashboard(equipsFiltrados){
         const eq = btn.dataset.deqAbrir;
         garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); });
       };
+    });
+    tabelaCont.querySelectorAll('[data-deq-equip]').forEach(function(linha){
+      ativarPreviaHover(linha, function(){ return montarPreviaDeqLinha(linha.dataset.deqEquip); });
     });
   }
   const btnVerTodos = document.getElementById('status-eq-dash-manut-ver-todos');
@@ -7012,6 +7051,37 @@ function configurarHoverGenerico2(cardId, tooltipId, titulo, obterConteudoHtml, 
   };
   tooltip.onmouseleave = function(){ tooltip.style.display = 'none'; };
 }
+/** Prévia por hover: passar o mouse numa linha/card e ficar parado um
+ *  instante mostra um resumo do equipamento, sem precisar clicar. Só usa
+ *  dados já carregados na tela (nada de chamada nova ao Graph), por isso
+ *  aparece na hora. Reaproveitável em qualquer lista/tabela clicável. */
+function ativarPreviaHover(elemento, obterHtmlFn){
+  if (!elemento || elemento.dataset.previaHoverAtiva) return;
+  elemento.dataset.previaHoverAtiva = '1';
+  const tip = document.getElementById('hover-prev-tooltip');
+  if (!tip) return;
+  let timer = null;
+  elemento.addEventListener('mouseenter', function(){
+    timer = setTimeout(function(){
+      const html = obterHtmlFn();
+      if (!html) return;
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      const rect = elemento.getBoundingClientRect();
+      const largura = tip.offsetWidth || 260;
+      let left = rect.left;
+      if (left + largura > window.innerWidth - 10) left = window.innerWidth - largura - 10;
+      tip.style.left = Math.max(8, left) + 'px';
+      tip.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+      requestAnimationFrame(function(){ tip.style.opacity = '1'; });
+    }, 550);
+  });
+  elemento.addEventListener('mouseleave', function(){
+    if (timer) { clearTimeout(timer); timer = null; }
+    tip.style.opacity = '0';
+    setTimeout(function(){ if (tip.style.opacity === '0') tip.style.display = 'none'; }, 150);
+  });
+}
 function renderBarChart(itens, deChave, ateChave){
   const cont = document.getElementById('dash-bar-chart');
   const dias = [];
@@ -7777,6 +7847,21 @@ function renderizarPainelKPIs(frotasEquip){
 function painelIrParaHistoricoDoEquip(eq){
   garantirOcorrenciasCarregadas().then(function(){ abrirHistoricoEquipamentoOcorrencias(eq); });
 }
+function montarPreviaPainelLinha(l){
+  const sit = l.situacao || 'verde';
+  const info = PAINEL_SITUACAO_INFO[sit];
+  const chk = l.ultimo
+    ? (formatarDataHist(l.ultimo.criado) + ' — ' + (l.ultimo.operador || '—'))
+    : 'Sem checklist registrado';
+  return '<div class="hpt-titulo">🚜 ' + l.equipamento + '</div>' +
+    '<div class="hpt-linha"><span>Local</span><b>' + l.local + '</b></div>' +
+    '<div class="hpt-linha"><span>Situação</span><b>' + info.icone + ' ' + info.texto + '</b></div>' +
+    '<div class="hpt-linha"><span>Último checklist</span><b>' + chk + '</b></div>' +
+    '<div class="hpt-linha"><span>Itens ruins</span><b>' + l.itensRuins + '</b></div>' +
+    '<div class="hpt-linha"><span>Itens impeditivos</span><b>' + l.itensImpeditivos + '</b></div>' +
+    (l.ultimo ? '<div class="hpt-linha"><span>Necessita paralisar</span><b>' + (l.precisaParalisar ? 'SIM' : 'NÃO') + '</b></div>' : '') +
+    '<div class="hpt-dica">Clique para ver o histórico completo</div>';
+}
 function renderizarPainelTabela(){
   const cont = document.getElementById('painel-tabela-cont');
   const botaoVerMais = document.getElementById('painel-ver-mais');
@@ -7836,6 +7921,10 @@ function renderizarPainelTabela(){
     buscarUrlFotoEquipamento(tr.dataset.painelEquip).then(function(url){
       if (!foto) return;
       foto.innerHTML = url ? '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;border-radius:9px">' : '🚜';
+    });
+    ativarPreviaHover(tr, function(){
+      const l = linhasVisiveis.find(function(x){ return x.equipamento === tr.dataset.painelEquip; });
+      return l ? montarPreviaPainelLinha(l) : '';
     });
   });
 }
