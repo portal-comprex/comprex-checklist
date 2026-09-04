@@ -530,6 +530,16 @@
   #ctrl-iframe{width:100%;height:100%;border:none;display:block}
   .ctrl-erro{display:none;position:absolute;inset:0;background:var(--card);color:var(--tinta);
     align-items:center;justify-content:center;text-align:center;font-size:13px;padding:24px;flex-direction:column;gap:10px}
+  .ctrl-voltar-btn{background:none;border:1.5px solid var(--linha);color:var(--tinta);font-size:12.5px;
+    font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;font-family:inherit}
+  .ctrl-voltar-btn:hover{background:var(--cream)}
+  /* ---- Controladoria em tela cheia: some com o menu/topo do Portal e o
+     iframe ocupa a janela inteira, como se fosse um app à parte. ---- */
+  .shell.controladoria-cheia .sidebar{display:none}
+  .shell.controladoria-cheia .topbar{display:none}
+  .shell.controladoria-cheia #view-controladoria.ativo{position:fixed;inset:0;z-index:500;
+    background:var(--fundo);padding:16px 20px;display:flex;flex-direction:column}
+  .shell.controladoria-cheia #view-controladoria .ctrl-iframe-wrap{flex:1;height:auto}
   .arv-btn-detalhe{background:var(--cream);border:1px solid var(--linha);border-radius:6px;
     font-size:12px;padding:2px 6px;cursor:pointer;flex-shrink:0}
   .arv-btn-detalhe:hover{background:var(--navy);color:#fff}
@@ -1261,7 +1271,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
     <nav class="sidebar-nav">
     <div class="sidebar-item" data-view="painel" data-secao="checklist"><i>🧭</i> Painel</div>
       <div class="sidebar-item ativo" data-view="novo" data-secao="checklist"><i>📋</i> Checklists</div>
-      <div class="sidebar-item" data-view="partediaria" data-secao="partediaria"><i>📝</i> Parte Diária</div>
+      <div class="sidebar-item" data-view="partediaria" data-secao="partediaria"><i>📝</i> TESTE</div>
       <div class="sidebar-item" data-view="historico" data-secao="checklist"><i>🕒</i> Histórico</div>
       <div class="sidebar-item" data-view="dashboard" data-secao="checklist"><i>📊</i> Dashboard</div>
      <div class="sidebar-item" data-view="ocorrencias" data-secao="checklist"><i>⚠️</i> Ocorrências <span class="sidebar-badge" id="badge-ocorrencias" style="display:none">0</span></div>
@@ -1295,7 +1305,7 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       </div>
       <div class="topo-toggle" id="topo-toggle">
         <button type="button" class="topo-toggle-opt" data-ir="novo">Checklists</button>
-        <button type="button" class="topo-toggle-opt" data-ir="partediaria">Parte Diária</button>
+        <button type="button" class="topo-toggle-opt" data-ir="partediaria">TESTE</button>
         <button type="button" class="topo-toggle-opt" data-ir="rastreamento">Movimentações</button>
         <button type="button" class="topo-toggle-opt" data-ir="controladoria" id="topo-toggle-controladoria">Controladoria</button>
       </div>
@@ -2502,7 +2512,10 @@ body.tema-escuro .resumo-equip{color:#e5e7eb}
       <b>Sistema de Controladoria</b><br>
       Este é outro sistema, com login próprio (separado do Portal Comprex), exibido aqui dentro só para facilitar o acesso.
     </div>
-    <a href="https://sys-poc.vercel.app/" target="_blank" rel="noopener" class="ctrl-abrir-nova-aba">Abrir em nova aba ↗</a>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button type="button" class="ctrl-voltar-btn" id="ctrl-voltar-btn">← Voltar ao Portal</button>
+      <a href="https://sys-poc.vercel.app/" target="_blank" rel="noopener" class="ctrl-abrir-nova-aba">Abrir em nova aba ↗</a>
+    </div>
   </div>
   <div class="ctrl-iframe-wrap">
     <iframe id="ctrl-iframe" src="about:blank" title="Sistema de Controladoria" loading="lazy"></iframe>
@@ -4042,7 +4055,7 @@ function acessosRenderizarArvoreMenus(){
 document.getElementById('btn-abrir-acessos').onclick = acessosAbrirTela;
 document.getElementById('acessos-fechar').onclick = function(){ document.getElementById('acessos-overlay').classList.remove('aberto'); };
 document.getElementById('acessos-overlay').onclick = function(e){ if (e.target === this) this.classList.remove('aberto'); };
-const NOMES_SECAO = { checklist: 'Checklists', partediaria: 'Parte Diária', rastreamento: 'Movimentações' };
+const NOMES_SECAO = { checklist: 'Checklists', partediaria: 'TESTE', rastreamento: 'Movimentações' };
 /** Todas as telas que existem, agrupadas por seção — usado pra montar os
  *  checkboxes de permissão granular na tela "Gerenciar Acessos". */
 const MENUS_POR_SECAO = {
@@ -4055,7 +4068,7 @@ const MENUS_POR_SECAO = {
     { view: 'indicadores', label: 'Indicadores' }
   ],
   partediaria: [
-    { view: 'partediaria', label: 'Parte Diária' },
+    { view: 'partediaria', label: 'TESTE' },
     { view: 'historico-pd', label: 'Histórico' },
     { view: 'dashboard-pd', label: 'Dashboard' },
     { view: 'indicadores-pd', label: 'Indicadores' }
@@ -6689,13 +6702,14 @@ let historicoCarregado = false;
 let detalheHistoricoAberto = null;
 let historicoItens = [];
 function mostrarView(nome){
+  document.getElementById('app-shell').classList.toggle('controladoria-cheia', nome === 'controladoria');
   document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('ativo'); });
   const alvo = document.getElementById('view-' + nome);
   if (alvo) alvo.classList.add('ativo');
   document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
     item.classList.toggle('ativo', item.dataset.view === nome);
   });
-const titulos = { painel: 'Painel', novo: 'Checklists', partediaria: 'Parte Diária', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos', controladoria: 'Controladoria' };
+const titulos = { painel: 'Painel', novo: 'Checklists', partediaria: 'TESTE', historico: 'Histórico', dashboard: 'Dashboard', ocorrencias: 'Ocorrências', frota: 'Frota', operadores: 'Operadores', indicadores: 'Indicadores', 'historico-pd': 'Histórico', 'dashboard-pd': 'Dashboard', 'indicadores-pd': 'Indicadores', rastreamento: 'Mover Equipamento', 'localizacao-atual': 'Localização Atual', 'historico-mov': 'Histórico de Movimentações', 'dashboard-mov': 'Dashboard', 'status-equipamentos': 'Status dos Equipamentos', controladoria: 'Controladoria' };
 const INFO_PAGINA = {
   painel: { icone: '🧭', sub: 'Visão geral dos checklists diários da frota', secao: 'Checklists' },
   novo: { icone: '📋', sub: 'Preenchimento diário de inspeção', secao: 'Checklists' },
@@ -6705,10 +6719,10 @@ const INFO_PAGINA = {
   frota: { icone: '🚚', sub: 'Equipamentos e implementos cadastrados', secao: 'Movimentações' },
   operadores: { icone: '👷', sub: 'Ranking de operadores', secao: 'Checklists' },
   indicadores: { icone: '📈', sub: 'Indicadores de conformidade', secao: 'Checklists' },
-  partediaria: { icone: '🕐', sub: 'Registro de atividades e paradas do dia', secao: 'Parte Diária' },
-  'historico-pd': { icone: '🕒', sub: 'Todas as partes diárias já registradas', secao: 'Parte Diária' },
-  'dashboard-pd': { icone: '📊', sub: 'Visão geral do dia', secao: 'Parte Diária' },
-  'indicadores-pd': { icone: '📈', sub: 'Indicadores de horas trabalhadas e paradas', secao: 'Parte Diária' },
+  partediaria: { icone: '🕐', sub: 'Registro de atividades e paradas do dia', secao: 'TESTE' },
+  'historico-pd': { icone: '🕒', sub: 'Todas as partes diárias já registradas', secao: 'TESTE' },
+  'dashboard-pd': { icone: '📊', sub: 'Visão geral do dia', secao: 'TESTE' },
+  'indicadores-pd': { icone: '📈', sub: 'Indicadores de horas trabalhadas e paradas', secao: 'TESTE' },
   rastreamento: { icone: '📦', sub: 'Mover um equipamento entre locais', secao: 'Movimentações' },
   'localizacao-atual': { icone: '📍', sub: 'Onde cada equipamento está agora', secao: 'Movimentações' },
   'historico-mov': { icone: '🕒', sub: 'Todas as movimentações já registradas', secao: 'Movimentações' },
@@ -6764,6 +6778,7 @@ function carregarControladoria(){
     iframe.src = 'https://sys-poc.vercel.app/';
   }
 }
+document.getElementById('ctrl-voltar-btn').onclick = function(){ mostrarView('painel'); };
 document.querySelectorAll('.sidebar-item[data-view]').forEach(function(item){
   item.onclick = function(){ mostrarView(item.dataset.view); };
 });
